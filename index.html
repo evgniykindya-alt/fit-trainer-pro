@@ -30,7 +30,7 @@ body {
     overscroll-behavior: none; user-select: none;
 }
 .app-container { width: 100%; height: 100vh; height: 100dvh; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: var(--sat) 0 var(--sab) 0; }
-.screen { display: none; padding: 15px 15px 10px; min-height: 100%; }
+.screen { display: none; padding: 20px 20px 40px; min-height: 100%; }
 .screen.active { display: block; }
 h1 { font-size: 1.9rem; font-weight: 700; margin: 10px 0 20px; letter-spacing: -0.5px; }
 h2 { color: var(--primary); margin: 20px 0 12px; font-size: 1.2rem; font-weight: 600; }
@@ -64,8 +64,9 @@ h2 { color: var(--primary); margin: 20px 0 12px; font-size: 1.2rem; font-weight:
 .menu-btn:active { transform: scale(0.98); }
 .menu-btn .icon { font-size: 1.8rem; }
 .menu-btn .sub { font-size: 0.8rem; color: var(--muted); margin-top: 2px; font-weight: 400; }
-/* Обновленные стили для перетаскивания */
-.workout-item { 
+
+/* Стили для Drag & Drop */
+.workout-item, .template-item { 
     background: var(--card); 
     border-radius: 16px; 
     padding: 16px; 
@@ -78,33 +79,37 @@ h2 { color: var(--primary); margin: 20px 0 12px; font-size: 1.2rem; font-weight:
     touch-action: pan-y; 
 }
 
-/* Элемент, который мы тащим (летает поверх всего) */
-.workout-item.dragging {
+/* Летающий элемент при перетаскивании */
+.workout-item.dragging, .template-item.dragging {
     opacity: 0.9;
     z-index: 9999;
     box-shadow: 0 20px 40px rgba(0,0,0,0.7);
     background: var(--card-2);
     border: 1px solid var(--primary);
-    pointer-events: none; /* Пропускаем касания сквозь него */
-    position: fixed !important; /* Фиксируем относительно экрана */
-    width: calc(100% - 40px) !important; /* Ширина как у карточки с учетом отступов */
+    pointer-events: none;
+    position: fixed !important;
+    width: calc(100% - 40px) !important;
     left: 20px !important;
     top: 0 !important;
     margin: 0 !important;
-    transform: translate3d(0, 0, 0); /* Аппаратное ускорение для плавности */
+    transform: translate3d(0, 0, 0);
 }
 
-/* Невидимая заглушка в списке, чтобы другие элементы не схлопывались */
+/* Заглушка в списке */
 .drag-placeholder {
     background: transparent;
     border: 2px dashed var(--muted);
     border-radius: 16px;
-    height: 100px; /* Примерная высота карточки */
+    height: 80px;
     margin-bottom: 12px;
     opacity: 0.5;
 }
+.drag-placeholder.active-drop {
+    border-color: var(--accent);
+    background: rgba(3, 218, 198, 0.1);
+}
 
-/* Блокировка скролла страницы при перетаскивании */
+/* Блокировка скролла страницы */
 body.no-scroll {
     overflow: hidden !important;
     position: fixed !important;
@@ -113,11 +118,6 @@ body.no-scroll {
     touch-action: none !important;
 }
 
-/* Подсветка места вставки */
-.drag-placeholder.active-drop {
-    border-color: var(--accent);
-    background: rgba(3, 218, 198, 0.1);
-}
 .workout-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; gap: 10px; }
 .workout-info { flex: 1; min-width: 0; }
 .workout-info .name { font-size: 1.15rem; font-weight: 600; word-break: break-word; line-height: 1.3; }
@@ -180,7 +180,7 @@ textarea.input { min-height: 60px; resize: vertical; font-family: inherit; }
 .phase-header {
     position: relative;
     width: 100%;
-    min-height: 3px;
+    min-height: 24px;
     margin: 10px 0;
 }
 .phase-label { 
@@ -200,22 +200,21 @@ textarea.input { min-height: 60px; resize: vertical; font-family: inherit; }
 .phase-label.water { color: var(--water); }
 .phase-label.finished { color: var(--danger); font-size: 1.3rem; letter-spacing: 1.5px; font-weight: 700; margin-bottom: 4px; }
 
-.start-time-display {
-    position: relative;
-    right: 10px;
-	text-align: right;
-    top: 0;
+.start-time-bottom {
+    text-align: left;
+    margin-top: 12px;
+    padding-left: 4px;
     font-size: 0.85rem;
-    font-weight: 600;
+    font-weight: 500;
+    color: var(--muted);
     letter-spacing: 0.5px;
-    white-space: nowrap;
-	
 }
-.start-time-display .start-label {
+.start-time-bottom .start-label {
     margin-right: 4px;
 }
-.start-time-display .start-value {
+.start-time-bottom .start-value {
     font-variant-numeric: tabular-nums;
+    font-weight: 600;
 }
 
 .finished-subtitle { text-align: center; color: var(--muted); font-size: 0.95rem; margin: 4px 0 12px; font-weight: 500; }
@@ -405,17 +404,12 @@ details[open] summary::after { transform: rotate(180deg); }
 </div>
 
 <div id="screen-run" class="screen">
-<div class="start-time-display" id="start-time-display" style="display:none;">
-            <span class="start-label" id="start-time-label">Старт</span>
-            <span class="start-value" id="start-time-value">--:--</span>
-        </div>
     <div class="top-bar">
         <button class="back-btn" onclick="confirmExit()">←</button>
         <h1 id="run-title" style="margin:0;">Тренировка</h1>
         <div class="spacer"></div>
     </div>
     <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
-	 
     <div class="phase-header">
         <div class="phase-label" id="phase-label">УПРАЖНЕНИЕ</div>
     </div>
@@ -425,52 +419,9 @@ details[open] summary::after { transform: rotate(180deg); }
         <div class="big-timer countdown" id="countdown-timer">3</div>
         <p style="text-align:center; color:var(--muted);">Приготовься...</p>
     </div>
-    <div id="phase-work" style="display:none;">
-        <div class="big-timer" id="work-timer">00:00</div>
-        <button class="btn warn" id="work-pause-btn" onclick="toggleWorkPause()">⏸ Пауза</button>
-        <button class="btn danger" onclick="finishExercise()">✅ Завершить упражнение</button>
-    </div>
-    <div id="phase-rest" style="display:none;">
-        <div class="big-timer" id="rest-timer">00:00</div>
-        <div class="next-exercise-block" id="next-exercise-block">
-            <div class="next-exercise-label" id="next-exercise-label">Следующее</div>
-            <div class="next-exercise-name" id="next-exercise-name">—</div>
-        </div>
-        <div class="rest-adjust">
-            <button class="btn small ghost" onclick="adjustRest(-30)">-30с</button>
-            <button class="btn small ghost" onclick="adjustRest(-10)">-10с</button>
-            <button class="btn small ghost" onclick="adjustRest(+10)">+10с</button>
-            <button class="btn small ghost" onclick="adjustRest(+30)">+30с</button>
-        </div>
-        <div class="rest-buttons">
-            <button class="btn warn" id="rest-pause-btn" onclick="toggleRestPause()">⏸ Пауза</button>
-            <button class="btn" style="background: var(--blue); color: #fff;" id="rest-undo-btn" onclick="undoFinishExercise()">↩ Предыдущее упражнение</button>
-            <button class="btn accent" id="rest-skip-btn" onclick="skipRest()">⏭ Пропустить отдых</button>
-            <button class="btn accent" id="rest-confirm-btn" onclick="confirmRestFinished()" style="display:none;">✅ Завершить отдых</button>
-        </div>
-    </div>
-    <div id="phase-water" style="display:none;">
-        <div class="water-screen">
-            <div class="water-icon" id="water-icon">💧</div>
-            <div class="big-timer water" id="water-timer">00:00</div>
-            <div class="next-exercise-block" id="water-next-block">
-                <div class="next-exercise-label" id="water-next-label">Следующее</div>
-                <div class="next-exercise-name" id="water-next-name">—</div>
-            </div>
-            <div class="water-adjust" id="water-adjust">
-                <button class="btn small ghost" onclick="adjustWater(-30)">-30с</button>
-                <button class="btn small ghost" onclick="adjustWater(-10)">-10с</button>
-                <button class="btn small ghost" onclick="adjustWater(+10)">+10с</button>
-                <button class="btn small ghost" onclick="adjustWater(+30)">+30с</button>
-            </div>
-            <div class="water-buttons">
-                <button class="btn warn" id="water-pause-btn" onclick="toggleWaterPause()">⏸ Пауза</button>
-                <button class="btn" style="background: var(--blue); color: #fff;" id="water-undo-btn" onclick="undoWaterFinish()">↩ Предыдущее упражнение</button>
-                <button class="btn accent" id="water-skip-btn" onclick="skipWater()">⏭ Пропустить отдых</button>
-                <button class="btn accent" id="water-confirm-btn" onclick="confirmWaterFinished()" style="display:none;">✅ Завершить тренировку</button>
-            </div>
-        </div>
-    </div>
+    <div id="phase-work" style="display:none;"></div>
+    <div id="phase-rest" style="display:none;"></div>
+    <div id="phase-water" style="display:none;"></div>
     <div id="phase-finish" style="display:none;"></div>
 </div>
 
@@ -731,6 +682,13 @@ let restAlarmTimeout = null;
 let waterAlarmTimeout = null;
 let previewCtx = null;
 
+// --- DRAG & DROP VARIABLES ---
+let draggedItem = null;
+let dragContainerId = 'workouts-list';
+let dragPlaceholder = null;
+let dragOffsetY = 0;
+let longPressTimer = null;
+
 let audioCtx = null;
 async function getAudioCtx() {
     try {
@@ -805,16 +763,14 @@ function showScreen(id) {
     if (id === 'screen-settings') renderSettings();
     if (id === 'screen-templates') renderTemplates();
 }
-let draggedItem = null;
-let dragPlaceholder = null; // Невидимая заглушка в списке
-let dragOffsetY = 0;
-let longPressTimer = null;
 
-function initDragAndDrop(item) {
-    // --- Desktop (Mouse) ---
+// --- DRAG & DROP LOGIC ---
+function initDragAndDrop(item, containerId = 'workouts-list') {
+    // Desktop (Mouse)
     item.setAttribute('draggable', 'true');
     item.addEventListener('dragstart', (e) => {
         draggedItem = item;
+        dragContainerId = containerId;
         item.classList.add('dragging');
         e.dataTransfer.effectAllowed = 'move';
     });
@@ -823,40 +779,35 @@ function initDragAndDrop(item) {
     });
     item.addEventListener('dragover', (e) => {
         e.preventDefault();
-        const afterElement = getDragAfterElement(document.getElementById('workouts-list'), e.clientY);
-        updatePlaceholderPosition(afterElement);
+        const list = document.getElementById(containerId);
+        const afterElement = getDragAfterElement(list, e.clientY);
+        updatePlaceholderPosition(afterElement, list);
     });
     item.addEventListener('drop', (e) => {
         e.preventDefault();
-        finalizeDrop();
+        finalizeDrop(containerId);
     });
 
-    // --- Mobile (Touch) ---
+    // Mobile (Touch)
     item.addEventListener('touchstart', (e) => {
         if (e.target.closest('.icon-btn') || e.target.closest('.btn')) return;
         
         const touch = e.touches[0];
         longPressTimer = setTimeout(() => {
-            startDragging(item, touch.clientY);
+            startDragging(item, touch.clientY, containerId);
         }, 200); 
     }, { passive: true });
-
-    // Глобальные слушатели для тача
-    document.addEventListener('touchmove', handleGlobalTouchMove, { passive: false });
-    document.addEventListener('touchend', handleGlobalTouchEnd);
-    document.addEventListener('touchcancel', handleGlobalTouchEnd);
 }
 
-function startDragging(item, clientY) {
+function startDragging(item, clientY, containerId) {
     draggedItem = item;
+    dragContainerId = containerId;
     
-    // Создаем заглушку на месте оригинального элемента
     dragPlaceholder = document.createElement('div');
     dragPlaceholder.className = 'drag-placeholder';
     dragPlaceholder.style.height = item.offsetHeight + 'px';
     item.parentNode.insertBefore(dragPlaceholder, item);
     
-    // Настраиваем летающий элемент
     const rect = item.getBoundingClientRect();
     dragOffsetY = clientY - rect.top;
     
@@ -876,26 +827,20 @@ function handleGlobalTouchMove(e) {
     
     const touch = e.touches[0];
     const newY = touch.clientY - dragOffsetY;
-    
-    // Плавное движение через transform
     draggedItem.style.transform = `translate3d(0, ${newY - parseFloat(draggedItem.style.top)}px, 0)`;
     
-    // Поиск элемента под пальцем
     let elemBelow = document.elementFromPoint(touch.clientX, touch.clientY);
     if (!elemBelow) return;
     
-    let targetItem = elemBelow.closest('.workout-item');
+    const list = document.getElementById(dragContainerId);
+    let targetItem = elemBelow.closest(`#${dragContainerId} > .workout-item, #${dragContainerId} > .template-item`);
     
-    // Убираем активный класс со всех заглушек
     document.querySelectorAll('.drag-placeholder').forEach(p => p.classList.remove('active-drop'));
 
     if (targetItem && targetItem !== draggedItem) {
          const bounding = targetItem.getBoundingClientRect();
          const offset = touch.clientY - bounding.top - (bounding.height / 2);
          
-         const list = document.getElementById('workouts-list');
-         
-         // Перемещаем ЗАГЛУШКУ, а не сам летающий элемент
          if (offset > 0) {
              if(targetItem.nextSibling && targetItem.nextSibling !== dragPlaceholder) {
                  list.insertBefore(dragPlaceholder, targetItem.nextSibling);
@@ -914,12 +859,11 @@ function handleGlobalTouchMove(e) {
 function handleGlobalTouchEnd(e) {
     clearTimeout(longPressTimer);
     if (draggedItem) {
-        finalizeDrop();
+        finalizeDrop(dragContainerId);
     }
 }
 
-function updatePlaceholderPosition(afterElement) {
-    const list = document.getElementById('workouts-list');
+function updatePlaceholderPosition(afterElement, list) {
     if (!dragPlaceholder) {
         dragPlaceholder = document.createElement('div');
         dragPlaceholder.className = 'drag-placeholder';
@@ -933,13 +877,17 @@ function updatePlaceholderPosition(afterElement) {
     }
 }
 
-function finalizeDrop() {
+function finalizeDrop(containerId) {
     if (!draggedItem || !dragPlaceholder) return;
     
-    // Вставляем реальный элемент на место заглушки
     dragPlaceholder.parentNode.insertBefore(draggedItem, dragPlaceholder);
     cleanupDrag();
-    saveNewOrder();
+    
+    if (containerId === 'workouts-list') {
+        saveNewOrder();
+    } else if (containerId === 'templates-list') {
+        saveTemplatesOrder();
+    }
 }
 
 function cleanupDrag() {
@@ -960,7 +908,7 @@ function cleanupDrag() {
 }
 
 function getDragAfterElement(container, y) {
-    const draggableElements = [...container.querySelectorAll('.workout-item:not(.dragging)')];
+    const draggableElements = [...container.querySelectorAll('.workout-item:not(.dragging), .template-item:not(.dragging)')];
     return draggableElements.reduce((closest, child) => {
         const box = child.getBoundingClientRect();
         const offset = y - box.top - box.height / 2;
@@ -989,7 +937,33 @@ function saveNewOrder() {
     DB.workouts = reorderedWorkouts;
     saveDB('workouts');
 }
-// -----------------------------------------
+
+function saveTemplatesOrder() {
+    const listContainer = document.getElementById('templates-list');
+    const newOrderIds = Array.from(listContainer.children)
+        .filter(el => el.classList.contains('template-item'))
+        .map(el => parseInt(el.dataset.id));
+    
+    const reorderedTemplates = [];
+    newOrderIds.forEach(id => {
+        const template = DB.templates.find(t => t.id === id);
+        if (template) reorderedTemplates.push(template);
+    });
+    
+    DB.templates.forEach(t => {
+        if (!reorderedTemplates.includes(t)) reorderedTemplates.push(t);
+    });
+
+    DB.templates = reorderedTemplates;
+    saveDB('templates');
+}
+
+// Глобальные слушатели для тач-событий
+document.addEventListener('touchmove', handleGlobalTouchMove, { passive: false });
+document.addEventListener('touchend', handleGlobalTouchEnd);
+document.addEventListener('touchcancel', handleGlobalTouchEnd);
+// -----------------------------
+
 function renderWorkoutsList() {
     const c = document.getElementById('workouts-list');
     if (DB.workouts.length === 0) {
@@ -1013,9 +987,8 @@ function renderWorkoutsList() {
         </div>
     `).join('');
 
-    // Инициализация Drag&Drop для каждого элемента
     const items = c.querySelectorAll('.workout-item');
-    items.forEach(item => initDragAndDrop(item));
+    items.forEach(item => initDragAndDrop(item, 'workouts-list'));
 }
 
 function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
@@ -1023,10 +996,11 @@ function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;'
 function renderTemplates() {
     const c = document.getElementById('templates-list');
     let html = '';
+    
     if (DB.templates.length > 0) {
         html += '<div class="template-section-title">Мои шаблоны</div>';
         html += DB.templates.map(t => `
-            <div class="template-card">
+            <div class="template-item workout-item" data-id="${t.id}" data-type="template">
                 <div class="template-card-header">
                     <div class="template-card-info" onclick="showTemplatePreview(${t.id}, false)">
                         <div class="name">${escapeHtml(t.name)}</div>
@@ -1042,6 +1016,7 @@ function renderTemplates() {
             </div>
         `).join('');
     }
+    
     const visibleBuiltins = BUILTIN_TEMPLATES.filter(t => !DB.settings.hiddenBuiltins.includes(t.id));
     if (visibleBuiltins.length > 0) {
         html += '<div class="template-section-title">Готовые шаблоны</div>';
@@ -1062,10 +1037,15 @@ function renderTemplates() {
             </div>
         `).join('');
     }
+    
     if (DB.templates.length === 0 && visibleBuiltins.length === 0) {
         html += '<div class="empty-state">Все шаблоны скрыты.<br>Нажми «Восстановить все шаблоны» в настройках.</div>';
     }
+    
     c.innerHTML = html;
+
+    const items = c.querySelectorAll('.template-item');
+    items.forEach(item => initDragAndDrop(item, 'templates-list'));
 }
 
 function createFromTemplate(id, isBuiltin) {
@@ -1883,14 +1863,19 @@ function updateWaterNextBlock() {
     }
 }
 
+function getStartTimeHTML() {
+    if (!DB.settings.showStartTime || !runState || !runState.startTime) return '';
+    return `<div class="start-time-bottom">
+        <span class="start-label">Старт</span>
+        <span class="start-value">${formatClock(runState.startTime)}</span>
+    </div>`;
+}
+
 function renderRun() {
     const { workout, index, phase } = runState;
     const exercises = workout.exercises;
     const totalEx = getTotalExerciseCount(exercises);
     const phaseLabel = document.getElementById('phase-label');
-    const startTimeDisplay = document.getElementById('start-time-display');
-    const startTimeLabel = document.getElementById('start-time-label');
-    const startTimeValue = document.getElementById('start-time-value');
     
     const lastIsWater = exercises.length > 0 && exercises[exercises.length - 1].waterBreak;
     const activeCount = lastIsWater ? exercises.length - 1 : exercises.length;
@@ -1906,7 +1891,6 @@ function renderRun() {
     document.getElementById('progress-fill').style.width = progressPercent + '%';
     
     hideAllPhases();
-	document.getElementById('current-exercise').style.color = '';
     if (index >= exercises.length) { showFinishScreen(); return; }
     const ex = exercises[index];
     const isLastWater = ex.waterBreak && index === exercises.length - 1;
@@ -1914,13 +1898,6 @@ function renderRun() {
     document.getElementById('current-exercise').innerText = ex.waterBreak ? 
         (isLastWater ? (ex.name || 'Попить воды') : ('💧 ' + (ex.name || 'Попить воды'))) : 
         (ex.name || 'Упражнение');
-
-    if (DB.settings.showStartTime && runState.startTime) {
-        startTimeDisplay.style.display = 'block';
-        startTimeValue.innerText = formatClock(runState.startTime);
-    } else {
-        startTimeDisplay.style.display = 'none';
-    }
 
     phaseLabel.style.display = 'block';
 
@@ -1939,12 +1916,11 @@ function renderRun() {
             phaseLabel.className = 'phase-label';
             phaseLabel.style.display = 'block';
         }
-        startTimeLabel.style.color = 'var(--muted)';
-        startTimeValue.style.color = 'var(--muted)';
         document.getElementById('phase-ready').innerHTML = `
             ${ex.notes ? `<p style="text-align:center; color:var(--muted); font-size:0.9rem; margin-bottom:10px;">📝 ${escapeHtml(ex.notes)}</p>` : ''}
             <p style="text-align:center; color:var(--muted);">Готов? Нажми чтобы начать.</p>
             <button class="btn ${ex.waterBreak ? 'water' : 'accent'}" onclick="beginExerciseFlow()">▶ Начать</button>
+            ${getStartTimeHTML()}
         `;
         document.getElementById('phase-ready').style.display = 'block';
     } else if (phase === 'countdown') {
@@ -1952,8 +1928,6 @@ function renderRun() {
         phaseLabel.innerText = `УПРАЖНЕНИЕ ${num} / ${totalEx}`;
         phaseLabel.className = 'phase-label';
         phaseLabel.style.display = 'block';
-        startTimeLabel.style.color = 'var(--muted)';
-        startTimeValue.style.color = 'var(--muted)';
         document.getElementById('countdown-timer').innerText = runState.countdownValue;
         document.getElementById('phase-countdown').style.display = 'block';
     } else if (phase === 'work') {
@@ -1961,8 +1935,6 @@ function renderRun() {
         phaseLabel.innerText = `УПРАЖНЕНИЕ ${num} / ${totalEx}`;
         phaseLabel.className = 'phase-label';
         phaseLabel.style.display = 'block';
-        startTimeLabel.style.color = 'var(--muted)';
-        startTimeValue.style.color = 'var(--muted)';
         const workTimer = document.getElementById('work-timer');
         const pauseBtn = document.getElementById('work-pause-btn');
         if (runState.workPaused) {
@@ -1975,6 +1947,12 @@ function renderRun() {
             pauseBtn.innerText = '⏸ Пауза';
         }
         workTimer.innerText = formatTime(getCurrentElapsed('work'));
+        document.getElementById('phase-work').innerHTML = `
+            <div class="big-timer" id="work-timer">${workTimer.innerText}</div>
+            <button class="btn warn" id="work-pause-btn" onclick="toggleWorkPause()">${pauseBtn.innerText}</button>
+            <button class="btn danger" onclick="finishExercise()">✅ Завершить упражнение</button>
+            ${getStartTimeHTML()}
+        `;
         document.getElementById('phase-work').style.display = 'block';
     } else if (phase === 'rest') {
         const timerEl = document.getElementById('rest-timer');
@@ -1993,10 +1971,8 @@ function renderRun() {
             timerEl.className = 'big-timer overtime';
             phaseLabel.innerText = "⏰ ВРЕМЯ ОТДЫХА ВЫШЛО";
             phaseLabel.className = 'phase-label finished';
-			document.getElementById('current-exercise').style.color = 'var(--danger)';
             phaseLabel.style.display = 'block';
-           // startTimeLabel.style.color = 'var(--danger)';
-           // startTimeValue.style.color = 'var(--danger)';
+            document.getElementById('current-exercise').style.color = 'var(--danger)';
             const subtitle = document.createElement('p');
             subtitle.id = 'finished-subtitle';
             subtitle.className = 'finished-subtitle';
@@ -2010,25 +1986,19 @@ function renderRun() {
             adjustDiv.style.display = 'none';
             nextBlock.style.display = 'none';
         } else {
+            document.getElementById('current-exercise').style.color = '';
             timerEl.className = 'big-timer';
-			document.getElementById('current-exercise').style.color = '';
             timerEl.innerText = formatTime(getRemainingTime('rest'));
             timerEl.style.color = "";
             if (runState.restPaused) {
                 timerEl.classList.add('paused');
                 phaseLabel.innerText = "⏸ ПАУЗА";
                 phaseLabel.className = 'phase-label paused';
-                phaseLabel.style.display = 'block';
-                startTimeLabel.style.color = 'var(--muted)';
-                startTimeValue.style.color = 'var(--muted)';
                 pauseBtn.innerText = '▶ Продолжить';
             } else {
                 timerEl.classList.remove('paused');
                 phaseLabel.innerText = "ОТДЫХ";
                 phaseLabel.className = 'phase-label';
-                phaseLabel.style.display = 'block';
-                startTimeLabel.style.color = 'var(--muted)';
-                startTimeValue.style.color = 'var(--muted)';
                 pauseBtn.innerText = '⏸ Пауза';
             }
             pauseBtn.style.display = 'block';
@@ -2039,6 +2009,26 @@ function renderRun() {
             nextBlock.style.display = 'block';
             updateNextExerciseBlock();
         }
+        document.getElementById('phase-rest').innerHTML = `
+            <div class="big-timer" id="rest-timer">${timerEl.innerText}</div>
+            <div class="next-exercise-block" id="next-exercise-block">
+                <div class="next-exercise-label" id="next-exercise-label">${document.getElementById('next-exercise-label').innerText}</div>
+                <div class="next-exercise-name" id="next-exercise-name">${document.getElementById('next-exercise-name').innerText}</div>
+            </div>
+            <div class="rest-adjust">
+                <button class="btn small ghost" onclick="adjustRest(-30)">-30с</button>
+                <button class="btn small ghost" onclick="adjustRest(-10)">-10с</button>
+                <button class="btn small ghost" onclick="adjustRest(+10)">+10с</button>
+                <button class="btn small ghost" onclick="adjustRest(+30)">+30с</button>
+            </div>
+            <div class="rest-buttons">
+                <button class="btn warn" id="rest-pause-btn" onclick="toggleRestPause()" style="display:${pauseBtn.style.display}">${pauseBtn.innerText}</button>
+                <button class="btn" style="background: var(--blue); color: #fff; display:${undoBtn.style.display}" id="rest-undo-btn" onclick="undoFinishExercise()">↩ Предыдущее упражнение</button>
+                <button class="btn accent" id="rest-skip-btn" onclick="skipRest()" style="display:${skipBtn.style.display}">⏭ Пропустить отдых</button>
+                <button class="btn accent" id="rest-confirm-btn" onclick="confirmRestFinished()" style="display:${confirmBtn.style.display}">✅ Завершить отдых</button>
+            </div>
+            ${getStartTimeHTML()}
+        `;
         document.getElementById('phase-rest').style.display = 'block';
     } else if (phase === 'water') {
         const timerEl = document.getElementById('water-timer');
@@ -2056,8 +2046,6 @@ function renderRun() {
         if (isLastWater) {
             timerEl.style.display = 'none';
             phaseLabel.style.display = 'none';
-            startTimeLabel.style.color = 'var(--muted)';
-            startTimeValue.style.color = 'var(--muted)';
             
             pauseBtn.style.display = 'none';
             skipBtn.style.display = 'none';
@@ -2070,15 +2058,12 @@ function renderRun() {
             waterIcon.style.display = 'inline-block';
         } else if (runState.waterFinished) {
             timerEl.style.display = 'block';
-			
             phaseLabel.style.display = 'block';
             timerEl.innerText = formatTime(getOvertime('water'));
             timerEl.className = 'big-timer water overtime';
             phaseLabel.innerText = "⏰ ВРЕМЯ ВЫШЛО";
             phaseLabel.className = 'phase-label finished';
-			document.getElementById('current-exercise').style.color = 'var(--danger)';
-           // startTimeLabel.style.color = 'var(--danger)';
-           // startTimeValue.style.color = 'var(--danger)';
+            document.getElementById('current-exercise').style.color = 'var(--danger)';
             
             const subtitle = document.createElement('p');
             subtitle.id = 'water-finished-subtitle';
@@ -2095,8 +2080,8 @@ function renderRun() {
             nextBlock.style.display = 'none';
             waterIcon.style.display = 'none';
         } else {
+            document.getElementById('current-exercise').style.color = '';
             timerEl.style.display = 'block';
-			document.getElementById('current-exercise').style.color = '';
             phaseLabel.style.display = 'block';
             timerEl.className = 'big-timer water';
             timerEl.innerText = formatTime(getRemainingTime('water'));
@@ -2105,17 +2090,11 @@ function renderRun() {
                 timerEl.classList.add('paused');
                 phaseLabel.innerText = "⏸ ПАУЗА";
                 phaseLabel.className = 'phase-label paused';
-                phaseLabel.style.display = 'block';
-                startTimeLabel.style.color = 'var(--muted)';
-                startTimeValue.style.color = 'var(--muted)';
                 pauseBtn.innerText = '▶ Продолжить';
             } else {
                 timerEl.classList.remove('paused');
                 phaseLabel.innerText = "ОТДЫХ";
                 phaseLabel.className = 'phase-label';
-                phaseLabel.style.display = 'block';
-                startTimeLabel.style.color = 'var(--muted)';
-                startTimeValue.style.color = 'var(--muted)';
                 pauseBtn.innerText = '⏸ Пауза';
             }
             pauseBtn.style.display = 'block';
@@ -2128,6 +2107,29 @@ function renderRun() {
             waterIcon.style.display = 'none';
             updateWaterNextBlock();
         }
+        document.getElementById('phase-water').innerHTML = `
+            <div class="water-screen">
+                <div class="water-icon" id="water-icon" style="display:${waterIcon.style.display}">💧</div>
+                <div class="big-timer water" id="water-timer">${timerEl.innerText}</div>
+                <div class="next-exercise-block" id="water-next-block">
+                    <div class="next-exercise-label" id="water-next-label">${document.getElementById('water-next-label').innerText}</div>
+                    <div class="next-exercise-name" id="water-next-name">${document.getElementById('water-next-name').innerText}</div>
+                </div>
+                <div class="water-adjust" id="water-adjust" style="display:${adjustDiv.style.display}">
+                    <button class="btn small ghost" onclick="adjustWater(-30)">-30с</button>
+                    <button class="btn small ghost" onclick="adjustWater(-10)">-10с</button>
+                    <button class="btn small ghost" onclick="adjustWater(+10)">+10с</button>
+                    <button class="btn small ghost" onclick="adjustWater(+30)">+30с</button>
+                </div>
+                <div class="water-buttons">
+                    <button class="btn warn" id="water-pause-btn" onclick="toggleWaterPause()" style="display:${pauseBtn.style.display}">⏸ Пауза</button>
+                    <button class="btn" style="background: var(--blue); color: #fff; display:${undoBtn.style.display}" id="water-undo-btn" onclick="undoWaterFinish()">↩ Предыдущее упражнение</button>
+                    <button class="btn accent" id="water-skip-btn" onclick="skipWater()" style="display:${skipBtn.style.display}">⏭ Пропустить отдых</button>
+                    <button class="btn accent" id="water-confirm-btn" onclick="confirmWaterFinished()" style="display:${confirmBtn.style.display}">${confirmBtn.innerText}</button>
+                </div>
+                ${getStartTimeHTML()}
+            </div>
+        `;
         document.getElementById('phase-water').style.display = 'block';
     }
 }
@@ -2228,7 +2230,6 @@ function adjustWater(delta) {
         document.getElementById('water-timer').innerText = formatTime(runState.waterOvertime);
     } else {
         runState.waterDuration = Math.max(0, runState.waterDuration + delta);
-        // Если после корректировки время стало <= 0, сразу завершаем
         if (runState.waterDuration <= 0 && !runState.waterPaused) {
             onWaterFinished();
         }
@@ -2494,7 +2495,6 @@ function showFinishScreen() {
     const totalDuration = Math.floor((endTime - runState.startTime) / 1000);
     document.getElementById('phase-label').style.display = 'none';
     document.getElementById('current-exercise').innerText = '';
-    document.getElementById('start-time-display').style.display = 'none';
     hideAllPhases();
     playBeep(1000, 0.8);
     if (navigator.vibrate) navigator.vibrate([300, 100, 300, 100, 300]);
