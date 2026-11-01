@@ -64,7 +64,7 @@ h2 { color: var(--primary); margin: 20px 0 12px; font-size: 1.2rem; font-weight:
 .menu-btn:active { transform: scale(0.98); }
 .menu-btn .icon { font-size: 1.8rem; }
 .menu-btn .sub { font-size: 0.8rem; color: var(--muted); margin-top: 2px; font-weight: 400; }
-
+/* Обновленные стили для перетаскивания */
 .workout-item { 
     background: var(--card); 
     border-radius: 16px; 
@@ -72,25 +72,51 @@ h2 { color: var(--primary); margin: 20px 0 12px; font-size: 1.2rem; font-weight:
     margin-bottom: 12px; 
     position: relative; 
     z-index: 1; 
-    transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s; 
-    touch-action: none; /* Важно для мобильных устройств */
+    transition: box-shadow 0.2s, opacity 0.2s; 
     user-select: none;
-	 -webkit-user-select: none; /* Обязательно для iOS */
+    -webkit-user-select: none;
+    touch-action: pan-y; 
 }
 
-/* Стили при перетаскивании */
+/* Элемент, который мы тащим (летает поверх всего) */
 .workout-item.dragging {
-    opacity: 0.8;
-    z-index: 1000;
-    box-shadow: 0 10px 20px rgba(0,0,0,0.5);
-    transform: scale(1.02);
+    opacity: 0.9;
+    z-index: 9999;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.7);
     background: var(--card-2);
     border: 1px solid var(--primary);
+    pointer-events: none; /* Пропускаем касания сквозь него */
+    position: fixed !important; /* Фиксируем относительно экрана */
+    width: calc(100% - 40px) !important; /* Ширина как у карточки с учетом отступов */
+    left: 20px !important;
+    top: 0 !important;
+    margin: 0 !important;
+    transform: translate3d(0, 0, 0); /* Аппаратное ускорение для плавности */
 }
 
-/* Подсветка места куда бросаем */
-.workout-item.drag-over {
-    border-top: 2px solid var(--accent);
+/* Невидимая заглушка в списке, чтобы другие элементы не схлопывались */
+.drag-placeholder {
+    background: transparent;
+    border: 2px dashed var(--muted);
+    border-radius: 16px;
+    height: 100px; /* Примерная высота карточки */
+    margin-bottom: 12px;
+    opacity: 0.5;
+}
+
+/* Блокировка скролла страницы при перетаскивании */
+body.no-scroll {
+    overflow: hidden !important;
+    position: fixed !important;
+    width: 100%;
+    height: 100%;
+    touch-action: none !important;
+}
+
+/* Подсветка места вставки */
+.drag-placeholder.active-drop {
+    border-color: var(--accent);
+    background: rgba(3, 218, 198, 0.1);
 }
 .workout-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; gap: 10px; }
 .workout-info { flex: 1; min-width: 0; }
@@ -779,98 +805,160 @@ function showScreen(id) {
     if (id === 'screen-settings') renderSettings();
     if (id === 'screen-templates') renderTemplates();
 }
-// --- ЛОГИКА DRAG & DROP ДЛЯ ТРЕНИРОВОК ---
 let draggedItem = null;
-let touchStartY = 0;
+let dragPlaceholder = null; // Невидимая заглушка в списке
+let dragOffsetY = 0;
 let longPressTimer = null;
 
 function initDragAndDrop(item) {
-    // Мышь (Desktop)
+    // --- Desktop (Mouse) ---
     item.setAttribute('draggable', 'true');
-    
     item.addEventListener('dragstart', (e) => {
         draggedItem = item;
         item.classList.add('dragging');
         e.dataTransfer.effectAllowed = 'move';
     });
-
     item.addEventListener('dragend', () => {
-        item.classList.remove('dragging');
-        draggedItem = null;
-        document.querySelectorAll('.workout-item').forEach(el => el.classList.remove('drag-over'));
+        cleanupDrag();
     });
-
     item.addEventListener('dragover', (e) => {
         e.preventDefault();
-        e.dataTransfer.dropEffect = 'move';
         const afterElement = getDragAfterElement(document.getElementById('workouts-list'), e.clientY);
-        if (afterElement == null) {
-            document.getElementById('workouts-list').appendChild(draggedItem);
-        } else {
-            document.getElementById('workouts-list').insertBefore(draggedItem, afterElement);
-        }
+        updatePlaceholderPosition(afterElement);
     });
-
     item.addEventListener('drop', (e) => {
         e.preventDefault();
-        saveNewOrder();
+        finalizeDrop();
     });
 
-    // Touch (Mobile) - Исправлено для Safari iOS
+    // --- Mobile (Touch) ---
     item.addEventListener('touchstart', (e) => {
-        // Игнорируем касания по кнопкам внутри карточки
         if (e.target.closest('.icon-btn') || e.target.closest('.btn')) return;
         
-        touchStartY = e.touches[0].clientY;
+        const touch = e.touches[0];
         longPressTimer = setTimeout(() => {
-            draggedItem = item;
-            item.classList.add('dragging');
-            navigator.vibrate && navigator.vibrate(50); 
-        }, 300); 
+            startDragging(item, touch.clientY);
+        }, 200); 
     }, { passive: true });
 
-    // Используем глобальный слушатель для touchmove, чтобы не блокировался скролл
-    item.addEventListener('touchmove', (e) => {
-        if (!draggedItem) {
-            clearTimeout(longPressTimer);
-            return;
-        }
-        // Важно: preventDefault только если мы уже тащим элемент
-        e.preventDefault(); 
-        
-        const touchY = e.touches[0].clientY;
-        const rect = draggedItem.getBoundingClientRect();
-        draggedItem.style.transform = `translateY(${touchY - rect.top - rect.height/2}px)`;
-        
-        draggedItem.style.display = 'none'; 
-        let elemBelow = document.elementFromPoint(e.touches[0].clientX, touchY);
-        draggedItem.style.display = 'block';
-
-        if (!elemBelow) return;
-        
-        let draggableBelow = elemBelow.closest('.workout-item');
-        if (draggableBelow && draggableBelow !== draggedItem) {
-             const bounding = draggableBelow.getBoundingClientRect();
-             const offset = touchY - bounding.top - bounding.height / 2;
-             if (offset > 0) {
-                 draggableBelow.parentNode.insertBefore(draggedItem, draggableBelow.nextSibling);
-             } else {
-                 draggableBelow.parentNode.insertBefore(draggedItem, draggableBelow);
-             }
-        }
-    }, { passive: false });
-
-    // Глобальный слушатель touchend для надежности в Safari
-    item.addEventListener('touchend', () => {
-        clearTimeout(longPressTimer);
-        if (draggedItem) {
-            draggedItem.classList.remove('dragging');
-            draggedItem.style.transform = '';
-            draggedItem = null;
-            saveNewOrder();
-        }
-    });
+    // Глобальные слушатели для тача
+    document.addEventListener('touchmove', handleGlobalTouchMove, { passive: false });
+    document.addEventListener('touchend', handleGlobalTouchEnd);
+    document.addEventListener('touchcancel', handleGlobalTouchEnd);
 }
+
+function startDragging(item, clientY) {
+    draggedItem = item;
+    
+    // Создаем заглушку на месте оригинального элемента
+    dragPlaceholder = document.createElement('div');
+    dragPlaceholder.className = 'drag-placeholder';
+    dragPlaceholder.style.height = item.offsetHeight + 'px';
+    item.parentNode.insertBefore(dragPlaceholder, item);
+    
+    // Настраиваем летающий элемент
+    const rect = item.getBoundingClientRect();
+    dragOffsetY = clientY - rect.top;
+    
+    item.classList.add('dragging');
+    item.style.top = (clientY - dragOffsetY) + 'px';
+    
+    document.body.classList.add('no-scroll');
+    if (navigator.vibrate) navigator.vibrate(30);
+}
+
+function handleGlobalTouchMove(e) {
+    if (!draggedItem) {
+        clearTimeout(longPressTimer);
+        return;
+    }
+    e.preventDefault(); 
+    
+    const touch = e.touches[0];
+    const newY = touch.clientY - dragOffsetY;
+    
+    // Плавное движение через transform
+    draggedItem.style.transform = `translate3d(0, ${newY - parseFloat(draggedItem.style.top)}px, 0)`;
+    
+    // Поиск элемента под пальцем
+    let elemBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+    if (!elemBelow) return;
+    
+    let targetItem = elemBelow.closest('.workout-item');
+    
+    // Убираем активный класс со всех заглушек
+    document.querySelectorAll('.drag-placeholder').forEach(p => p.classList.remove('active-drop'));
+
+    if (targetItem && targetItem !== draggedItem) {
+         const bounding = targetItem.getBoundingClientRect();
+         const offset = touch.clientY - bounding.top - (bounding.height / 2);
+         
+         const list = document.getElementById('workouts-list');
+         
+         // Перемещаем ЗАГЛУШКУ, а не сам летающий элемент
+         if (offset > 0) {
+             if(targetItem.nextSibling && targetItem.nextSibling !== dragPlaceholder) {
+                 list.insertBefore(dragPlaceholder, targetItem.nextSibling);
+             } else if (targetItem.nextSibling !== dragPlaceholder) {
+                 list.appendChild(dragPlaceholder);
+             }
+         } else {
+             if(targetItem !== dragPlaceholder) {
+                 list.insertBefore(dragPlaceholder, targetItem);
+             }
+         }
+         dragPlaceholder.classList.add('active-drop');
+    }
+}
+
+function handleGlobalTouchEnd(e) {
+    clearTimeout(longPressTimer);
+    if (draggedItem) {
+        finalizeDrop();
+    }
+}
+
+function updatePlaceholderPosition(afterElement) {
+    const list = document.getElementById('workouts-list');
+    if (!dragPlaceholder) {
+        dragPlaceholder = document.createElement('div');
+        dragPlaceholder.className = 'drag-placeholder';
+        dragPlaceholder.style.height = draggedItem.offsetHeight + 'px';
+    }
+    
+    if (afterElement == null) {
+        list.appendChild(dragPlaceholder);
+    } else {
+        list.insertBefore(dragPlaceholder, afterElement);
+    }
+}
+
+function finalizeDrop() {
+    if (!draggedItem || !dragPlaceholder) return;
+    
+    // Вставляем реальный элемент на место заглушки
+    dragPlaceholder.parentNode.insertBefore(draggedItem, dragPlaceholder);
+    cleanupDrag();
+    saveNewOrder();
+}
+
+function cleanupDrag() {
+    if (draggedItem) {
+        draggedItem.classList.remove('dragging');
+        draggedItem.style.top = '';
+        draggedItem.style.left = '';
+        draggedItem.style.width = '';
+        draggedItem.style.transform = '';
+        draggedItem = null;
+    }
+    if (dragPlaceholder) {
+        dragPlaceholder.remove();
+        dragPlaceholder = null;
+    }
+    document.body.classList.remove('no-scroll');
+    document.querySelectorAll('.drag-placeholder').forEach(p => p.classList.remove('active-drop'));
+}
+
 function getDragAfterElement(container, y) {
     const draggableElements = [...container.querySelectorAll('.workout-item:not(.dragging)')];
     return draggableElements.reduce((closest, child) => {
@@ -888,14 +976,12 @@ function saveNewOrder() {
     const listContainer = document.getElementById('workouts-list');
     const newOrderIds = Array.from(listContainer.children).map(el => parseInt(el.dataset.id));
     
-    // Пересортируем массив DB.workouts согласно новому порядку ID
     const reorderedWorkouts = [];
     newOrderIds.forEach(id => {
         const workout = DB.workouts.find(w => w.id === id);
         if (workout) reorderedWorkouts.push(workout);
     });
     
-    // Добавляем те, что могли потеряться (на всякий случай)
     DB.workouts.forEach(w => {
         if (!reorderedWorkouts.includes(w)) reorderedWorkouts.push(w);
     });
