@@ -75,6 +75,7 @@ h2 { color: var(--primary); margin: 20px 0 12px; font-size: 1.2rem; font-weight:
     transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s; 
     touch-action: none; /* Важно для мобильных устройств */
     user-select: none;
+	 -webkit-user-select: none; /* Обязательно для iOS */
 }
 
 /* Стили при перетаскивании */
@@ -815,7 +816,7 @@ function initDragAndDrop(item) {
         saveNewOrder();
     });
 
-    // Touch (Mobile) - долгое нажатие для начала перетаскивания
+    // Touch (Mobile) - Исправлено для Safari iOS
     item.addEventListener('touchstart', (e) => {
         // Игнорируем касания по кнопкам внутри карточки
         if (e.target.closest('.icon-btn') || e.target.closest('.btn')) return;
@@ -824,24 +825,24 @@ function initDragAndDrop(item) {
         longPressTimer = setTimeout(() => {
             draggedItem = item;
             item.classList.add('dragging');
-            navigator.vibrate && navigator.vibrate(50); // Тактильная отдача
-        }, 300); // Долгое нажатие 300мс
+            navigator.vibrate && navigator.vibrate(50); 
+        }, 300); 
     }, { passive: true });
 
+    // Используем глобальный слушатель для touchmove, чтобы не блокировался скролл
     item.addEventListener('touchmove', (e) => {
         if (!draggedItem) {
             clearTimeout(longPressTimer);
             return;
         }
-        e.preventDefault(); // Блокируем скролл страницы при перетаскивании
+        // Важно: preventDefault только если мы уже тащим элемент
+        e.preventDefault(); 
         
         const touchY = e.touches[0].clientY;
         const rect = draggedItem.getBoundingClientRect();
-        // Визуально двигаем элемент за пальцем
         draggedItem.style.transform = `translateY(${touchY - rect.top - rect.height/2}px)`;
         
-        // Находим элемент под пальцем
-        draggedItem.style.display = 'none'; // Скрываем перетаскиваемый, чтобы найти элемент под ним
+        draggedItem.style.display = 'none'; 
         let elemBelow = document.elementFromPoint(e.touches[0].clientX, touchY);
         draggedItem.style.display = 'block';
 
@@ -859,6 +860,7 @@ function initDragAndDrop(item) {
         }
     }, { passive: false });
 
+    // Глобальный слушатель touchend для надежности в Safari
     item.addEventListener('touchend', () => {
         clearTimeout(longPressTimer);
         if (draggedItem) {
@@ -869,7 +871,6 @@ function initDragAndDrop(item) {
         }
     });
 }
-
 function getDragAfterElement(container, y) {
     const draggableElements = [...container.querySelectorAll('.workout-item:not(.dragging)')];
     return draggableElements.reduce((closest, child) => {
