@@ -1,0 +1,2686 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Fit Trainer">
+<meta name="theme-color" content="#0f0f12">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Fit Trainer Pro</title>
+<link rel="manifest" href='data:application/manifest+json,{"name":"Fit Trainer Pro","short_name":"FitTrainer","start_url":".","display":"standalone","background_color":"%230f0f12","theme_color":"%230f0f12","icons":[{"src":"data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%230f0f12%22/%3E%3Ctext x=%2250%22 y=%2268%22 font-size=%2260%22 text-anchor=%22middle%22%3E💪%3C/text%3E%3C/svg%3E","sizes":"192x192","type":"image/svg+xml"}]}'>
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%230f0f12'/%3E%3Ctext x='50' y='68' font-size='60' text-anchor='middle'%3E💪%3C/text%3E%3C/svg%3E">
+<style>
+:root {
+    --bg: #0f0f12; --card: #1c1c22; --card-2: #26262e;
+    --primary: #bb86fc; --accent: #03dac6; --danger: #ff5c6c;
+    --text: #fff; --muted: #8a8a95; --warn: #ff9800;
+    --blue: #42a5f5; --water: #4fc3f7;
+    --sat: env(safe-area-inset-top, 20px);
+    --sab: env(safe-area-inset-bottom, 0px);
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; }
+html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, sans-serif;
+    background: var(--bg); color: var(--text);
+    min-height: 100vh; min-height: 100dvh;
+    -webkit-font-smoothing: antialiased;
+    overscroll-behavior: none; user-select: none;
+}
+.app-container { width: 100%; height: 100vh; height: 100dvh; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: var(--sat) 0 var(--sab) 0; }
+.screen { display: none; padding: 15px 15px 10px; min-height: 100%; }
+.screen.active { display: block; }
+h1 { font-size: 1.9rem; font-weight: 700; margin: 10px 0 20px; letter-spacing: -0.5px; }
+h2 { color: var(--primary); margin: 20px 0 12px; font-size: 1.2rem; font-weight: 600; }
+
+.top-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.top-bar .spacer { width: 44px; flex-shrink: 0; }
+.top-bar h1 { flex: 1; text-align: center; margin: 0; font-size: 1.3rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.back-btn { background: var(--card); border: none; color: var(--text); width: 44px; height: 44px; border-radius: 50%; font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.back-btn:active { background: var(--card-2); }
+
+.card { background: var(--card); border-radius: 18px; padding: 16px; margin-bottom: 12px; }
+.btn { background: var(--primary); color: #000; border: none; padding: 15px 20px; border-radius: 14px; font-size: 1rem; font-weight: 600; cursor: pointer; width: 100%; margin-top: 10px; min-height: 52px; transition: transform 0.1s; }
+.btn:active { transform: scale(0.98); }
+.btn.accent { background: var(--accent); }
+.btn.danger { background: var(--danger); color: #fff; }
+.btn.ghost { background: var(--card-2); color: var(--text); }
+.btn.warn { background: var(--warn); color: #000; }
+.btn.water { background: var(--water); color: #000; }
+.btn.small { padding: 10px 14px; font-size: 0.9rem; min-height: 40px; width: auto; margin: 4px; }
+
+#phase-work .btn,
+#phase-rest .rest-buttons .btn,
+#phase-water .water-buttons .btn {
+    font-size: 1.3rem;
+    padding: 20px 22px;
+    min-height: 64px;
+    letter-spacing: 0.3px;
+}
+
+.menu-btn { background: var(--card); border: 2px solid var(--primary); color: var(--text); padding: 22px 18px; width: 100%; margin: 10px 0; border-radius: 18px; font-size: 1.15rem; font-weight: 600; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 14px; min-height: 76px; }
+.menu-btn:active { transform: scale(0.98); }
+.menu-btn .icon { font-size: 1.8rem; }
+.menu-btn .sub { font-size: 0.8rem; color: var(--muted); margin-top: 2px; font-weight: 400; }
+
+.workout-item { 
+    background: var(--card); 
+    border-radius: 16px; 
+    padding: 16px; 
+    margin-bottom: 12px; 
+    position: relative; 
+    z-index: 1; 
+    transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s; 
+    touch-action: none; /* Важно для мобильных устройств */
+    user-select: none;
+}
+
+/* Стили при перетаскивании */
+.workout-item.dragging {
+    opacity: 0.8;
+    z-index: 1000;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+    transform: scale(1.02);
+    background: var(--card-2);
+    border: 1px solid var(--primary);
+}
+
+/* Подсветка места куда бросаем */
+.workout-item.drag-over {
+    border-top: 2px solid var(--accent);
+}
+.workout-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; gap: 10px; }
+.workout-info { flex: 1; min-width: 0; }
+.workout-info .name { font-size: 1.15rem; font-weight: 600; word-break: break-word; line-height: 1.3; }
+.workout-info .meta { color: var(--muted); font-size: 0.85rem; margin-top: 4px; }
+.workout-actions { display: flex; gap: 8px; flex-shrink: 0; }
+.workout-actions .icon-btn { background: var(--card-2); border: none; color: var(--text); width: 44px; height: 44px; border-radius: 12px; cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; }
+.workout-actions .icon-btn:active { background: #333; }
+.btn-start-workout { width: 100%; margin: 0; padding: 16px; font-size: 1.1rem; }
+
+.input, .select { background: var(--card-2); border: 1px solid #333; color: var(--text); padding: 12px; border-radius: 10px; font-size: 1rem; width: 100%; margin-bottom: 8px; -webkit-appearance: none; appearance: none; }
+select.select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%238a8a95' d='M6 8L0 0h12z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+.input:focus, .select:focus { outline: none; border-color: var(--primary); }
+textarea.input { min-height: 60px; resize: vertical; font-family: inherit; }
+
+.exercise-block { background: var(--card-2); border-radius: 14px; padding: 12px; margin-bottom: 10px; border-left: 3px solid var(--primary); }
+.exercise-block.water-break { border-left-color: var(--water); background: rgba(79, 195, 247, 0.08); }
+.exercise-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.exercise-number { background: var(--primary); color: #000; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; flex-shrink: 0; }
+.exercise-block.water-break .exercise-number { background: var(--water); }
+.exercise-name-input { margin: 0; flex: 1; padding: 8px; background: var(--card); border: 1px solid #333; color: var(--text); border-radius: 8px; font-size: 0.95rem; min-width: 0; }
+.exercise-controls { display: flex; gap: 6px; margin-left: auto; flex-shrink: 0; }
+.exercise-controls .icon-btn { width: 36px; height: 36px; background: var(--card); border: 1px solid #333; border-radius: 10px; color: var(--text); display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+.exercise-controls .icon-btn:active { background: var(--primary); color: #000; transform: scale(0.95); }
+.exercise-controls .icon-btn:disabled { opacity: 0.3; pointer-events: none; }
+.exercise-controls .icon-btn svg { width: 18px; height: 18px; stroke: currentColor; }
+.exercise-controls .icon-btn.delete-btn { color: var(--danger); }
+.exercise-controls .icon-btn.delete-btn:active { background: var(--danger); color: #fff; }
+
+.rest-row, .notes-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; padding-top: 8px; border-top: 1px solid #333; }
+.rest-row label, .notes-row label { color: var(--muted); font-size: 0.85rem; flex-shrink: 0; }
+.rest-row .select { flex: 1; margin: 0; padding: 8px 32px 8px 10px; font-size: 0.9rem; }
+.notes-row textarea { flex: 1; margin: 0; padding: 8px; min-height: 36px; font-size: 0.9rem; }
+
+.checkbox-row { display: flex; align-items: center; gap: 12px; background: var(--card-2); padding: 14px; border-radius: 12px; margin-bottom: 10px; }
+.checkbox-row input[type="checkbox"] { width: 22px; height: 22px; cursor: pointer; accent-color: var(--primary); flex-shrink: 0; }
+.checkbox-row label { cursor: pointer; flex: 1; font-size: 0.95rem; }
+
+.sound-section { background: var(--card); border-radius: 16px; padding: 14px; margin-bottom: 12px; }
+.sound-section-title { color: var(--text); font-size: 0.95rem; font-weight: 600; margin-bottom: 10px; }
+.sound-options { display: flex; flex-direction: column; gap: 8px; }
+.sound-option { display: flex; align-items: center; gap: 10px; background: var(--card-2); border: 2px solid transparent; padding: 10px 12px; border-radius: 12px; cursor: pointer; transition: all 0.15s; }
+.sound-option:active { transform: scale(0.98); }
+.sound-option.selected { border-color: var(--primary); background: rgba(187, 134, 252, 0.1); }
+.sound-option .radio { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--muted); flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+.sound-option.selected .radio { border-color: var(--primary); }
+.sound-option.selected .radio::after { content: ''; width: 10px; height: 10px; border-radius: 50%; background: var(--primary); }
+.sound-option .sound-info { flex: 1; min-width: 0; }
+.sound-option .sound-name { font-weight: 600; font-size: 0.95rem; }
+.sound-option .sound-desc { color: var(--muted); font-size: 0.8rem; margin-top: 2px; }
+.sound-option .preview-btn { background: var(--card); border: 1px solid #333; color: var(--accent); width: 38px; height: 38px; border-radius: 50%; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 1rem; }
+.sound-option .preview-btn:active { background: var(--accent); color: #000; }
+
+.big-timer { font-size: 4.5rem; font-weight: 700; text-align: center; margin: 16px 0; font-variant-numeric: tabular-nums; letter-spacing: -2px; }
+.big-timer.paused { color: var(--muted); }
+.big-timer.countdown { color: var(--warn); font-size: 7rem; }
+.big-timer.overtime { color: var(--danger); font-size: 5rem; }
+.big-timer.water { color: var(--water); }
+.big-timer.water.overtime { color: var(--danger); }
+
+.phase-header {
+    position: relative;
+    width: 100%;
+    min-height: 3px;
+    margin: 10px 0;
+}
+.phase-label { 
+    text-align: center; 
+    font-size: 0.85rem; 
+    text-transform: uppercase; 
+    letter-spacing: 2px; 
+    color: var(--muted); 
+    font-weight: 600; 
+    transition: all 0.2s; 
+    width: 100%;
+    display: block;
+}
+.phase-label.work { color: var(--accent); }
+.phase-label.rest { color: var(--primary); }
+.phase-label.paused { color: var(--muted); }
+.phase-label.water { color: var(--water); }
+.phase-label.finished { color: var(--danger); font-size: 1.3rem; letter-spacing: 1.5px; font-weight: 700; margin-bottom: 4px; }
+
+.start-time-display {
+    position: relative;
+    right: 10px;
+	text-align: right;
+    top: 0;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+	
+}
+.start-time-display .start-label {
+    margin-right: 4px;
+}
+.start-time-display .start-value {
+    font-variant-numeric: tabular-nums;
+}
+
+.finished-subtitle { text-align: center; color: var(--muted); font-size: 0.95rem; margin: 4px 0 12px; font-weight: 500; }
+
+.current-exercise { 
+    text-align: center; 
+    font-size: 3rem;
+    font-weight: 700; 
+    margin: 10px 0; 
+    letter-spacing: -0.5px; 
+    word-break: break-word; 
+    line-height: 1.2;
+}
+
+.next-exercise-block { text-align: center; margin: 8px 0 16px; padding: 12px 16px; background: var(--card-2); border-radius: 14px; border: 1px solid #333; }
+.next-exercise-block.water { background: rgba(79, 195, 247, 0.1); border-color: var(--water); }
+.next-exercise-label { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); font-weight: 600; margin-bottom: 6px; }
+.next-exercise-name { font-size: 1.4rem; font-weight: 700; color: var(--accent); line-height: 1.25; word-break: break-word; overflow-wrap: break-word; hyphens: auto; }
+.next-exercise-name.finish { color: var(--warn); }
+.next-exercise-name.water { color: var(--water); }
+
+.water-screen { text-align: center; padding: 10px 10px 20px; }
+.water-icon { font-size: 6rem; margin: 10px 0; animation: waterPulse 2s ease-in-out infinite; display: inline-block; }
+@keyframes waterPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+.water-buttons { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
+.water-adjust { display: flex; justify-content: center; gap: 6px; flex-wrap: wrap; margin: 10px 0; }
+
+.progress-bar { height: 6px; background: var(--card-2); border-radius: 3px; overflow: hidden; margin: 10px 0; }
+.progress-fill { height: 100%; background: var(--primary); transition: width 0.3s; }
+
+.rest-buttons { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
+.rest-adjust { display: flex; justify-content: center; gap: 6px; flex-wrap: wrap; margin: 10px 0; }
+
+.empty-state { text-align: center; color: var(--muted); padding: 40px 20px; font-size: 0.95rem; }
+
+.finish-card { background: linear-gradient(135deg, #1c1c22 0%, #26262e 100%); border-radius: 22px; padding: 22px 18px; margin: 16px 0; border: 1px solid #333; min-height: 3px; }
+.finish-title { text-align: center; font-size: 1.96rem; font-weight: 800; margin-bottom: 16px; } 
+.stats-grid { display: flex; flex-direction: column; gap: 10px; }
+.stat-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: rgba(255,255,255,0.03); border-radius: 10px; }
+.stat-label { color: var(--muted); font-size: 1.05rem; display: flex; align-items: center; gap: 6px; font-weight: 700; }
+.stat-value { font-size: 1rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.stat-value.highlight { color: var(--accent); font-size: 1.2rem; }
+
+details { transition: all 0.2s; }
+details summary { cursor: pointer; outline: none; list-style: none; display: flex; justify-content: space-between; align-items: center; }
+details summary::-webkit-details-marker { display: none; }
+details summary::after { content: '▼'; font-size: 0.8rem; color: var(--muted); transition: transform 0.2s; }
+details[open] summary::after { transform: rotate(180deg); }
+
+.history-card { background: var(--card); border-radius: 14px; padding: 14px; margin-bottom: 10px; display: flex; flex-direction: column; gap: 10px; }
+.history-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.history-info { flex: 1; min-width: 0; }
+.history-info .name { font-weight: 600; font-size: 1rem; word-break: break-word; line-height: 1.3; }
+.history-info .stats { font-size: 0.85rem; color: var(--muted); margin-top: 4px; }
+.history-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.history-actions .icon-btn { background: var(--card-2); border: none; color: var(--text); width: 38px; height: 38px; border-radius: 10px; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; }
+.history-actions .icon-btn.delete { color: var(--danger); }
+
+.preview-exercise { background: var(--card-2); border-radius: 10px; padding: 12px; margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
+.preview-exercise.water { background: rgba(79, 195, 247, 0.1); border-left: 3px solid var(--water); }
+.preview-exercise .num { background: var(--primary); color: #000; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; flex-shrink: 0; }
+.preview-exercise.water .num { background: var(--water); }
+.preview-exercise .info { flex: 1; min-width: 0; }
+.preview-exercise .name { font-weight: 500; word-break: break-word; }
+.preview-exercise .rest { color: var(--muted); font-size: 0.8rem; }
+
+.record-item { background: var(--card-2); border-radius: 12px; padding: 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+.record-item .label { color: var(--muted); font-size: 0.9rem; }
+.record-item .value { color: var(--accent); font-weight: 700; font-size: 1.1rem; }
+
+.tabs { display: flex; gap: 6px; margin-bottom: 16px; }
+.tab { flex: 1; padding: 10px; text-align: center; background: var(--card-2); border-radius: 10px; font-size: 0.9rem; cursor: pointer; }
+.tab.active { background: var(--primary); color: #000; font-weight: 600; }
+
+.template-card { background: var(--card-2); border-radius: 12px; padding: 14px; margin-bottom: 10px; border: 1px solid transparent; }
+.template-card-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+.template-card-info { flex: 1; min-width: 0; cursor: pointer; }
+.template-card-info .name { font-weight: 600; margin-bottom: 4px; word-break: break-word; line-height: 1.3; }
+.template-card-info .desc { color: var(--muted); font-size: 0.85rem; }
+.template-card-actions { display: flex; gap: 6px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
+.template-card-actions .icon-btn { background: var(--card); border: none; color: var(--text); width: 38px; height: 38px; border-radius: 10px; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; }
+.template-card-actions .icon-btn.add { background: var(--accent); color: #000; font-weight: 700; font-size: 1.3rem; }
+.template-card-actions .icon-btn.delete { color: var(--danger); }
+.template-section-title { color: var(--muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; margin: 16px 0 8px; font-weight: 600; }
+
+@media (max-height: 700px) {
+    .big-timer { font-size: 3.5rem; margin: 10px 0; }
+    .big-timer.countdown { font-size: 5rem; }
+    .big-timer.overtime { font-size: 4rem; }
+    .current-exercise { font-size: 2.4rem; }
+    .next-exercise-name { font-size: 1.2rem; }
+    .water-icon { font-size: 4.5rem; }
+    h1 { font-size: 1.5rem; margin: 8px 0 14px; }
+    #phase-work .btn, #phase-rest .rest-buttons .btn, #phase-water .water-buttons .btn {
+        font-size: 1.15rem; padding: 17px 20px; min-height: 58px;
+    }
+    .phase-label.finished { font-size: 1.15rem; }
+    .finish-title { font-size: 1.6rem; }
+}
+@media (min-width: 430px) {
+    .big-timer { font-size: 5.5rem; }
+    .big-timer.overtime { font-size: 6rem; }
+    .current-exercise { font-size: 3.4rem; }
+    .next-exercise-name { font-size: 1.6rem; }
+    .finish-title { font-size: 2.2rem; }
+}
+</style>
+</head>
+<body>
+<div class="app-container">
+
+<div id="screen-home" class="screen active">
+    <h1>💪 Fit Trainer</h1>
+    <button class="menu-btn" onclick="showScreen('screen-workouts')">
+        <span class="icon">🏋️</span>
+        <div><div>Мои тренировки</div><div class="sub">Создать, редактировать, запустить</div></div>
+    </button>
+    <button class="menu-btn" onclick="showScreen('screen-templates')" style="border-color:var(--accent)">
+        <span class="icon">📋</span>
+        <div><div>Шаблоны</div><div class="sub">Мои и готовые шаблоны тренировок</div></div>
+    </button>
+    <button class="menu-btn" onclick="showScreen('screen-history')" style="border-color:var(--blue)">
+        <span class="icon">📜</span>
+        <div><div>История и статистика</div><div class="sub">Прогресс, рекорды</div></div>
+    </button>
+    <button class="menu-btn" onclick="showScreen('screen-settings')" style="border-color:var(--warn)">
+        <span class="icon">⚙️</span>
+        <div><div>Настройки</div><div class="sub">Экран, голос, звук, экспорт</div></div>
+    </button>
+</div>
+
+<div id="screen-workouts" class="screen">
+    <div class="top-bar">
+        <button class="back-btn" onclick="showScreen('screen-home')">←</button>
+        <h1>Мои тренировки</h1>
+        <div class="spacer"></div>
+    </div>
+    <div id="workouts-list"></div>
+    <button class="btn" onclick="openEditor(null, false)">+ Создать тренировку</button>
+    <button class="btn ghost" onclick="document.getElementById('import-workout-file').click()" style="margin-top:8px;">📥 Импорт тренировки</button>
+    <input type="file" id="import-workout-file" accept=".json" style="display:none" onchange="importWorkout(event)">
+</div>
+
+<div id="screen-templates" class="screen">
+    <div class="top-bar">
+        <button class="back-btn" onclick="showScreen('screen-home')">←</button>
+        <h1>Шаблоны</h1>
+        <div class="spacer"></div>
+    </div>
+    <button class="btn accent" onclick="openEditor(null, true)">+ Создать свой шаблон</button>
+    <div id="templates-list"></div>
+</div>
+
+<div id="screen-editor" class="screen">
+    <div class="top-bar">
+        <button class="back-btn" onclick="cancelEditor()">←</button>
+        <h1 id="editor-title" style="margin:0;">Новая тренировка</h1>
+        <div class="spacer"></div>
+    </div>
+    <div class="card">
+        <label style="color:var(--muted); font-size:0.85rem;">Название</label>
+        <input type="text" id="workout-name" class="input" placeholder="Например: Пресс">
+    </div>
+    <div class="checkbox-row">
+        <input type="checkbox" id="auto-start">
+        <label for="auto-start">🔄 Автозапуск следующего упражнения</label>
+    </div>
+    <h2>Упражнения</h2>
+    <div id="exercises-list"></div>
+    <button class="btn ghost" onclick="addExercise()">+ Добавить упражнение</button>
+    <button class="btn ghost" onclick="addWaterBreak()" style="margin-top:6px; border: 1px solid var(--water); color: var(--water);">💧 Добавить перерыв на воду</button>
+    <div style="margin-top: 16px;">
+        <button class="btn accent" onclick="saveWorkout()">💾 Сохранить</button>
+        <button class="btn ghost" id="export-btn" style="display:none;" onclick="exportCurrentWorkout()">📤 Экспорт тренировки</button>
+        <button class="btn danger" id="delete-btn" style="display:none;" onclick="deleteWorkout()">🗑 Удалить</button>
+    </div>
+</div>
+
+<div id="screen-preview" class="screen">
+    <div class="top-bar">
+        <button class="back-btn" id="preview-back-btn" onclick="showScreen('screen-workouts')">←</button>
+        <h1 id="preview-title" style="margin:0;">Предпросмотр</h1>
+        <div class="spacer"></div>
+    </div>
+    <div id="preview-content"></div>
+    <div id="preview-actions"></div>
+</div>
+
+<div id="screen-run" class="screen">
+<div class="start-time-display" id="start-time-display" style="display:none;">
+            <span class="start-label" id="start-time-label">Старт</span>
+            <span class="start-value" id="start-time-value">--:--</span>
+        </div>
+    <div class="top-bar">
+        <button class="back-btn" onclick="confirmExit()">←</button>
+        <h1 id="run-title" style="margin:0;">Тренировка</h1>
+        <div class="spacer"></div>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+	 
+    <div class="phase-header">
+        <div class="phase-label" id="phase-label">УПРАЖНЕНИЕ</div>
+    </div>
+    <div class="current-exercise" id="current-exercise">—</div>
+    <div id="phase-ready" style="display:none;"></div>
+    <div id="phase-countdown" style="display:none;">
+        <div class="big-timer countdown" id="countdown-timer">3</div>
+        <p style="text-align:center; color:var(--muted);">Приготовься...</p>
+    </div>
+    <div id="phase-work" style="display:none;">
+        <div class="big-timer" id="work-timer">00:00</div>
+        <button class="btn warn" id="work-pause-btn" onclick="toggleWorkPause()">⏸ Пауза</button>
+        <button class="btn danger" onclick="finishExercise()">✅ Завершить упражнение</button>
+    </div>
+    <div id="phase-rest" style="display:none;">
+        <div class="big-timer" id="rest-timer">00:00</div>
+        <div class="next-exercise-block" id="next-exercise-block">
+            <div class="next-exercise-label" id="next-exercise-label">Следующее</div>
+            <div class="next-exercise-name" id="next-exercise-name">—</div>
+        </div>
+        <div class="rest-adjust">
+            <button class="btn small ghost" onclick="adjustRest(-30)">-30с</button>
+            <button class="btn small ghost" onclick="adjustRest(-10)">-10с</button>
+            <button class="btn small ghost" onclick="adjustRest(+10)">+10с</button>
+            <button class="btn small ghost" onclick="adjustRest(+30)">+30с</button>
+        </div>
+        <div class="rest-buttons">
+            <button class="btn warn" id="rest-pause-btn" onclick="toggleRestPause()">⏸ Пауза</button>
+            <button class="btn" style="background: var(--blue); color: #fff;" id="rest-undo-btn" onclick="undoFinishExercise()">↩ Предыдущее упражнение</button>
+            <button class="btn accent" id="rest-skip-btn" onclick="skipRest()">⏭ Пропустить отдых</button>
+            <button class="btn accent" id="rest-confirm-btn" onclick="confirmRestFinished()" style="display:none;">✅ Завершить отдых</button>
+        </div>
+    </div>
+    <div id="phase-water" style="display:none;">
+        <div class="water-screen">
+            <div class="water-icon" id="water-icon">💧</div>
+            <div class="big-timer water" id="water-timer">00:00</div>
+            <div class="next-exercise-block" id="water-next-block">
+                <div class="next-exercise-label" id="water-next-label">Следующее</div>
+                <div class="next-exercise-name" id="water-next-name">—</div>
+            </div>
+            <div class="water-adjust" id="water-adjust">
+                <button class="btn small ghost" onclick="adjustWater(-30)">-30с</button>
+                <button class="btn small ghost" onclick="adjustWater(-10)">-10с</button>
+                <button class="btn small ghost" onclick="adjustWater(+10)">+10с</button>
+                <button class="btn small ghost" onclick="adjustWater(+30)">+30с</button>
+            </div>
+            <div class="water-buttons">
+                <button class="btn warn" id="water-pause-btn" onclick="toggleWaterPause()">⏸ Пауза</button>
+                <button class="btn" style="background: var(--blue); color: #fff;" id="water-undo-btn" onclick="undoWaterFinish()">↩ Предыдущее упражнение</button>
+                <button class="btn accent" id="water-skip-btn" onclick="skipWater()">⏭ Пропустить отдых</button>
+                <button class="btn accent" id="water-confirm-btn" onclick="confirmWaterFinished()" style="display:none;">✅ Завершить тренировку</button>
+            </div>
+        </div>
+    </div>
+    <div id="phase-finish" style="display:none;"></div>
+</div>
+
+<div id="screen-history" class="screen">
+    <div class="top-bar">
+        <button class="back-btn" onclick="showScreen('screen-home')">←</button>
+        <h1>История</h1>
+        <div class="spacer"></div>
+    </div>
+    <div class="tabs">
+        <div class="tab active" onclick="switchHistoryTab('list', this)">Записи</div>
+        <div class="tab" onclick="switchHistoryTab('stats', this)">Статистика</div>
+        <div class="tab" onclick="switchHistoryTab('records', this)">Рекорды</div>
+    </div>
+    <div id="history-tab-list"></div>
+    <div id="history-tab-stats" style="display:none;"></div>
+    <div id="history-tab-records" style="display:none;"></div>
+</div>
+
+<div id="screen-settings" class="screen">
+    <div class="top-bar">
+        <button class="back-btn" onclick="showScreen('screen-home')">←</button>
+        <h1>Настройки</h1>
+        <div class="spacer"></div>
+    </div>
+    <h2>Поведение</h2>
+    <div class="checkbox-row">
+        <input type="checkbox" id="set-wakelock">
+        <label for="set-wakelock">🔒 Не гасить экран во время тренировки</label>
+    </div>
+    <div class="checkbox-row">
+        <input type="checkbox" id="set-voice">
+        <label for="set-voice">🔊 Голосовые подсказки</label>
+    </div>
+    <div class="checkbox-row">
+        <input type="checkbox" id="set-countdown">
+        <label for="set-countdown">⏱ Обратный отсчёт перед стартом</label>
+    </div>
+    <div id="countdown-interval-options" style="display:none; margin-top: 8px; margin-bottom: 12px;">
+        <div class="sound-section">
+            <div class="sound-section-title">Интервал обратного отсчёта</div>
+            <div class="sound-options" id="countdown-interval-list"></div>
+        </div>
+    </div>
+    <div class="checkbox-row">
+        <input type="checkbox" id="set-default-auto">
+        <label for="set-default-auto">🔄 Автозапуск по умолчанию в новых тренировках</label>
+    </div>
+    <div class="checkbox-row">
+        <input type="checkbox" id="set-announce-numbers">
+        <label for="set-announce-numbers">🔢 Озвучивать номер упражнения (например: «1. Планка»)</label>
+    </div>
+    <div class="checkbox-row">
+        <input type="checkbox" id="set-show-start-time">
+        <label for="set-show-start-time">🕐 Показывать время начала тренировки</label>
+    </div>
+
+    <h2>🔔 Звук окончания отдыха</h2>
+    <div class="sound-section">
+        <div class="sound-section-title">Выбери звук</div>
+        <div class="sound-options" id="sound-options"></div>
+    </div>
+    <div class="checkbox-row">
+        <input type="checkbox" id="set-continuous-beep">
+        <label for="set-continuous-beep">🔁 Непрерывно повторять звук до нажатия (без автоперехода)</label>
+    </div>
+
+    <h2>⏱ Пиканье во время упражнения</h2>
+    <div class="checkbox-row">
+        <input type="checkbox" id="set-minute-beep">
+        <label for="set-minute-beep">🔔 Пикать каждую минуту во время упражнения, отдыха и воды</label>
+    </div>
+    <div id="minute-beep-options" style="display:none;">
+        <div class="sound-section">
+            <div class="sound-section-title">Интервал пиканья</div>
+            <div class="sound-options" id="minute-beep-interval-options"></div>
+        </div>
+    </div>
+
+    <h2>Данные</h2>
+    <button class="btn ghost" onclick="exportData()">💾 Экспорт всех данных (JSON)</button>
+    <button class="btn ghost" onclick="document.getElementById('import-file').click()">📥 Импорт данных</button>
+    <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)">
+    <button class="btn danger" onclick="clearHistory()">🗑 Очистить всю историю</button>
+    <button class="btn ghost" onclick="restoreBuiltins()">🔄 Восстановить все шаблоны</button>
+</div>
+
+</div>
+
+<script>
+const Storage = {
+    get(key, defaultValue) { try { const item = localStorage.getItem(key); return item ? JSON.parse(item) : defaultValue; } catch (e) { return defaultValue; } },
+    set(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) {} }
+};
+
+const DB = {
+    workouts: Storage.get('ft_workouts', []),
+    templates: Storage.get('ft_templates', []),
+    history: Storage.get('ft_history', []),
+    settings: Storage.get('ft_settings', {})
+};
+
+function saveDB(key) {
+    const map = { workouts: 'ft_workouts', templates: 'ft_templates', history: 'ft_history', settings: 'ft_settings' };
+    Storage.set(map[key], DB[key]);
+}
+
+DB.settings = Object.assign({
+    wakeLock: false, voice: false, countdown: false, 
+    defaultAutoStart: true, continuousBeep: false,
+    alarmSound: 'alarm', hiddenBuiltins: [],
+    minuteBeep: false, minuteBeepInterval: 60,
+    announceNumbers: true,
+    countdownDuration: 3,
+    showStartTime: false
+}, DB.settings);
+if (!Array.isArray(DB.settings.hiddenBuiltins)) DB.settings.hiddenBuiltins = [];
+
+const ALARM_SOUNDS = {
+    classic: {
+        name: 'Классический', desc: 'Один короткий бип',
+        playOnce: (ctx) => {
+            const osc = ctx.createOscillator(); const gain = ctx.createGain();
+            osc.type = 'sine'; osc.frequency.value = 880;
+            gain.gain.setValueAtTime(0.3, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.start(); osc.stop(ctx.currentTime + 0.3);
+        },
+        loopPattern: [
+            { type: 'beep', dur: 300, freq: 880, wave: 'sine' },
+            { type: 'silence', dur: 700 }
+        ]
+    },
+    alarm: {
+        name: 'Будильник', desc: 'Ритмичный бип-бип',
+        playOnce: (ctx) => {
+            [0, 0.2].forEach(offset => {
+                const osc = ctx.createOscillator(); const gain = ctx.createGain();
+                osc.type = 'square'; osc.frequency.value = 650;
+                gain.gain.setValueAtTime(0.15, ctx.currentTime + offset);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + offset + 0.18);
+                osc.connect(gain); gain.connect(ctx.destination);
+                osc.start(ctx.currentTime + offset); osc.stop(ctx.currentTime + offset + 0.18);
+            });
+        },
+        loopPattern: [
+            { type: 'beep', dur: 180, freq: 650, wave: 'square' },
+            { type: 'silence', dur: 100 },
+            { type: 'beep', dur: 180, freq: 650, wave: 'square' },
+            { type: 'silence', dur: 600 }
+        ]
+    },
+    soft: {
+        name: 'Мягкий', desc: 'Низкий приятный тон',
+        playOnce: (ctx) => {
+            const osc = ctx.createOscillator(); const gain = ctx.createGain();
+            osc.type = 'triangle'; osc.frequency.value = 440;
+            gain.gain.setValueAtTime(0.25, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.start(); osc.stop(ctx.currentTime + 0.5);
+        },
+        loopPattern: [
+            { type: 'beep', dur: 400, freq: 440, wave: 'triangle' },
+            { type: 'silence', dur: 800 }
+        ]
+    },
+    double: {
+        name: 'Двойной', desc: 'Два тона разной высоты',
+        playOnce: (ctx) => {
+            [
+                { offset: 0, freq: 700, dur: 0.15 },
+                { offset: 0.2, freq: 1000, dur: 0.2 }
+            ].forEach(n => {
+                const osc = ctx.createOscillator(); const gain = ctx.createGain();
+                osc.type = 'sine'; osc.frequency.value = n.freq;
+                gain.gain.setValueAtTime(0.25, ctx.currentTime + n.offset);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + n.offset + n.dur);
+                osc.connect(gain); gain.connect(ctx.destination);
+                osc.start(ctx.currentTime + n.offset); osc.stop(ctx.currentTime + n.offset + n.dur);
+            });
+        },
+        loopPattern: [
+            { type: 'beep', dur: 150, freq: 700, wave: 'sine' },
+            { type: 'silence', dur: 80 },
+            { type: 'beep', dur: 200, freq: 1000, wave: 'sine' },
+            { type: 'silence', dur: 700 }
+        ]
+    },
+    siren: {
+        name: 'Сирена', desc: 'Плавное изменение частоты',
+        playOnce: (ctx) => {
+            const osc = ctx.createOscillator(); const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(500, ctx.currentTime);
+            osc.frequency.linearRampToValueAtTime(900, ctx.currentTime + 0.3);
+            osc.frequency.linearRampToValueAtTime(500, ctx.currentTime + 0.6);
+            gain.gain.setValueAtTime(0.25, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.6);
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.start(); osc.stop(ctx.currentTime + 0.6);
+        },
+        loopPattern: [
+            { type: 'siren', dur: 600, freqStart: 500, freqEnd: 900 },
+            { type: 'silence', dur: 600 }
+        ]
+    }
+};
+
+const MINUTE_BEEP_INTERVALS = [
+    { v: 60, t: 'Каждую минуту' },
+    { v: 120, t: 'Каждые 2 минуты' },
+    { v: 300, t: 'Каждые 5 минут' },
+    { v: 600, t: 'Каждые 10 минут' }
+];
+
+const COUNTDOWN_INTERVALS = [
+    { v: 3, t: '3 секунды' },
+    { v: 5, t: '5 секунд' },
+    { v: 15, t: '15 секунд' },
+    { v: 20, t: '20 секунд' }
+];
+
+const BUILTIN_TEMPLATES = [
+    { builtin: true, id: 'bt_1', name: 'Пресс 10 минут', autoStart: true, exercises: [
+        { name: 'Скручивания', restSeconds: 30, notes: '', waterBreak: false },
+        { name: 'Подъём ног', restSeconds: 30, notes: '', waterBreak: false },
+        { name: 'Планка', restSeconds: 45, notes: '45 сек', waterBreak: false },
+        { name: 'Велосипед', restSeconds: 0, notes: '', waterBreak: false }
+    ]},
+    { builtin: true, id: 'bt_2', name: 'Отжимания прогрессия', autoStart: true, exercises: [
+        { name: 'Отжимания классические', restSeconds: 60, notes: '', waterBreak: false },
+        { name: 'Отжимания узкие', restSeconds: 60, notes: '', waterBreak: false },
+        { name: 'Отжимания широкие', restSeconds: 60, notes: '', waterBreak: false },
+        { name: 'Алмазные', restSeconds: 0, notes: '', waterBreak: false }
+    ]},
+    { builtin: true, id: 'bt_3', name: 'Планка Challenge', autoStart: false, exercises: [
+        { name: 'Планка на локтях', restSeconds: 60, notes: 'Максимум', waterBreak: false },
+        { name: 'Планка на руках', restSeconds: 60, notes: '', waterBreak: false },
+        { name: 'Боковая планка (лево)', restSeconds: 45, notes: '', waterBreak: false },
+        { name: 'Боковая планка (право)', restSeconds: 0, notes: '', waterBreak: false }
+    ]},
+    { builtin: true, id: 'bt_4', name: 'Растяжка', autoStart: false, exercises: [
+        { name: 'Наклон к ногам', restSeconds: 90, notes: '30 сек', waterBreak: false },
+        { name: 'Бабочка', restSeconds: 90, notes: '', waterBreak: false },
+        { name: 'Поза ребёнка', restSeconds: 120, notes: '', waterBreak: false },
+        { name: 'Кошка-корова', restSeconds: 0, notes: '', waterBreak: false }
+    ]}
+];
+
+let editingId = null;
+let editingIsTemplate = false;
+let editorExercises = [];
+let previewWorkoutId = null;
+let previewTemplateData = null;
+let restAlarmTimeout = null;
+let waterAlarmTimeout = null;
+let previewCtx = null;
+
+let audioCtx = null;
+async function getAudioCtx() {
+    try {
+        if (!audioCtx || audioCtx.state === 'closed') {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+            await audioCtx.resume();
+        }
+    } catch(e) {}
+    return audioCtx;
+}
+
+function warmUpAudio() {
+    try {
+        const ctx = getAudioCtx();
+        if (!ctx) return;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+        osc.start(); osc.stop(ctx.currentTime + 0.01);
+    } catch(e) {}
+}
+
+const REST_PRESETS = [
+    { v: 10, t: '10 сек' },
+    { v: 15, t: '15 сек' },
+    { v: 30, t: '30 сек' },
+    { v: 45, t: '45 сек' },
+    { v: 60, t: '1 мин' },
+    { v: 90, t: '1 мин 30 сек' },
+    { v: 120, t: '2 мин' },
+    { v: 180, t: '3 мин' },
+    { v: 300, t: '5 мин' }
+];
+
+const WATER_PRESETS = REST_PRESETS;
+
+function getExerciseNumber(exercises, i) {
+    let num = 0;
+    for (let j = 0; j <= i; j++) {
+        if (!exercises[j].waterBreak) num++;
+    }
+    return num;
+}
+
+function getTotalExerciseCount(exercises) {
+    return exercises.filter(e => !e.waterBreak).length;
+}
+
+function getTotalRestTime(exercises) {
+    let total = 0;
+    for (let i = 0; i < exercises.length; i++) {
+        const ex = exercises[i];
+        if (!ex.waterBreak && i < exercises.length - 1) {
+            const nextEx = exercises[i + 1];
+            if (!nextEx.waterBreak) {
+                total += (ex.restSeconds || 0);
+            }
+        }
+    }
+    return total;
+}
+
+function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    document.querySelector('.app-container').scrollTop = 0;
+    if (id === 'screen-workouts') renderWorkoutsList();
+    if (id === 'screen-history') renderHistory();
+    if (id === 'screen-settings') renderSettings();
+    if (id === 'screen-templates') renderTemplates();
+}
+// --- ЛОГИКА DRAG & DROP ДЛЯ ТРЕНИРОВОК ---
+let draggedItem = null;
+let touchStartY = 0;
+let longPressTimer = null;
+
+function initDragAndDrop(item) {
+    // Мышь (Desktop)
+    item.setAttribute('draggable', 'true');
+    
+    item.addEventListener('dragstart', (e) => {
+        draggedItem = item;
+        item.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+    });
+
+    item.addEventListener('dragend', () => {
+        item.classList.remove('dragging');
+        draggedItem = null;
+        document.querySelectorAll('.workout-item').forEach(el => el.classList.remove('drag-over'));
+    });
+
+    item.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        const afterElement = getDragAfterElement(document.getElementById('workouts-list'), e.clientY);
+        if (afterElement == null) {
+            document.getElementById('workouts-list').appendChild(draggedItem);
+        } else {
+            document.getElementById('workouts-list').insertBefore(draggedItem, afterElement);
+        }
+    });
+
+    item.addEventListener('drop', (e) => {
+        e.preventDefault();
+        saveNewOrder();
+    });
+
+    // Touch (Mobile) - долгое нажатие для начала перетаскивания
+    item.addEventListener('touchstart', (e) => {
+        // Игнорируем касания по кнопкам внутри карточки
+        if (e.target.closest('.icon-btn') || e.target.closest('.btn')) return;
+        
+        touchStartY = e.touches[0].clientY;
+        longPressTimer = setTimeout(() => {
+            draggedItem = item;
+            item.classList.add('dragging');
+            navigator.vibrate && navigator.vibrate(50); // Тактильная отдача
+        }, 300); // Долгое нажатие 300мс
+    }, { passive: true });
+
+    item.addEventListener('touchmove', (e) => {
+        if (!draggedItem) {
+            clearTimeout(longPressTimer);
+            return;
+        }
+        e.preventDefault(); // Блокируем скролл страницы при перетаскивании
+        
+        const touchY = e.touches[0].clientY;
+        const rect = draggedItem.getBoundingClientRect();
+        // Визуально двигаем элемент за пальцем
+        draggedItem.style.transform = `translateY(${touchY - rect.top - rect.height/2}px)`;
+        
+        // Находим элемент под пальцем
+        draggedItem.style.display = 'none'; // Скрываем перетаскиваемый, чтобы найти элемент под ним
+        let elemBelow = document.elementFromPoint(e.touches[0].clientX, touchY);
+        draggedItem.style.display = 'block';
+
+        if (!elemBelow) return;
+        
+        let draggableBelow = elemBelow.closest('.workout-item');
+        if (draggableBelow && draggableBelow !== draggedItem) {
+             const bounding = draggableBelow.getBoundingClientRect();
+             const offset = touchY - bounding.top - bounding.height / 2;
+             if (offset > 0) {
+                 draggableBelow.parentNode.insertBefore(draggedItem, draggableBelow.nextSibling);
+             } else {
+                 draggableBelow.parentNode.insertBefore(draggedItem, draggableBelow);
+             }
+        }
+    }, { passive: false });
+
+    item.addEventListener('touchend', () => {
+        clearTimeout(longPressTimer);
+        if (draggedItem) {
+            draggedItem.classList.remove('dragging');
+            draggedItem.style.transform = '';
+            draggedItem = null;
+            saveNewOrder();
+        }
+    });
+}
+
+function getDragAfterElement(container, y) {
+    const draggableElements = [...container.querySelectorAll('.workout-item:not(.dragging)')];
+    return draggableElements.reduce((closest, child) => {
+        const box = child.getBoundingClientRect();
+        const offset = y - box.top - box.height / 2;
+        if (offset < 0 && offset > closest.offset) {
+            return { offset: offset, element: child };
+        } else {
+            return closest;
+        }
+    }, { offset: Number.NEGATIVE_INFINITY }).element;
+}
+
+function saveNewOrder() {
+    const listContainer = document.getElementById('workouts-list');
+    const newOrderIds = Array.from(listContainer.children).map(el => parseInt(el.dataset.id));
+    
+    // Пересортируем массив DB.workouts согласно новому порядку ID
+    const reorderedWorkouts = [];
+    newOrderIds.forEach(id => {
+        const workout = DB.workouts.find(w => w.id === id);
+        if (workout) reorderedWorkouts.push(workout);
+    });
+    
+    // Добавляем те, что могли потеряться (на всякий случай)
+    DB.workouts.forEach(w => {
+        if (!reorderedWorkouts.includes(w)) reorderedWorkouts.push(w);
+    });
+
+    DB.workouts = reorderedWorkouts;
+    saveDB('workouts');
+}
+// -----------------------------------------
+function renderWorkoutsList() {
+    const c = document.getElementById('workouts-list');
+    if (DB.workouts.length === 0) {
+        c.innerHTML = '<div class="empty-state">Пока нет тренировок.<br>Создай свою первую или выбери шаблон!</div>';
+        return;
+    }
+    c.innerHTML = DB.workouts.map(w => `
+        <div class="workout-item" data-id="${w.id}">
+            <div class="workout-header">
+                <div class="workout-info">
+                    <div class="name">${escapeHtml(w.name || 'Без названия')}</div>
+                    <div class="meta">${getTotalExerciseCount(w.exercises)} упр. · ~${Math.round(getTotalRestTime(w.exercises)/60)} мин отдыха</div>
+                </div>
+                <div class="workout-actions">
+                    <button class="icon-btn" onclick="showPreview(${w.id})" title="Просмотр">👁</button>
+                    <button class="icon-btn" onclick="duplicateWorkout(${w.id})" title="Копия">📋</button>
+                    <button class="icon-btn" onclick="openEditor(${w.id}, false)" title="Редактировать">✏️</button>
+                </div>
+            </div>
+            <button class="btn accent btn-start-workout" onclick="startWorkout(${w.id})">▶ Начать тренировку</button>
+        </div>
+    `).join('');
+
+    // Инициализация Drag&Drop для каждого элемента
+    const items = c.querySelectorAll('.workout-item');
+    items.forEach(item => initDragAndDrop(item));
+}
+
+function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function renderTemplates() {
+    const c = document.getElementById('templates-list');
+    let html = '';
+    if (DB.templates.length > 0) {
+        html += '<div class="template-section-title">Мои шаблоны</div>';
+        html += DB.templates.map(t => `
+            <div class="template-card">
+                <div class="template-card-header">
+                    <div class="template-card-info" onclick="showTemplatePreview(${t.id}, false)">
+                        <div class="name">${escapeHtml(t.name)}</div>
+                        <div class="desc">${getTotalExerciseCount(t.exercises)} упр. · ${t.autoStart ? 'автозапуск' : 'ручной старт'}</div>
+                    </div>
+                    <div class="template-card-actions">
+                        <button class="icon-btn add" onclick="createFromTemplate(${t.id}, false)" title="Добавить в тренировки">+</button>
+                        <button class="icon-btn" onclick="showTemplatePreview(${t.id}, false)" title="Просмотр">👁</button>
+                        <button class="icon-btn" onclick="openEditor(${t.id}, true)" title="Редактировать">✏️</button>
+                        <button class="icon-btn delete" onclick="deleteTemplate(${t.id})" title="Удалить">🗑</button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+    const visibleBuiltins = BUILTIN_TEMPLATES.filter(t => !DB.settings.hiddenBuiltins.includes(t.id));
+    if (visibleBuiltins.length > 0) {
+        html += '<div class="template-section-title">Готовые шаблоны</div>';
+        html += visibleBuiltins.map(t => `
+            <div class="template-card">
+                <div class="template-card-header">
+                    <div class="template-card-info" onclick="showTemplatePreview('${t.id}', true)">
+                        <div class="name">${escapeHtml(t.name)}</div>
+                        <div class="desc">${getTotalExerciseCount(t.exercises)} упр. · отдых ${t.exercises[0].restSeconds}с</div>
+                    </div>
+                    <div class="template-card-actions">
+                        <button class="icon-btn add" onclick="createFromTemplate('${t.id}', true)" title="Добавить в тренировки">+</button>
+                        <button class="icon-btn" onclick="showTemplatePreview('${t.id}', true)" title="Просмотр">👁</button>
+                        <button class="icon-btn" onclick="editBuiltinTemplate('${t.id}')" title="Скопировать и редактировать">✏️</button>
+                        <button class="icon-btn delete" onclick="hideBuiltinTemplate('${t.id}')" title="Скрыть">🗑</button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+    if (DB.templates.length === 0 && visibleBuiltins.length === 0) {
+        html += '<div class="empty-state">Все шаблоны скрыты.<br>Нажми «Восстановить все шаблоны» в настройках.</div>';
+    }
+    c.innerHTML = html;
+}
+
+function createFromTemplate(id, isBuiltin) {
+    const t = isBuiltin ? BUILTIN_TEMPLATES.find(x => x.id === id) : DB.templates.find(x => x.id === id);
+    if (!t) return;
+    const newW = JSON.parse(JSON.stringify(t));
+    delete newW.builtin;
+    newW.id = Date.now();
+    DB.workouts.push(newW);
+    saveDB('workouts');
+    alert('Добавлено в «Мои тренировки»!');
+    showScreen('screen-workouts');
+}
+
+function deleteTemplate(id) {
+    if (!confirm('Удалить шаблон?')) return;
+    DB.templates = DB.templates.filter(t => t.id !== id);
+    saveDB('templates');
+    renderTemplates();
+}
+
+function hideBuiltinTemplate(id) {
+    const t = BUILTIN_TEMPLATES.find(x => x.id === id);
+    if (!t) return;
+    if (!confirm(`Скрыть шаблон «${t.name}»?\nЕго можно будет вернуть в настройках.`)) return;
+    if (!DB.settings.hiddenBuiltins.includes(id)) DB.settings.hiddenBuiltins.push(id);
+    saveDB('settings');
+    renderTemplates();
+}
+
+function editBuiltinTemplate(id) {
+    const t = BUILTIN_TEMPLATES.find(x => x.id === id);
+    if (!t) return;
+    const copy = JSON.parse(JSON.stringify(t));
+    delete copy.builtin;
+    copy.id = Date.now();
+    copy.name = t.name + ' (моя версия)';
+    DB.templates.push(copy);
+    saveDB('templates');
+    openEditor(copy.id, true);
+}
+
+function restoreBuiltins() {
+    if (DB.settings.hiddenBuiltins.length === 0) { alert('Все шаблоны уже на месте!'); return; }
+    if (!confirm(`Восстановить ${DB.settings.hiddenBuiltins.length} скрытых шаблонов?`)) return;
+    DB.settings.hiddenBuiltins = [];
+    saveDB('settings');
+    alert('Все шаблоны восстановлены!');
+    renderSettings();
+}
+
+function showTemplatePreview(id, isBuiltin) {
+    const t = isBuiltin ? BUILTIN_TEMPLATES.find(x => x.id === id) : DB.templates.find(x => x.id === id);
+    if (!t) return;
+    previewTemplateData = { template: t, isBuiltin };
+    previewWorkoutId = null;
+    document.getElementById('preview-title').innerText = t.name;
+    document.getElementById('preview-back-btn').onclick = () => showScreen('screen-templates');
+    const totalRest = getTotalRestTime(t.exercises);
+    document.getElementById('preview-content').innerHTML = `
+        <div class="card">
+            <div style="color:var(--muted); font-size:0.9rem; margin-bottom:8px;">
+                ${getTotalExerciseCount(t.exercises)} упражнений · ~${Math.round(totalRest/60)} мин отдыха
+                · ${t.autoStart ? 'автозапуск' : 'ручной старт'}
+                ${isBuiltin ? ' · <span style="color:var(--accent);">готовый шаблон</span>' : ''}
+            </div>
+        </div>
+        ${renderPreviewExercises(t.exercises)}
+    `;
+    document.getElementById('preview-actions').innerHTML = `
+        <button class="btn accent" onclick="createFromTemplate('${id}', ${isBuiltin})">+ Добавить в тренировки</button>
+        ${!isBuiltin ? `<button class="btn ghost" onclick="openEditor(${id}, true)">✏️ Редактировать шаблон</button>` : 
+            `<button class="btn ghost" onclick="editBuiltinTemplate('${id}')">✏️ Скопировать и редактировать</button>`}
+    `;
+    showScreen('screen-preview');
+}
+
+function renderPreviewExercises(exercises) {
+    return exercises.map((e, i) => {
+        const isWater = e.waterBreak;
+        const num = isWater ? '💧' : getExerciseNumber(exercises, i);
+        const isLast = i === exercises.length - 1;
+        return `
+            <div class="preview-exercise ${isWater ? 'water' : ''}">
+                <div class="num">${num}</div>
+                <div class="info">
+                    <div class="name">${escapeHtml(e.name || (isWater ? '💧 Попить воды' : 'Упражнение'))}</div>
+                    <div class="rest">${isWater ? (isLast ? '💧 Финальный перерыв' : '💧 Длительность: ' + formatTime(e.restSeconds)) : 
+                        (!isLast ? 'Отдых: ' + formatTime(e.restSeconds) : 'Последнее упражнение')}${e.notes ? ' · ' + escapeHtml(e.notes) : ''}</div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function duplicateWorkout(id) {
+    const w = DB.workouts.find(x => x.id === id);
+    if (!w) return;
+    const copy = JSON.parse(JSON.stringify(w));
+    copy.id = Date.now();
+    copy.name = w.name + ' (копия)';
+    DB.workouts.push(copy);
+    saveDB('workouts');
+    renderWorkoutsList();
+}
+
+function openEditor(id, isTemplate) {
+    editingId = id;
+    editingIsTemplate = isTemplate;
+    if (id === null) {
+        editorExercises = [];
+        document.getElementById('workout-name').value = '';
+        document.getElementById('auto-start').checked = DB.settings.defaultAutoStart;
+        document.getElementById('editor-title').innerText = isTemplate ? 'Новый шаблон' : 'Новая тренировка';
+        document.getElementById('delete-btn').style.display = 'none';
+        document.getElementById('export-btn').style.display = 'none';
+    } else {
+        const source = isTemplate ? DB.templates : DB.workouts;
+        const w = source.find(x => x.id === id);
+        if (!w) return;
+        editorExercises = JSON.parse(JSON.stringify(w.exercises));
+        editorExercises.forEach(e => { 
+            if (e.waterBreak === undefined) e.waterBreak = false;
+            if (e.customRest === undefined) e.customRest = false;
+        });
+        document.getElementById('workout-name').value = w.name;
+        document.getElementById('auto-start').checked = w.autoStart;
+        document.getElementById('editor-title').innerText = isTemplate ? 'Редактирование шаблона' : 'Редактирование';
+        document.getElementById('delete-btn').style.display = 'block';
+        document.getElementById('export-btn').style.display = 'block';
+    }
+    renderEditorExercises();
+    showScreen('screen-editor');
+}
+
+function cancelEditor() { showScreen(editingIsTemplate ? 'screen-templates' : 'screen-workouts'); }
+
+function renderDurationRow(i, ex, presets) {
+    const isPreset = !ex.customRest && presets.some(p => p.v === ex.restSeconds);
+    let html = `<div class="rest-row">
+        <label>Длительность:</label>
+        <select class="select" onchange="handleDurationSelect(${i}, this.value)" style="flex:1; margin:0;">`;
+    presets.forEach(p => {
+        html += `<option value="${p.v}" ${isPreset && p.v === ex.restSeconds ? 'selected' : ''}>${p.t}</option>`;
+    });
+    html += `<option value="custom" ${!isPreset ? 'selected' : ''}>Другое...</option>`;
+    html += `</select>`;
+    if (!isPreset) {
+        html += `<input type="number" value="${ex.restSeconds}" min="0" step="5" placeholder="сек"
+            onchange="updateExercise(${i}, 'restSeconds', parseInt(this.value)||0); renderEditorExercises();"
+            style="width:80px; margin:0; padding:8px;">
+            <span style="color:var(--muted); font-size:0.85rem;">сек</span>`;
+    }
+    html += `</div>`;
+    return html;
+}
+
+function renderRestRow(i, ex) {
+    const nextEx = editorExercises[i + 1];
+    if (!nextEx || nextEx.waterBreak) return '';
+    return renderDurationRow(i, ex, REST_PRESETS).replace('<label>Длительность:</label>', '<label>Отдых:</label>');
+}
+
+function handleDurationSelect(i, value) {
+    if (value === 'custom') {
+        editorExercises[i].customRest = true;
+        renderEditorExercises();
+    } else {
+        editorExercises[i].customRest = false;
+        updateExercise(i, 'restSeconds', parseInt(value));
+        renderEditorExercises();
+    }
+}
+
+function renderEditorExercises() {
+    const c = document.getElementById('exercises-list');
+    if (editorExercises.length === 0) { c.innerHTML = '<div class="empty-state">Добавь упражнения ниже</div>'; return; }
+    const isLast = (i) => i === editorExercises.length - 1;
+    c.innerHTML = editorExercises.map((ex, i) => {
+        const isWater = ex.waterBreak;
+        const num = isWater ? '💧' : getExerciseNumber(editorExercises, i);
+        return `
+        <div class="exercise-block ${isWater ? 'water-break' : ''}">
+            <div class="exercise-header">
+                <div class="exercise-number">${num}</div>
+                <input type="text" class="exercise-name-input" 
+                    value="${escapeHtml(ex.name)}" 
+                    onchange="updateExercise(${i}, 'name', this.value)"
+                    placeholder="${isWater ? '💧 Попить воды' : 'Название упражнения'}">
+                <div class="exercise-controls">
+                    <button class="icon-btn" onclick="moveExercise(${i},-1)" ${i===0?'disabled':''} aria-label="Вверх">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg>
+                    </button>
+                    <button class="icon-btn" onclick="moveExercise(${i},1)" ${i===editorExercises.length-1?'disabled':''} aria-label="Вниз">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                    <button class="icon-btn delete-btn" onclick="removeExercise(${i})" aria-label="Удалить">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                    </button>
+                </div>
+            </div>
+            ${isWater ? (isLast(i) ? '' : renderDurationRow(i, ex, WATER_PRESETS)) : renderRestRow(i, ex)}
+            <div class="notes-row">
+                <label>📝</label>
+                <textarea class="input" placeholder="Заметки"
+                    onchange="updateExercise(${i}, 'notes', this.value)" style="margin:0;">${escapeHtml(ex.notes || '')}</textarea>
+            </div>
+        </div>
+    `}).join('');
+}
+
+function addExercise() { 
+    editorExercises.push({ name: '', restSeconds: 60, notes: '', waterBreak: false, customRest: false }); 
+    renderEditorExercises(); 
+}
+function addWaterBreak() { 
+    editorExercises.push({ name: 'Попить воды', restSeconds: 60, notes: '', waterBreak: true, customRest: false }); 
+    renderEditorExercises(); 
+}
+function updateExercise(i, f, v) { editorExercises[i][f] = v; }
+function removeExercise(i) { editorExercises.splice(i, 1); renderEditorExercises(); }
+function moveExercise(i, d) {
+    const j = i + d;
+    if (j < 0 || j >= editorExercises.length) return;
+    [editorExercises[i], editorExercises[j]] = [editorExercises[j], editorExercises[i]];
+    renderEditorExercises();
+}
+
+function saveWorkout() {
+    const name = document.getElementById('workout-name').value.trim();
+    if (!name) { alert('Введи название'); return; }
+    if (editorExercises.length === 0) { alert('Добавь упражнения'); return; }
+    const emptyNames = editorExercises.filter(e => !e.waterBreak && !e.name.trim());
+    if (emptyNames.length > 0) { if (!confirm(`У ${emptyNames.length} упражнений не указано название. Продолжить?`)) return; }
+    const autoStart = document.getElementById('auto-start').checked;
+    const data = { name, autoStart, exercises: editorExercises };
+    if (editingIsTemplate) {
+        if (editingId === null) DB.templates.push({ id: Date.now(), ...data });
+        else Object.assign(DB.templates.find(x => x.id === editingId), data);
+        saveDB('templates');
+        showScreen('screen-templates');
+    } else {
+        if (editingId === null) DB.workouts.push({ id: Date.now(), ...data });
+        else Object.assign(DB.workouts.find(x => x.id === editingId), data);
+        saveDB('workouts');
+        showScreen('screen-workouts');
+    }
+}
+
+function deleteWorkout() {
+    if (!confirm('Удалить?')) return;
+    if (editingIsTemplate) {
+        DB.templates = DB.templates.filter(w => w.id !== editingId);
+        saveDB('templates'); showScreen('screen-templates');
+    } else {
+        DB.workouts = DB.workouts.filter(w => w.id !== editingId);
+        saveDB('workouts'); showScreen('screen-workouts');
+    }
+}
+
+function exportCurrentWorkout() {
+    if (editingId === null) {
+        alert('Сначала сохрани тренировку');
+        return;
+    }
+    const source = editingIsTemplate ? DB.templates : DB.workouts;
+    const w = source.find(x => x.id === editingId);
+    if (!w) {
+        alert('Тренировка не найдена');
+        return;
+    }
+    
+    const exportData = {
+        type: 'fit-trainer-workout',
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        workout: {
+            name: w.name,
+            autoStart: w.autoStart,
+            exercises: w.exercises
+        }
+    };
+    
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `fit-trainer-${w.name.replace(/[^a-zа-яё0-9]/gi, '_')}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+function importWorkout(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+        try {
+            const data = JSON.parse(e.target.result);
+            
+            if (data.type !== 'fit-trainer-workout' || !data.workout) {
+                alert('Это не файл тренировки Fit Trainer');
+                return;
+            }
+            
+            const w = data.workout;
+            if (!w.name || !w.exercises || !Array.isArray(w.exercises)) {
+                alert('Неверный формат файла тренировки');
+                return;
+            }
+            
+            const newWorkout = {
+                id: Date.now(),
+                name: w.name + ' (импорт)',
+                autoStart: w.autoStart || false,
+                exercises: w.exercises.map(e => ({
+                    name: e.name || '',
+                    restSeconds: e.restSeconds || 0,
+                    notes: e.notes || '',
+                    waterBreak: e.waterBreak || false,
+                    customRest: e.customRest || false
+                }))
+            };
+            
+            DB.workouts.push(newWorkout);
+            saveDB('workouts');
+            
+            alert(`Тренировка «${newWorkout.name}» импортирована!`);
+            showScreen('screen-workouts');
+        } catch(err) {
+            alert('Ошибка импорта: ' + err.message);
+        }
+    };
+    reader.readAsText(file);
+    event.target.value = '';
+}
+
+function showPreview(id) {
+    const w = DB.workouts.find(x => x.id === id);
+    if (!w) return;
+    previewWorkoutId = id;
+    previewTemplateData = null;
+    document.getElementById('preview-title').innerText = w.name;
+    document.getElementById('preview-back-btn').onclick = () => showScreen('screen-workouts');
+    const totalRest = getTotalRestTime(w.exercises);
+    document.getElementById('preview-content').innerHTML = `
+        <div class="card">
+            <div style="color:var(--muted); font-size:0.9rem; margin-bottom:8px;">
+                ${getTotalExerciseCount(w.exercises)} упражнений · ~${Math.round(totalRest/60)} мин отдыха
+                · ${w.autoStart ? 'автозапуск' : 'ручной старт'}
+            </div>
+        </div>
+        ${renderPreviewExercises(w.exercises)}
+    `;
+    document.getElementById('preview-actions').innerHTML = `
+        <button class="btn accent" onclick="startFromPreview()">▶ Начать тренировку</button>
+    `;
+    showScreen('screen-preview');
+}
+
+function startFromPreview() { if (previewWorkoutId) startWorkout(previewWorkoutId); }
+
+let runState = null;
+let wakeLockObj = null;
+
+async function acquireWakeLock() {
+    if (!DB.settings.wakeLock) return;
+    if ('wakeLock' in navigator) { try { wakeLockObj = await navigator.wakeLock.request('screen'); } catch(e) {} }
+}
+function releaseWakeLock() { if (wakeLockObj) { try { wakeLockObj.release(); } catch(e) {} wakeLockObj = null; } }
+
+function speak(text) {
+    if (!DB.settings.voice) return;
+    if (!('speechSynthesis' in window)) return;
+    try {
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = 'ru-RU'; u.rate = 1; u.volume = 1;
+        speechSynthesis.cancel();
+        speechSynthesis.speak(u);
+    } catch(e) {}
+}
+
+async function playEndBeep() {
+    try {
+        const ctx = await getAudioCtx();
+        if (!ctx || ctx.state !== 'running') return;
+        const sound = ALARM_SOUNDS[DB.settings.alarmSound] || ALARM_SOUNDS.alarm;
+        sound.playOnce(ctx);
+    } catch(e) {}
+}
+
+function playPatternStep(ctx, step) {
+    if (step.type === 'silence') return;
+    if (step.type === 'beep') {
+        const osc = ctx.createOscillator(); const gain = ctx.createGain();
+        osc.type = step.wave || 'sine'; osc.frequency.value = step.freq;
+        const dur = step.dur / 1000;
+        gain.gain.setValueAtTime(0.2, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + dur);
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.start(); osc.stop(ctx.currentTime + dur);
+    } else if (step.type === 'siren') {
+        const osc = ctx.createOscillator(); const gain = ctx.createGain();
+        osc.type = 'sine';
+        const dur = step.dur / 1000;
+        osc.frequency.setValueAtTime(step.freqStart, ctx.currentTime);
+        osc.frequency.linearRampToValueAtTime(step.freqEnd, ctx.currentTime + dur);
+        gain.gain.setValueAtTime(0.2, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + dur);
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.start(); osc.stop(ctx.currentTime + dur);
+    }
+}
+
+async function startRestAlarm() {
+    stopRestAlarm();
+    try {
+        const ctx = await getAudioCtx();
+        if (!ctx || ctx.state !== 'running') return;
+        const sound = ALARM_SOUNDS[DB.settings.alarmSound] || ALARM_SOUNDS.alarm;
+        const pattern = sound.loopPattern;
+        let stepIdx = 0;
+        function playNext() {
+            const step = pattern[stepIdx % pattern.length];
+            playPatternStep(ctx, step);
+            restAlarmTimeout = setTimeout(playNext, step.dur);
+            stepIdx++;
+        }
+        playNext();
+    } catch(e) {}
+    if (navigator.vibrate) {
+        const vibPattern = [];
+        for (let i = 0; i < 30; i++) vibPattern.push(150, 100, 150, 600);
+        navigator.vibrate(vibPattern);
+    }
+}
+
+function stopRestAlarm() {
+    if (restAlarmTimeout) { clearTimeout(restAlarmTimeout); restAlarmTimeout = null; }
+    if (navigator.vibrate) navigator.vibrate(0);
+}
+
+async function startWaterAlarm() {
+    stopWaterAlarm();
+    try {
+        const ctx = await getAudioCtx();
+        if (!ctx || ctx.state !== 'running') return;
+        const sound = ALARM_SOUNDS[DB.settings.alarmSound] || ALARM_SOUNDS.alarm;
+        const pattern = sound.loopPattern;
+        let stepIdx = 0;
+        function playNext() {
+            const step = pattern[stepIdx % pattern.length];
+            playPatternStep(ctx, step);
+            waterAlarmTimeout = setTimeout(playNext, step.dur);
+            stepIdx++;
+        }
+        playNext();
+    } catch(e) {}
+    if (navigator.vibrate) {
+        const vibPattern = [];
+        for (let i = 0; i < 30; i++) vibPattern.push(150, 100, 150, 600);
+        navigator.vibrate(vibPattern);
+    }
+}
+
+function stopWaterAlarm() {
+    if (waterAlarmTimeout) { clearTimeout(waterAlarmTimeout); waterAlarmTimeout = null; }
+    if (navigator.vibrate) navigator.vibrate(0);
+}
+
+function startWaterOvertime() {
+    stopWaterOvertime();
+    runState.waterOvertime = 0;
+    const timerEl = document.getElementById('water-timer');
+    runState.waterOvertimeInterval = setInterval(() => {
+        runState.waterOvertime++;
+        timerEl.innerText = formatTime(runState.waterOvertime);
+    }, 1000);
+}
+
+function stopWaterOvertime() {
+    if (runState && runState.waterOvertimeInterval) {
+        clearInterval(runState.waterOvertimeInterval);
+        runState.waterOvertimeInterval = null;
+    }
+}
+
+function startRestOvertime() {
+    stopRestOvertime();
+    runState.restOvertime = 0;
+    const timerEl = document.getElementById('rest-timer');
+    runState.restOvertimeInterval = setInterval(() => {
+        runState.restOvertime++;
+        timerEl.innerText = formatTime(runState.restOvertime);
+    }, 1000);
+}
+
+function stopRestOvertime() {
+    if (runState && runState.restOvertimeInterval) {
+        clearInterval(runState.restOvertimeInterval);
+        runState.restOvertimeInterval = null;
+    }
+}
+
+function previewAlarmSound(key) {
+    try {
+        if (previewCtx) { try { previewCtx.close(); } catch(e) {} }
+        previewCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (previewCtx.state === 'suspended') previewCtx.resume();
+        const sound = ALARM_SOUNDS[key];
+        if (DB.settings.continuousBeep) {
+            const pattern = sound.loopPattern;
+            let stepIdx = 0; let cycles = 0;
+            function playNext() {
+                if (cycles >= 2) { try { previewCtx.close(); } catch(e) {} return; }
+                const step = pattern[stepIdx % pattern.length];
+                playPatternStep(previewCtx, step);
+                setTimeout(() => { stepIdx++; if (stepIdx % pattern.length === 0) cycles++; playNext(); }, step.dur);
+            }
+            playNext();
+        } else { sound.playOnce(previewCtx); }
+    } catch(e) {}
+}
+
+function selectAlarmSound(key) { DB.settings.alarmSound = key; saveDB('settings'); renderSoundOptions(); }
+
+function renderSoundOptions() {
+    const c = document.getElementById('sound-options');
+    c.innerHTML = Object.keys(ALARM_SOUNDS).map(key => {
+        const s = ALARM_SOUNDS[key];
+        const selected = DB.settings.alarmSound === key;
+        return `
+            <div class="sound-option ${selected ? 'selected' : ''}" onclick="selectAlarmSound('${key}')">
+                <div class="radio"></div>
+                <div class="sound-info">
+                    <div class="sound-name">${s.name}</div>
+                    <div class="sound-desc">${s.desc}</div>
+                </div>
+                <button class="preview-btn" onclick="event.stopPropagation(); previewAlarmSound('${key}')" title="Прослушать">▶</button>
+            </div>
+        `;
+    }).join('');
+}
+
+function selectMinuteBeepInterval(v) {
+    DB.settings.minuteBeepInterval = v;
+    saveDB('settings');
+    renderMinuteBeepOptions();
+}
+
+function renderMinuteBeepOptions() {
+    const container = document.getElementById('minute-beep-options');
+    container.style.display = DB.settings.minuteBeep ? 'block' : 'none';
+    const c = document.getElementById('minute-beep-interval-options');
+    c.innerHTML = MINUTE_BEEP_INTERVALS.map(opt => {
+        const selected = DB.settings.minuteBeepInterval === opt.v;
+        return `
+            <div class="sound-option ${selected ? 'selected' : ''}" onclick="selectMinuteBeepInterval(${opt.v})">
+                <div class="radio"></div>
+                <div class="sound-info">
+                    <div class="sound-name">${opt.t}</div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function renderCountdownIntervals() {
+    const container = document.getElementById('countdown-interval-options');
+    container.style.display = DB.settings.countdown ? 'block' : 'none';
+    const c = document.getElementById('countdown-interval-list');
+    c.innerHTML = COUNTDOWN_INTERVALS.map(opt => {
+        const selected = DB.settings.countdownDuration === opt.v;
+        return `
+            <div class="sound-option ${selected ? 'selected' : ''}" onclick="selectCountdownInterval(${opt.v})">
+                <div class="radio"></div>
+                <div class="sound-info">
+                    <div class="sound-name">${opt.t}</div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function selectCountdownInterval(v) {
+    DB.settings.countdownDuration = v;
+    saveDB('settings');
+    renderCountdownIntervals();
+}
+
+async function startMinuteBeep() {
+    stopMinuteBeep();
+    if (!DB.settings.minuteBeep) return;
+    const interval = DB.settings.minuteBeepInterval || 60;
+    runState.minuteBeepIntervalId = setInterval(async () => {
+        try {
+            const ctx = await getAudioCtx();
+            if (!ctx || ctx.state !== 'running') return;
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.value = 1000;
+            gain.gain.setValueAtTime(0.2, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.start(); osc.stop(ctx.currentTime + 0.15);
+        } catch(e) {}
+    }, interval * 1000);
+}
+
+function stopMinuteBeep() {
+    if (runState && runState.minuteBeepIntervalId) {
+        clearInterval(runState.minuteBeepIntervalId);
+        runState.minuteBeepIntervalId = null;
+    }
+}
+
+function getCurrentElapsed(type) {
+    const state = runState;
+    if (state[`${type}Paused`]) {
+        return state[`${type}ElapsedBeforePause`] || 0;
+    }
+    const startTime = state[`${type}StartTime`];
+    const beforePause = state[`${type}ElapsedBeforePause`] || 0;
+    if (!startTime) return beforePause;
+    return beforePause + Math.floor((Date.now() - startTime) / 1000);
+}
+
+function getRemainingTime(type) {
+    const duration = runState[`${type}Duration`] || 0;
+    const elapsed = getCurrentElapsed(type);
+    return Math.max(0, duration - elapsed);
+}
+
+function getOvertime(type) {
+    const duration = runState[`${type}Duration`] || 0;
+    const elapsed = getCurrentElapsed(type);
+    return Math.max(0, elapsed - duration);
+}
+
+function startTimer(type, duration) {
+    runState[`${type}StartTime`] = Date.now();
+    runState[`${type}ElapsedBeforePause`] = 0;
+    runState[`${type}Paused`] = false;
+    runState[`${type}Duration`] = duration;
+    runState[`${type}BeepPlayed`] = false;
+    if (!runState.tickInterval) {
+        runState.tickInterval = setInterval(updateTimersUI, 1000);
+    }
+}
+
+function pauseTimer(type) {
+    const elapsed = getCurrentElapsed(type);
+    runState[`${type}ElapsedBeforePause`] = elapsed;
+    runState[`${type}StartTime`] = null;
+    runState[`${type}Paused`] = true;
+}
+
+function resumeTimer(type) {
+    runState[`${type}StartTime`] = Date.now();
+    runState[`${type}Paused`] = false;
+}
+
+function stopTimer(type) {
+    runState[`${type}StartTime`] = null;
+    runState[`${type}ElapsedBeforePause`] = 0;
+    runState[`${type}Paused`] = false;
+    runState[`${type}Duration`] = 0;
+    runState[`${type}BeepPlayed`] = false;
+    if (runState.phase !== 'work' && runState.phase !== 'rest' && runState.phase !== 'water') {
+        stopTickInterval();
+    }
+}
+
+function stopTickInterval() {
+    if (runState.tickInterval) {
+        clearInterval(runState.tickInterval);
+        runState.tickInterval = null;
+    }
+}
+
+function updateTimersUI() {
+    if (!runState) return;
+    const { phase } = runState;
+    
+    if (phase === 'work') {
+        const elapsed = getCurrentElapsed('work');
+        const timerEl = document.getElementById('work-timer');
+        if (timerEl) timerEl.innerText = formatTime(elapsed);
+    } else if (phase === 'rest') {
+        const remaining = getRemainingTime('rest');
+        const timerEl = document.getElementById('rest-timer');
+        if (timerEl) {
+            if (runState.restFinished) {
+                timerEl.innerText = formatTime(getOvertime('rest'));
+            } else {
+                timerEl.innerText = formatTime(remaining);
+            }
+        }
+        if (remaining === 3 && !runState.restBeepPlayed && !runState.restPaused && !runState.restFinished) {
+            runState.restBeepPlayed = true;
+            playBeep(600, 0.1);
+        }
+        if (remaining === 0 && !runState.restFinished && !runState.restPaused) {
+            onRestFinished();
+        }
+    } else if (phase === 'water') {
+        if (runState.waterDuration === 0) return;
+        
+        const remaining = getRemainingTime('water');
+        const timerEl = document.getElementById('water-timer');
+        if (timerEl) {
+            if (runState.waterFinished) {
+                timerEl.innerText = formatTime(getOvertime('water'));
+            } else {
+                timerEl.innerText = formatTime(remaining);
+            }
+        }
+        if (remaining === 3 && !runState.waterBeepPlayed && !runState.waterPaused && !runState.waterFinished) {
+            runState.waterBeepPlayed = true;
+            playBeep(600, 0.1);
+        }
+        if (remaining === 0 && !runState.waterFinished && !runState.waterPaused) {
+            onWaterFinished();
+        }
+    }
+}
+
+function startWorkout(id) {
+    const w = DB.workouts.find(x => x.id === id);
+    if (!w) return;
+    runState = {
+        workout: w, index: 0, phase: 'ready',
+        countdownInterval: null,
+        minuteBeepIntervalId: null, restOvertimeInterval: null, waterOvertimeInterval: null,
+        tickInterval: null,
+        workStartTime: null, workElapsedBeforePause: 0, workPaused: false,
+        restStartTime: null, restElapsedBeforePause: 0, restPaused: false, restDuration: 0, restBeepPlayed: false,
+        waterStartTime: null, waterElapsedBeforePause: 0, waterPaused: false, waterDuration: 0, waterBeepPlayed: false,
+        restFinished: false, waterFinished: false,
+        restOvertime: 0, waterOvertime: 0,
+        startTime: new Date(), totalWorkTime: 0,
+        lastFinishedWorkElapsed: 0,
+        exerciseTimes: []
+    };
+    document.getElementById('run-title').innerText = w.name;
+    warmUpAudio();
+    acquireWakeLock();
+    renderRun();
+    showScreen('screen-run');
+    if (w.autoStart) setTimeout(() => beginExerciseFlow(), 400);
+}
+
+function updateNextExerciseBlock() {
+    const block = document.getElementById('next-exercise-block');
+    const label = document.getElementById('next-exercise-label');
+    const name = document.getElementById('next-exercise-name');
+    if (!runState || !block) return;
+    
+    const exercises = runState.workout.exercises;
+    const nextIdx = runState.index + 1;
+    
+    block.classList.remove('water');
+    name.classList.remove('finish', 'water');
+    
+    if (nextIdx >= exercises.length) {
+        label.innerText = 'После отдыха';
+        name.innerText = '🏁 Финиш!';
+        name.classList.add('finish');
+    } else {
+        const nextEx = exercises[nextIdx];
+        if (nextEx.waterBreak) {
+            label.innerText = 'Следующее';
+            name.innerHTML = '💧 <strong style="font-weight:800;">Попить воды</strong>';
+            name.classList.add('water');
+            block.classList.add('water');
+        } else {
+            label.innerText = 'Следующее';
+            if (DB.settings.announceNumbers) {
+                const num = getExerciseNumber(exercises, nextIdx);
+                name.innerText = `${num}. ${nextEx.name || 'Упражнение'}`;
+            } else {
+                name.innerText = nextEx.name || 'Упражнение';
+            }
+        }
+    }
+}
+
+function updateWaterNextBlock() {
+    const block = document.getElementById('water-next-block');
+    const label = document.getElementById('water-next-label');
+    const name = document.getElementById('water-next-name');
+    if (!runState || !block) return;
+    
+    const exercises = runState.workout.exercises;
+    const nextIdx = runState.index + 1;
+    
+    name.classList.remove('finish');
+    
+    if (nextIdx >= exercises.length) {
+        label.innerText = 'После перерыва';
+        name.innerText = 'Это последнее упражнение';
+        name.classList.add('finish');
+    } else {
+        const nextEx = exercises[nextIdx];
+        label.innerText = 'Следующее';
+        if (DB.settings.announceNumbers) {
+            const num = getExerciseNumber(exercises, nextIdx);
+            name.innerText = `${num}. ${nextEx.name || 'Упражнение'}`;
+        } else {
+            name.innerText = nextEx.name || 'Упражнение';
+        }
+    }
+}
+
+function renderRun() {
+    const { workout, index, phase } = runState;
+    const exercises = workout.exercises;
+    const totalEx = getTotalExerciseCount(exercises);
+    const phaseLabel = document.getElementById('phase-label');
+    const startTimeDisplay = document.getElementById('start-time-display');
+    const startTimeLabel = document.getElementById('start-time-label');
+    const startTimeValue = document.getElementById('start-time-value');
+    
+    const lastIsWater = exercises.length > 0 && exercises[exercises.length - 1].waterBreak;
+    const activeCount = lastIsWater ? exercises.length - 1 : exercises.length;
+    
+    let progressPercent = 0;
+    if (activeCount > 0) {
+        if (index >= activeCount) {
+            progressPercent = 100;
+        } else {
+            progressPercent = ((index + 1) / activeCount) * 100;
+        }
+    }
+    document.getElementById('progress-fill').style.width = progressPercent + '%';
+    
+    hideAllPhases();
+	document.getElementById('current-exercise').style.color = '';
+    if (index >= exercises.length) { showFinishScreen(); return; }
+    const ex = exercises[index];
+    const isLastWater = ex.waterBreak && index === exercises.length - 1;
+    
+    document.getElementById('current-exercise').innerText = ex.waterBreak ? 
+        (isLastWater ? (ex.name || 'Попить воды') : ('💧 ' + (ex.name || 'Попить воды'))) : 
+        (ex.name || 'Упражнение');
+
+    if (DB.settings.showStartTime && runState.startTime) {
+        startTimeDisplay.style.display = 'block';
+        startTimeValue.innerText = formatClock(runState.startTime);
+    } else {
+        startTimeDisplay.style.display = 'none';
+    }
+
+    phaseLabel.style.display = 'block';
+
+    if (phase === 'ready') {
+        if (ex.waterBreak) {
+            if (isLastWater) {
+                phaseLabel.style.display = 'none';
+            } else {
+                phaseLabel.innerText = `ОТДЫХ`;
+                phaseLabel.className = 'phase-label';
+                phaseLabel.style.display = 'block';
+            }
+        } else {
+            const num = getExerciseNumber(exercises, index);
+            phaseLabel.innerText = `УПРАЖНЕНИЕ ${num} / ${totalEx}`;
+            phaseLabel.className = 'phase-label';
+            phaseLabel.style.display = 'block';
+        }
+        startTimeLabel.style.color = 'var(--muted)';
+        startTimeValue.style.color = 'var(--muted)';
+        document.getElementById('phase-ready').innerHTML = `
+            ${ex.notes ? `<p style="text-align:center; color:var(--muted); font-size:0.9rem; margin-bottom:10px;">📝 ${escapeHtml(ex.notes)}</p>` : ''}
+            <p style="text-align:center; color:var(--muted);">Готов? Нажми чтобы начать.</p>
+            <button class="btn ${ex.waterBreak ? 'water' : 'accent'}" onclick="beginExerciseFlow()">▶ Начать</button>
+        `;
+        document.getElementById('phase-ready').style.display = 'block';
+    } else if (phase === 'countdown') {
+        const num = getExerciseNumber(exercises, index);
+        phaseLabel.innerText = `УПРАЖНЕНИЕ ${num} / ${totalEx}`;
+        phaseLabel.className = 'phase-label';
+        phaseLabel.style.display = 'block';
+        startTimeLabel.style.color = 'var(--muted)';
+        startTimeValue.style.color = 'var(--muted)';
+        document.getElementById('countdown-timer').innerText = runState.countdownValue;
+        document.getElementById('phase-countdown').style.display = 'block';
+    } else if (phase === 'work') {
+        const num = getExerciseNumber(exercises, index);
+        phaseLabel.innerText = `УПРАЖНЕНИЕ ${num} / ${totalEx}`;
+        phaseLabel.className = 'phase-label';
+        phaseLabel.style.display = 'block';
+        startTimeLabel.style.color = 'var(--muted)';
+        startTimeValue.style.color = 'var(--muted)';
+        const workTimer = document.getElementById('work-timer');
+        const pauseBtn = document.getElementById('work-pause-btn');
+        if (runState.workPaused) {
+            workTimer.classList.add('paused');
+            pauseBtn.innerText = '▶ Продолжить';
+            phaseLabel.innerText = '⏸ ПАУЗА';
+            phaseLabel.className = 'phase-label paused';
+        } else {
+            workTimer.classList.remove('paused');
+            pauseBtn.innerText = '⏸ Пауза';
+        }
+        workTimer.innerText = formatTime(getCurrentElapsed('work'));
+        document.getElementById('phase-work').style.display = 'block';
+    } else if (phase === 'rest') {
+        const timerEl = document.getElementById('rest-timer');
+        const pauseBtn = document.getElementById('rest-pause-btn');
+        const confirmBtn = document.getElementById('rest-confirm-btn');
+        const skipBtn = document.getElementById('rest-skip-btn');
+        const undoBtn = document.getElementById('rest-undo-btn');
+        const adjustDiv = document.querySelector('#phase-rest .rest-adjust');
+        const nextBlock = document.getElementById('next-exercise-block');
+
+        const oldSub = document.getElementById('finished-subtitle');
+        if (oldSub) oldSub.remove();
+
+        if (runState.restFinished) {
+            timerEl.innerText = formatTime(getOvertime('rest'));
+            timerEl.className = 'big-timer overtime';
+            phaseLabel.innerText = "⏰ ВРЕМЯ ОТДЫХА ВЫШЛО";
+            phaseLabel.className = 'phase-label finished';
+			document.getElementById('current-exercise').style.color = 'var(--danger)';
+            phaseLabel.style.display = 'block';
+           // startTimeLabel.style.color = 'var(--danger)';
+           // startTimeValue.style.color = 'var(--danger)';
+            const subtitle = document.createElement('p');
+            subtitle.id = 'finished-subtitle';
+            subtitle.className = 'finished-subtitle';
+            subtitle.innerText = 'Нажмите для продолжения';
+            timerEl.parentNode.insertBefore(subtitle, timerEl.nextSibling);
+            
+            pauseBtn.style.display = 'none';
+            undoBtn.style.display = 'none';
+            skipBtn.style.display = 'none';
+            confirmBtn.style.display = 'block';
+            adjustDiv.style.display = 'none';
+            nextBlock.style.display = 'none';
+        } else {
+            timerEl.className = 'big-timer';
+			document.getElementById('current-exercise').style.color = '';
+            timerEl.innerText = formatTime(getRemainingTime('rest'));
+            timerEl.style.color = "";
+            if (runState.restPaused) {
+                timerEl.classList.add('paused');
+                phaseLabel.innerText = "⏸ ПАУЗА";
+                phaseLabel.className = 'phase-label paused';
+                phaseLabel.style.display = 'block';
+                startTimeLabel.style.color = 'var(--muted)';
+                startTimeValue.style.color = 'var(--muted)';
+                pauseBtn.innerText = '▶ Продолжить';
+            } else {
+                timerEl.classList.remove('paused');
+                phaseLabel.innerText = "ОТДЫХ";
+                phaseLabel.className = 'phase-label';
+                phaseLabel.style.display = 'block';
+                startTimeLabel.style.color = 'var(--muted)';
+                startTimeValue.style.color = 'var(--muted)';
+                pauseBtn.innerText = '⏸ Пауза';
+            }
+            pauseBtn.style.display = 'block';
+            undoBtn.style.display = 'block';
+            skipBtn.style.display = 'block';
+            confirmBtn.style.display = 'none';
+            adjustDiv.style.display = 'flex';
+            nextBlock.style.display = 'block';
+            updateNextExerciseBlock();
+        }
+        document.getElementById('phase-rest').style.display = 'block';
+    } else if (phase === 'water') {
+        const timerEl = document.getElementById('water-timer');
+        const pauseBtn = document.getElementById('water-pause-btn');
+        const undoBtn = document.getElementById('water-undo-btn');
+        const skipBtn = document.getElementById('water-skip-btn');
+        const confirmBtn = document.getElementById('water-confirm-btn');
+        const adjustDiv = document.getElementById('water-adjust');
+        const nextBlock = document.getElementById('water-next-block');
+        const waterIcon = document.getElementById('water-icon');
+
+        const oldSub = document.getElementById('water-finished-subtitle');
+        if (oldSub) oldSub.remove();
+
+        if (isLastWater) {
+            timerEl.style.display = 'none';
+            phaseLabel.style.display = 'none';
+            startTimeLabel.style.color = 'var(--muted)';
+            startTimeValue.style.color = 'var(--muted)';
+            
+            pauseBtn.style.display = 'none';
+            skipBtn.style.display = 'none';
+            undoBtn.style.display = 'block';
+            undoBtn.innerText = '↩ Предыдущее упражнение';
+            confirmBtn.style.display = 'block';
+            confirmBtn.innerText = '✅ Завершить тренировку';
+            adjustDiv.style.display = 'none';
+            nextBlock.style.display = 'none';
+            waterIcon.style.display = 'inline-block';
+        } else if (runState.waterFinished) {
+            timerEl.style.display = 'block';
+			
+            phaseLabel.style.display = 'block';
+            timerEl.innerText = formatTime(getOvertime('water'));
+            timerEl.className = 'big-timer water overtime';
+            phaseLabel.innerText = "⏰ ВРЕМЯ ВЫШЛО";
+            phaseLabel.className = 'phase-label finished';
+			document.getElementById('current-exercise').style.color = 'var(--danger)';
+           // startTimeLabel.style.color = 'var(--danger)';
+           // startTimeValue.style.color = 'var(--danger)';
+            
+            const subtitle = document.createElement('p');
+            subtitle.id = 'water-finished-subtitle';
+            subtitle.className = 'finished-subtitle';
+            subtitle.innerText = 'Нажмите для продолжения';
+            timerEl.parentNode.insertBefore(subtitle, timerEl.nextSibling);
+            
+            pauseBtn.style.display = 'none';
+            undoBtn.style.display = 'none';
+            skipBtn.style.display = 'none';
+            confirmBtn.style.display = 'block';
+            confirmBtn.innerText = '✅ Завершить перерыв';
+            adjustDiv.style.display = 'none';
+            nextBlock.style.display = 'none';
+            waterIcon.style.display = 'none';
+        } else {
+            timerEl.style.display = 'block';
+			document.getElementById('current-exercise').style.color = '';
+            phaseLabel.style.display = 'block';
+            timerEl.className = 'big-timer water';
+            timerEl.innerText = formatTime(getRemainingTime('water'));
+            timerEl.style.color = "";
+            if (runState.waterPaused) {
+                timerEl.classList.add('paused');
+                phaseLabel.innerText = "⏸ ПАУЗА";
+                phaseLabel.className = 'phase-label paused';
+                phaseLabel.style.display = 'block';
+                startTimeLabel.style.color = 'var(--muted)';
+                startTimeValue.style.color = 'var(--muted)';
+                pauseBtn.innerText = '▶ Продолжить';
+            } else {
+                timerEl.classList.remove('paused');
+                phaseLabel.innerText = "ОТДЫХ";
+                phaseLabel.className = 'phase-label';
+                phaseLabel.style.display = 'block';
+                startTimeLabel.style.color = 'var(--muted)';
+                startTimeValue.style.color = 'var(--muted)';
+                pauseBtn.innerText = '⏸ Пауза';
+            }
+            pauseBtn.style.display = 'block';
+            undoBtn.style.display = 'block';
+            undoBtn.innerText = '↩ Предыдущее упражнение';
+            skipBtn.style.display = 'block';
+            confirmBtn.style.display = 'none';
+            adjustDiv.style.display = 'flex';
+            nextBlock.style.display = 'block';
+            waterIcon.style.display = 'none';
+            updateWaterNextBlock();
+        }
+        document.getElementById('phase-water').style.display = 'block';
+    }
+}
+
+function hideAllPhases() {
+    ['phase-ready','phase-countdown','phase-work','phase-rest','phase-water','phase-finish'].forEach(id => {
+        document.getElementById(id).style.display = 'none';
+    });
+}
+
+function beginExerciseFlow() {
+    const ex = runState.workout.exercises[runState.index];
+    if (ex.waterBreak) {
+        startWaterBreak();
+    } else if (DB.settings.countdown) {
+        startCountdown();
+    } else {
+        startExercise();
+    }
+}
+
+function startWaterBreak() {
+    runState.phase = 'water';
+    const ex = runState.workout.exercises[runState.index];
+    const isLastWater = runState.index === runState.workout.exercises.length - 1;
+    
+    if (isLastWater) {
+        runState.waterFinished = false;
+        runState.waterDuration = 0;
+        runState.waterStartTime = null;
+        runState.waterElapsedBeforePause = 0;
+        runState.waterPaused = false;
+        runState.waterBeepPlayed = false;
+        stopTickInterval();
+    } else {
+        runState.waterFinished = false;
+        runState.waterBeepPlayed = false;
+        startTimer('water', ex.restSeconds);
+    }
+    
+    let speechText = 'Необходимо попить воды';
+    if (!isLastWater) {
+        const exercises = runState.workout.exercises;
+        const nextIdx = runState.index + 1;
+        if (nextIdx < exercises.length) {
+            const nextEx = exercises[nextIdx];
+            if (DB.settings.announceNumbers) {
+                const num = getExerciseNumber(exercises, nextIdx);
+                speechText += '. Следующее ' + num + '. ' + (nextEx.name || 'упражнение');
+            } else {
+                speechText += '. Следующее ' + (nextEx.name || 'упражнение');
+            }
+        }
+    }
+    speak(speechText);
+    
+    if (!isLastWater) {
+        startMinuteBeep();
+    }
+    renderRun();
+}
+
+function onWaterFinished() {
+    stopMinuteBeep();
+    if (DB.settings.continuousBeep) {
+        runState.waterFinished = true;
+        runState.waterOvertime = 0;
+        startWaterAlarm();
+        startWaterOvertime();
+        renderRun();
+    } else {
+        playEndBeep();
+        if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+        runState.index++;
+        runState.phase = 'ready';
+        stopTickInterval();
+        if (runState.workout.autoStart && runState.index < runState.workout.exercises.length) {
+            renderRun();
+            setTimeout(() => beginExerciseFlow(), 500);
+        } else {
+            renderRun();
+        }
+    }
+}
+
+function toggleWaterPause() {
+    if (runState.waterPaused) {
+        resumeTimer('water');
+    } else {
+        pauseTimer('water');
+    }
+    renderRun();
+}
+
+function adjustWater(delta) {
+    if (runState.waterFinished) {
+        runState.waterOvertime = Math.max(0, runState.waterOvertime + delta);
+        document.getElementById('water-timer').innerText = formatTime(runState.waterOvertime);
+    } else {
+        runState.waterDuration = Math.max(0, runState.waterDuration + delta);
+        // Если после корректировки время стало <= 0, сразу завершаем
+        if (runState.waterDuration <= 0 && !runState.waterPaused) {
+            onWaterFinished();
+        }
+    }
+}
+
+function undoWaterFinish() {
+    const isLastWater = runState.index === runState.workout.exercises.length - 1;
+    
+    if (isLastWater) {
+        stopTickInterval();
+        stopMinuteBeep();
+        runState.index--;
+        runState.phase = 'work';
+        runState.workPaused = false;
+        runState.workElapsedBeforePause = runState.lastFinishedWorkElapsed;
+        runState.workStartTime = Date.now();
+        if (!runState.tickInterval) {
+            runState.tickInterval = setInterval(updateTimersUI, 1000);
+        }
+        startMinuteBeep();
+        renderRun();
+        return;
+    }
+    
+    stopTimer('water');
+    stopWaterAlarm();
+    stopWaterOvertime();
+    stopMinuteBeep();
+    
+    runState.index--;
+    runState.phase = 'work';
+    runState.workPaused = false;
+    
+    runState.totalWorkTime -= runState.lastFinishedWorkElapsed;
+    runState.exerciseTimes.pop();
+    
+    runState.workElapsedBeforePause = runState.lastFinishedWorkElapsed;
+    runState.workStartTime = Date.now();
+    if (!runState.tickInterval) {
+        runState.tickInterval = setInterval(updateTimersUI, 1000);
+    }
+    startMinuteBeep();
+    renderRun();
+}
+
+function skipWater() {
+    stopTimer('water');
+    stopWaterAlarm();
+    stopWaterOvertime();
+    stopMinuteBeep();
+    runState.index++;
+    runState.phase = 'ready';
+    if (runState.workout.autoStart && runState.index < runState.workout.exercises.length) {
+        renderRun();
+        setTimeout(() => beginExerciseFlow(), 500);
+    } else {
+        renderRun();
+    }
+}
+
+function confirmWaterFinished() {
+    const isLastWater = runState.index === runState.workout.exercises.length - 1;
+    
+    stopTimer('water');
+    stopWaterAlarm();
+    stopWaterOvertime();
+    stopMinuteBeep();
+    stopTickInterval();
+    
+    if (isLastWater) {
+        runState.index++;
+        showFinishScreen();
+    } else {
+        runState.index++;
+        runState.phase = 'ready';
+        if (runState.workout.autoStart && runState.index < runState.workout.exercises.length) {
+            renderRun();
+            setTimeout(() => beginExerciseFlow(), 500);
+        } else {
+            renderRun();
+        }
+    }
+}
+
+function startCountdown() {
+    runState.phase = 'countdown';
+    runState.countdownValue = DB.settings.countdownDuration || 3;
+    renderRun();
+    speak('Готовьтесь');
+    clearInterval(runState.countdownInterval);
+    runState.countdownInterval = setInterval(() => {
+        runState.countdownValue--;
+        if (runState.countdownValue > 0) { playBeep(600, 0.1); renderRun(); }
+        else { clearInterval(runState.countdownInterval); playBeep(900, 0.3); startExercise(); }
+    }, 1000);
+}
+
+function startExercise() {
+    runState.phase = 'work';
+    runState.workPaused = false;
+    const ex = runState.workout.exercises[runState.index];
+    const num = getExerciseNumber(runState.workout.exercises, runState.index);
+    if (DB.settings.announceNumbers) {
+        speak(num + '. ' + (ex.name || 'Упражнение'));
+    } else {
+        speak(ex.name || 'Упражнение');
+    }
+    startTimer('work', 0);
+    startMinuteBeep();
+    renderRun();
+}
+
+function toggleWorkPause() {
+    if (runState.workPaused) {
+        resumeTimer('work');
+    } else {
+        pauseTimer('work');
+    }
+    renderRun();
+}
+
+function finishExercise() {
+    const elapsed = getCurrentElapsed('work');
+    stopTimer('work');
+    stopMinuteBeep();
+    runState.workPaused = false;
+    runState.lastFinishedWorkElapsed = elapsed;
+    runState.totalWorkTime += elapsed;
+    runState.exerciseTimes.push(elapsed);
+    
+    const isLastElement = runState.index === runState.workout.exercises.length - 1;
+    if (isLastElement) {
+        runState.index++;
+        showFinishScreen();
+    } else {
+        const nextEx = runState.workout.exercises[runState.index + 1];
+        
+        if (nextEx && nextEx.waterBreak) {
+            runState.index++;
+            runState.phase = 'ready';
+            if (runState.workout.autoStart) {
+                renderRun();
+                setTimeout(() => beginExerciseFlow(), 500);
+            } else {
+                renderRun();
+            }
+        } else {
+            runState.phase = 'rest';
+            runState.restFinished = false;
+            runState.restBeepPlayed = false;
+            const ex = runState.workout.exercises[runState.index];
+            startTimer('rest', ex.restSeconds);
+            renderRun();
+            if (nextEx) {
+                const num = getExerciseNumber(runState.workout.exercises, runState.index + 1);
+                if (DB.settings.announceNumbers) {
+                    speak('Отдых. Следующее ' + num + '. ' + (nextEx.name || ''));
+                } else {
+                    speak('Отдых. Следующее ' + (nextEx.name || ''));
+                }
+            } else {
+                speak('Отдых. Почти финиш');
+            }
+        }
+    }
+}
+
+function toggleRestPause() { 
+    if (runState.restPaused) {
+        resumeTimer('rest');
+    } else {
+        pauseTimer('rest');
+    }
+    renderRun(); 
+}
+
+function adjustRest(delta) {
+    if (runState.restFinished) {
+        runState.restOvertime = Math.max(0, runState.restOvertime + delta);
+        document.getElementById('rest-timer').innerText = formatTime(runState.restOvertime);
+    } else {
+        runState.restDuration = Math.max(0, runState.restDuration + delta);
+    }
+}
+
+function undoFinishExercise() {
+    stopTimer('rest');
+    stopRestOvertime();
+    runState.totalWorkTime -= runState.lastFinishedWorkElapsed;
+    runState.exerciseTimes.pop();
+    runState.phase = 'work';
+    runState.workPaused = false;
+    
+    runState.workElapsedBeforePause = runState.lastFinishedWorkElapsed;
+    runState.workStartTime = Date.now();
+    if (!runState.tickInterval) {
+        runState.tickInterval = setInterval(updateTimersUI, 1000);
+    }
+    startMinuteBeep();
+    renderRun();
+}
+
+function skipRest() { 
+    stopTimer('rest');
+    stopRestAlarm();
+    stopRestOvertime();
+    stopMinuteBeep();
+    runState.index++;
+    runState.phase = 'ready';
+    if (runState.workout.autoStart && runState.index < runState.workout.exercises.length) {
+        renderRun();
+        setTimeout(() => beginExerciseFlow(), 500);
+    } else {
+        renderRun();
+    }
+}
+
+function onRestFinished() {
+    stopMinuteBeep();
+    if (DB.settings.continuousBeep) {
+        runState.restFinished = true;
+        runState.restOvertime = 0;
+        startRestAlarm();
+        startRestOvertime();
+        renderRun();
+    } else {
+        playEndBeep();
+        if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+        runState.index++;
+        runState.phase = 'ready';
+        stopTickInterval();
+        if (runState.workout.autoStart && runState.index < runState.workout.exercises.length) {
+            renderRun();
+            setTimeout(() => beginExerciseFlow(), 500);
+        } else {
+            renderRun();
+        }
+    }
+}
+
+function confirmRestFinished() {
+    stopTimer('rest');
+    stopRestAlarm();
+    stopRestOvertime();
+    stopMinuteBeep();
+    runState.index++;
+    runState.phase = 'ready';
+    if (runState.workout.autoStart && runState.index < runState.workout.exercises.length) {
+        renderRun();
+        setTimeout(() => beginExerciseFlow(), 500);
+    } else {
+        renderRun();
+    }
+}
+
+function showFinishScreen() {
+    stopMinuteBeep();
+    stopRestOvertime();
+    stopWaterOvertime();
+    stopTickInterval();
+    const endTime = new Date();
+    const totalDuration = Math.floor((endTime - runState.startTime) / 1000);
+    document.getElementById('phase-label').style.display = 'none';
+    document.getElementById('current-exercise').innerText = '';
+    document.getElementById('start-time-display').style.display = 'none';
+    hideAllPhases();
+    playBeep(1000, 0.8);
+    if (navigator.vibrate) navigator.vibrate([300, 100, 300, 100, 300]);
+    speak('Тренировка завершена. Отличная работа!');
+    const record = {
+        id: Date.now(),
+        workoutId: runState.workout.id,
+        workoutName: runState.workout.name,
+        startTime: runState.startTime.toISOString(),
+        endTime: endTime.toISOString(),
+        totalDuration,
+        workTime: runState.totalWorkTime,
+        exercisesCount: getTotalExerciseCount(runState.workout.exercises),
+        exerciseTimes: [...runState.exerciseTimes],
+        exerciseNames: runState.workout.exercises.filter(e => !e.waterBreak).map(e => e.name || ''),
+        exerciseWaterFlags: runState.workout.exercises.map(e => !!e.waterBreak)
+    };
+    DB.history.push(record);
+    saveDB('history');
+    document.getElementById('phase-finish').innerHTML = `
+        <div class="finish-card" style="margin-top: 0;">
+            <div class="finish-title">🎉 Тренировка завершена!</div>
+            <div class="stats-grid">
+                <div class="stat-row"><div class="stat-label">🕐 Начало</div><div class="stat-value">${formatClock(runState.startTime)}</div></div>
+                <div class="stat-row"><div class="stat-label">🏁 Конец</div><div class="stat-value">${formatClock(endTime)}</div></div>
+                <div class="stat-row"><div class="stat-label">⏱ Общая длительность</div><div class="stat-value">${formatTime(totalDuration)}</div></div>
+                <div class="stat-row"><div class="stat-label">💪 Время упражнений</div><div class="stat-value highlight">${formatTime(runState.totalWorkTime)}</div></div>
+            </div>
+        </div>
+        <details style="margin-top: 12px; background: var(--card); border-radius: 14px; border: 1px solid #333;">
+            <summary style="padding: 14px 16px; font-weight: 600; color: var(--text);"><span>📊 Время по упражнениям</span></summary>
+            <div style="padding: 0 16px 16px; display: flex; flex-direction: column; gap: 8px;">
+                ${runState.workout.exercises.filter(e => !e.waterBreak).map((ex, i) => {
+                    const num = getExerciseNumber(runState.workout.exercises, runState.workout.exercises.indexOf(ex));
+                    return `
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--card-2);">
+                        <span style="color: var(--muted); font-size: 0.9rem;">${num}. ${escapeHtml(ex.name || 'Упражнение')}</span>
+                        <span style="color: var(--accent); font-weight: 700; font-size: 1rem;">${formatTime(runState.exerciseTimes[i] || 0)}</span>
+                    </div>
+                `}).join('')}
+            </div>
+        </details>
+        <button class="btn accent" onclick="shareResult(${record.id})" style="margin-top: 16px;">📤 Поделиться</button>
+        <button class="btn" onclick="showScreen('screen-workouts')">← К списку тренировок</button>
+    `;
+    document.getElementById('phase-finish').style.display = 'block';
+    releaseWakeLock();
+}
+
+function confirmExit() {
+    if (confirm('Выйти из тренировки?')) {
+        stopTickInterval();
+        clearInterval(runState.countdownInterval);
+        stopMinuteBeep();
+        stopRestAlarm();
+        stopWaterAlarm();
+        stopRestOvertime();
+        stopWaterOvertime();
+        releaseWakeLock();
+        showScreen('screen-workouts');
+    }
+}
+
+function renderHistory() { renderHistoryList(); renderHistoryStats(); renderHistoryRecords(); }
+function switchHistoryTab(tab, el) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    ['list','stats','records'].forEach(t => {
+        document.getElementById('history-tab-' + t).style.display = (t === tab) ? 'block' : 'none';
+    });
+}
+
+function renderHistoryList() {
+    const c = document.getElementById('history-tab-list');
+    if (DB.history.length === 0) { c.innerHTML = '<div class="empty-state">История пуста</div>'; return; }
+    const sorted = [...DB.history].sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
+    c.innerHTML = sorted.map(r => `
+        <div class="history-card">
+            <div class="history-top">
+                <div class="history-info">
+                    <div class="name">${escapeHtml(r.workoutName)}</div>
+                    <div class="stats">${formatDate(new Date(r.startTime))} · ${formatTime(r.totalDuration)} · 💪 ${formatTime(r.workTime)}</div>
+                </div>
+                <div class="history-actions">
+                    <button class="icon-btn" onclick="shareResult(${r.id})" title="Поделиться">📤</button>
+                    <button class="icon-btn delete" onclick="deleteHistoryRecord(${r.id})" title="Удалить">🗑</button>
+                </div>
+            </div>
+            ${r.exerciseTimes ? `
+            <details style="background: var(--card-2); border-radius: 10px;">
+                <summary style="padding: 10px 12px; font-size: 0.85rem; color: var(--muted);"><span>📊 Время по упражнениям</span></summary>
+                <div style="padding: 0 12px 12px; display: flex; flex-direction: column; gap: 6px;">
+                    ${(r.exerciseNames || []).map((name, i) => `
+                        <div style="display: flex; justify-content: space-between; font-size: 0.85rem; gap: 8px;">
+                            <span style="color: var(--text); flex:1; min-width:0; word-break: break-word;">${i+1}. ${escapeHtml(name || 'Упражнение')}</span>
+                            <span style="color: var(--accent); font-weight: 600; flex-shrink:0;">${formatTime(r.exerciseTimes[i] || 0)}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            </details>` : ''}
+        </div>
+    `).join('');
+}
+
+function deleteHistoryRecord(id) {
+    if (!confirm('Удалить эту запись из истории?')) return;
+    DB.history = DB.history.filter(r => r.id !== id);
+    saveDB('history');
+    renderHistory();
+}
+
+function renderHistoryStats() {
+    const c = document.getElementById('history-tab-stats');
+    if (DB.history.length === 0) { c.innerHTML = '<div class="empty-state">Нет данных</div>'; return; }
+    const now = new Date();
+    const weekAgo = new Date(now.getTime() - 7*24*60*60*1000);
+    const monthAgo = new Date(now.getTime() - 30*24*60*60*1000);
+    const thisWeek = DB.history.filter(r => new Date(r.startTime) >= weekAgo);
+    const thisMonth = DB.history.filter(r => new Date(r.startTime) >= monthAgo);
+    const totalWorkouts = DB.history.length;
+    const totalTime = DB.history.reduce((s, r) => s + r.totalDuration, 0);
+    const totalWork = DB.history.reduce((s, r) => s + r.workTime, 0);
+    c.innerHTML = `
+        <div class="card">
+            <div class="stat-row"><div class="stat-label">📅 Эта неделя</div><div class="stat-value">${thisWeek.length} трен.</div></div>
+            <div class="stat-row"><div class="stat-label">📅 Этот месяц</div><div class="stat-value">${thisMonth.length} трен.</div></div>
+            <div class="stat-row"><div class="stat-label">🏆 Всего тренировок</div><div class="stat-value highlight">${totalWorkouts}</div></div>
+            <div class="stat-row"><div class="stat-label">⏱ Общее время</div><div class="stat-value">${formatTime(totalTime)}</div></div>
+            <div class="stat-row"><div class="stat-label">💪 Чистое время работы</div><div class="stat-value">${formatTime(totalWork)}</div></div>
+        </div>
+    `;
+}
+
+function renderHistoryRecords() {
+    const c = document.getElementById('history-tab-records');
+    if (DB.history.length === 0) { c.innerHTML = '<div class="empty-state">Нет данных</div>'; return; }
+    const longest = DB.history.reduce((a, b) => a.totalDuration > b.totalDuration ? a : b);
+    const mostWork = DB.history.reduce((a, b) => a.workTime > b.workTime ? a : b);
+    const mostEx = DB.history.reduce((a, b) => a.exercisesCount > b.exercisesCount ? a : b);
+    c.innerHTML = `
+        <div class="record-item"><div class="label">🏅 Самая длинная</div><div class="value">${formatTime(longest.totalDuration)}</div></div>
+        <div style="color:var(--muted); font-size:0.8rem; margin:-4px 0 12px 4px;">${escapeHtml(longest.workoutName)}</div>
+        <div class="record-item"><div class="label">💪 Больше всего работы</div><div class="value">${formatTime(mostWork.workTime)}</div></div>
+        <div style="color:var(--muted); font-size:0.8rem; margin:-4px 0 12px 4px;">${escapeHtml(mostWork.workoutName)}</div>
+        <div class="record-item"><div class="label">🔥 Больше всего упражнений</div><div class="value">${mostEx.exercisesCount}</div></div>
+        <div style="color:var(--muted); font-size:0.8rem; margin:-4px 0 12px 4px;">${escapeHtml(mostEx.workoutName)}</div>
+    `;
+}
+
+function buildShareText(record) {
+    const r = typeof record === 'number' ? DB.history.find(x => x.id === record) : record;
+    if (!r) return '';
+    return `💪 Тренировка: ${r.workoutName}\n📅 ${formatDate(new Date(r.startTime))}\n⏱ Длительность: ${formatTime(r.totalDuration)}\n💪 Работа: ${formatTime(r.workTime)}\n🏋️ Упражнений: ${r.exercisesCount}\n\n#FitTrainer`;
+}
+
+function shareResult(id) {
+    const text = buildShareText(id);
+    if (navigator.share) {
+        navigator.share({ title: 'Моя тренировка', text }).catch(() => {});
+    } else {
+        try { navigator.clipboard.writeText(text).then(() => alert('Скопировано в буфер!')).catch(() => prompt('Скопируй текст:', text)); }
+        catch(e) { prompt('Скопируй текст:', text); }
+    }
+}
+
+function clearHistory() {
+    if (!confirm('Удалить всю историю?')) return;
+    DB.history = [];
+    saveDB('history');
+    renderHistory();
+    alert('История очищена');
+}
+
+function renderSettings() {
+    document.getElementById('set-wakelock').checked = DB.settings.wakeLock;
+    document.getElementById('set-voice').checked = DB.settings.voice;
+    document.getElementById('set-countdown').checked = DB.settings.countdown;
+    document.getElementById('set-default-auto').checked = DB.settings.defaultAutoStart;
+    document.getElementById('set-continuous-beep').checked = DB.settings.continuousBeep;
+    document.getElementById('set-minute-beep').checked = DB.settings.minuteBeep;
+    document.getElementById('set-announce-numbers').checked = DB.settings.announceNumbers;
+    document.getElementById('set-show-start-time').checked = DB.settings.showStartTime;
+    
+    renderSoundOptions();
+    renderMinuteBeepOptions();
+    renderCountdownIntervals();
+    
+    const checkboxMap = {
+        'set-wakelock': 'wakeLock', 'set-voice': 'voice', 'set-countdown': 'countdown',
+        'set-default-auto': 'defaultAutoStart', 'set-continuous-beep': 'continuousBeep',
+        'set-minute-beep': 'minuteBeep', 'set-announce-numbers': 'announceNumbers',
+        'set-show-start-time': 'showStartTime'
+    };
+    Object.keys(checkboxMap).forEach(id => {
+        const el = document.getElementById(id);
+        el.onchange = () => {
+            DB.settings[checkboxMap[id]] = el.checked;
+            saveDB('settings');
+            if (id === 'set-continuous-beep') renderSoundOptions();
+            if (id === 'set-minute-beep') renderMinuteBeepOptions();
+            if (id === 'set-countdown') renderCountdownIntervals();
+        };
+    });
+}
+
+function exportData() {
+    const data = { workouts: DB.workouts, templates: DB.templates, history: DB.history, settings: DB.settings, exportedAt: new Date().toISOString() };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `fit-trainer-backup-${new Date().toISOString().slice(0,10)}.json`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+function importData(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+        try {
+            const data = JSON.parse(e.target.result);
+            if (!confirm(`Импортировать данные?\nТренировок: ${data.workouts?.length || 0}\nШаблонов: ${data.templates?.length || 0}\nЗаписей истории: ${data.history?.length || 0}\n\nТекущие данные будут ЗАМЕНЕНЫ.`)) return;
+            if (data.workouts) DB.workouts = data.workouts;
+            if (data.templates) DB.templates = data.templates;
+            if (data.history) DB.history = data.history;
+            if (data.settings) DB.settings = Object.assign(DB.settings, data.settings);
+            if (!Array.isArray(DB.settings.hiddenBuiltins)) DB.settings.hiddenBuiltins = [];
+            if (DB.settings.announceNumbers === undefined) DB.settings.announceNumbers = true;
+            if (DB.settings.countdownDuration === undefined) DB.settings.countdownDuration = 3;
+            if (DB.settings.showStartTime === undefined) DB.settings.showStartTime = false;
+            saveDB('workouts'); saveDB('templates'); saveDB('history'); saveDB('settings');
+            alert('Импорт успешен!');
+            showScreen('screen-home');
+        } catch(err) { alert('Ошибка импорта: ' + err.message); }
+    };
+    reader.readAsText(file);
+    event.target.value = '';
+}
+
+function formatTime(s) {
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const sec = s % 60;
+    if (h > 0) return `${h}:${m.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}`;
+    return `${m.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}`;
+}
+function formatClock(d) { return d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0'); }
+function formatDate(d) {
+    const months = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+    return `${d.getDate()} ${months[d.getMonth()]}, ${formatClock(d)}`;
+}
+
+async function playBeep(freq = 800, duration = 0.3) {
+    try {
+        const ctx = await getAudioCtx();
+        if (!ctx || ctx.state !== 'running') return;
+        const osc = ctx.createOscillator(); const gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.3, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
+        osc.start(); osc.stop(ctx.currentTime + duration);
+    } catch(e) {}
+}
+
+document.addEventListener('visibilitychange', () => {
+    if (DB.settings.wakeLock && runState && document.visibilityState === 'visible') {
+        acquireWakeLock();
+        if (runState.tickInterval) updateTimersUI();
+    }
+});
+</script>
+</body>
+</html>
