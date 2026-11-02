@@ -1,1 +1,1 @@
-# fit-trainer-pro
+# fit-trainer v1.4
