@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Fit Trainer v1.4">
+<meta name="apple-mobile-web-app-title" content="Fit Trainer Pro v1.4"">
 <meta name="theme-color" content="#0f0f12">
 <meta name="mobile-web-app-capable" content="yes">
-<title>Fit Trainer v1.4</title>
-<link rel="manifest" href='data:application/manifest+json,{"name":"Fit Trainer v1.4","short_name":"FitTrainer","start_url":".","display":"standalone","background_color":"%230f0f12","theme_color":"%230f0f12","icons":[{"src":"data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%230f0f12%22/%3E%3Ctext x=%2250%22 y=%2268%22 font-size=%2260%22 text-anchor=%22middle%22%3E💪%3C/text%3E%3C/svg%3E","sizes":"192x192","type":"image/svg+xml"}]}'>
+<title>Fit Trainer Pro v1.4"</title>
+<link rel="manifest" href='data:application/manifest+json,{"name":"Fit Trainer Pro v1.4","short_name":"FitTrainer","start_url":".","display":"standalone","background_color":"%230f0f12","theme_color":"%230f0f12","icons":[{"src":"data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%230f0f12%22/%3E%3Ctext x=%2250%22 y=%2268%22 font-size=%2260%22 text-anchor=%22middle%22%3E💪%3C/text%3E%3C/svg%3E","sizes":"192x192","type":"image/svg+xml"}]}'>
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%230f0f12'/%3E%3Ctext x='50' y='68' font-size='60' text-anchor='middle'%3E💪%3C/text%3E%3C/svg%3E">
 <style>
 :root {
@@ -323,7 +323,7 @@ details[open] summary::after { transform: rotate(180deg); }
 <div class="app-container">
 
 <div id="screen-home" class="screen active">
-    <h1>💪 Fit Trainer v1.4</h1>
+    <h1>💪 Fit Trainer Pro v1.4"</h1>
     <button class="menu-btn" onclick="showScreen('screen-workouts')">
         <span class="icon">🏋️</span>
         <div><div>Мои тренировки</div><div class="sub">Создать, редактировать, запустить</div></div>
@@ -1351,7 +1351,7 @@ function importWorkout(event) {
             const data = JSON.parse(e.target.result);
             
             if (data.type !== 'fit-trainer-workout' || !data.workout) {
-                alert('Это не файл тренировки Fit Trainer');
+                alert('Это не файл тренировки Fit Trainer pro');
                 return;
             }
             
@@ -2768,9 +2768,6 @@ async function playBeep(freq = 800, duration = 0.3) {
         osc.start(); osc.stop(ctx.currentTime + duration);
     } catch(e) {}
 }
-
-document.addEventListener('click', unlockAudio, { capture: true });
-document.addEventListener('touchstart', unlockAudio, { capture: true, passive: true });
 
 document.addEventListener('visibilitychange', () => {
     if (DB.settings.wakeLock && runState && document.visibilityState === 'visible') {
