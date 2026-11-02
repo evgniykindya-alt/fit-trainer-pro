@@ -64,7 +64,7 @@ h2 { color: var(--primary); margin: 20px 0 12px; font-size: 1.2rem; font-weight:
 .menu-btn:active { transform: scale(0.98); }
 .menu-btn .icon { font-size: 1.8rem; }
 .menu-btn .sub { font-size: 0.8rem; color: var(--muted); margin-top: 2px; font-weight: 400; }
-/* Обновленные стили для перетаскивания */
+
 .workout-item { 
     background: var(--card); 
     border-radius: 16px; 
@@ -78,33 +78,30 @@ h2 { color: var(--primary); margin: 20px 0 12px; font-size: 1.2rem; font-weight:
     touch-action: pan-y; 
 }
 
-/* Элемент, который мы тащим (летает поверх всего) */
 .workout-item.dragging {
     opacity: 0.9;
     z-index: 9999;
     box-shadow: 0 20px 40px rgba(0,0,0,0.7);
     background: var(--card-2);
     border: 1px solid var(--primary);
-    pointer-events: none; /* Пропускаем касания сквозь него */
-    position: fixed !important; /* Фиксируем относительно экрана */
-    width: calc(100% - 40px) !important; /* Ширина как у карточки с учетом отступов */
+    pointer-events: none;
+    position: fixed !important;
+    width: calc(100% - 40px) !important;
     left: 20px !important;
     top: 0 !important;
     margin: 0 !important;
-    transform: translate3d(0, 0, 0); /* Аппаратное ускорение для плавности */
+    transform: translate3d(0, 0, 0);
 }
 
-/* Невидимая заглушка в списке, чтобы другие элементы не схлопывались */
 .drag-placeholder {
     background: transparent;
     border: 2px dashed var(--muted);
     border-radius: 16px;
-    height: 100px; /* Примерная высота карточки */
+    height: 100px;
     margin-bottom: 12px;
     opacity: 0.5;
 }
 
-/* Блокировка скролла страницы при перетаскивании */
 body.no-scroll {
     overflow: hidden !important;
     position: fixed !important;
@@ -113,7 +110,6 @@ body.no-scroll {
     touch-action: none !important;
 }
 
-/* Подсветка места вставки */
 .drag-placeholder.active-drop {
     border-color: var(--accent);
     background: rgba(3, 218, 198, 0.1);
@@ -209,7 +205,6 @@ textarea.input { min-height: 60px; resize: vertical; font-family: inherit; }
     font-weight: 600;
     letter-spacing: 0.5px;
     white-space: nowrap;
-	
 }
 .start-time-display .start-label {
     margin-right: 4px;
@@ -744,15 +739,19 @@ async function getAudioCtx() {
     return audioCtx;
 }
 
-function warmUpAudio() {
+// --- ИСПРАВЛЕНИЕ 2: Гарантированная разблокировка звука в PWA ---
+async function unlockAudio() {
     try {
-        const ctx = getAudioCtx();
+        const ctx = await getAudioCtx();
         if (!ctx) return;
+        // Микроскопический сигнал пробуждает аудио-движок браузера, не раздражая слух
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
-        osc.connect(gain); gain.connect(ctx.destination);
-        gain.gain.setValueAtTime(0.0001, ctx.currentTime);
-        osc.start(); osc.stop(ctx.currentTime + 0.01);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        gain.gain.setValueAtTime(0.001, ctx.currentTime);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.05);
     } catch(e) {}
 }
 
@@ -806,12 +805,11 @@ function showScreen(id) {
     if (id === 'screen-templates') renderTemplates();
 }
 let draggedItem = null;
-let dragPlaceholder = null; // Невидимая заглушка в списке
+let dragPlaceholder = null;
 let dragOffsetY = 0;
 let longPressTimer = null;
 
 function initDragAndDrop(item) {
-    // --- Desktop (Mouse) ---
     item.setAttribute('draggable', 'true');
     item.addEventListener('dragstart', (e) => {
         draggedItem = item;
@@ -831,17 +829,14 @@ function initDragAndDrop(item) {
         finalizeDrop();
     });
 
-    // --- Mobile (Touch) ---
     item.addEventListener('touchstart', (e) => {
         if (e.target.closest('.icon-btn') || e.target.closest('.btn')) return;
-        
         const touch = e.touches[0];
         longPressTimer = setTimeout(() => {
             startDragging(item, touch.clientY);
         }, 200); 
     }, { passive: true });
 
-    // Глобальные слушатели для тача
     document.addEventListener('touchmove', handleGlobalTouchMove, { passive: false });
     document.addEventListener('touchend', handleGlobalTouchEnd);
     document.addEventListener('touchcancel', handleGlobalTouchEnd);
@@ -849,14 +844,11 @@ function initDragAndDrop(item) {
 
 function startDragging(item, clientY) {
     draggedItem = item;
-    
-    // Создаем заглушку на месте оригинального элемента
     dragPlaceholder = document.createElement('div');
     dragPlaceholder.className = 'drag-placeholder';
     dragPlaceholder.style.height = item.offsetHeight + 'px';
     item.parentNode.insertBefore(dragPlaceholder, item);
     
-    // Настраиваем летающий элемент
     const rect = item.getBoundingClientRect();
     dragOffsetY = clientY - rect.top;
     
@@ -877,25 +869,20 @@ function handleGlobalTouchMove(e) {
     const touch = e.touches[0];
     const newY = touch.clientY - dragOffsetY;
     
-    // Плавное движение через transform
     draggedItem.style.transform = `translate3d(0, ${newY - parseFloat(draggedItem.style.top)}px, 0)`;
     
-    // Поиск элемента под пальцем
     let elemBelow = document.elementFromPoint(touch.clientX, touch.clientY);
     if (!elemBelow) return;
     
     let targetItem = elemBelow.closest('.workout-item');
     
-    // Убираем активный класс со всех заглушек
     document.querySelectorAll('.drag-placeholder').forEach(p => p.classList.remove('active-drop'));
 
     if (targetItem && targetItem !== draggedItem) {
          const bounding = targetItem.getBoundingClientRect();
          const offset = touch.clientY - bounding.top - (bounding.height / 2);
-         
          const list = document.getElementById('workouts-list');
          
-         // Перемещаем ЗАГЛУШКУ, а не сам летающий элемент
          if (offset > 0) {
              if(targetItem.nextSibling && targetItem.nextSibling !== dragPlaceholder) {
                  list.insertBefore(dragPlaceholder, targetItem.nextSibling);
@@ -935,8 +922,6 @@ function updatePlaceholderPosition(afterElement) {
 
 function finalizeDrop() {
     if (!draggedItem || !dragPlaceholder) return;
-    
-    // Вставляем реальный элемент на место заглушки
     dragPlaceholder.parentNode.insertBefore(draggedItem, dragPlaceholder);
     cleanupDrag();
     saveNewOrder();
@@ -989,7 +974,7 @@ function saveNewOrder() {
     DB.workouts = reorderedWorkouts;
     saveDB('workouts');
 }
-// -----------------------------------------
+
 function renderWorkoutsList() {
     const c = document.getElementById('workouts-list');
     if (DB.workouts.length === 0) {
@@ -1013,7 +998,6 @@ function renderWorkoutsList() {
         </div>
     `).join('');
 
-    // Инициализация Drag&Drop для каждого элемента
     const items = c.querySelectorAll('.workout-item');
     items.forEach(item => initDragAndDrop(item));
 }
@@ -1658,31 +1642,15 @@ function selectCountdownInterval(v) {
     renderCountdownIntervals();
 }
 
-async function startMinuteBeep() {
-    stopMinuteBeep();
-    if (!DB.settings.minuteBeep) return;
-    const interval = DB.settings.minuteBeepInterval || 60;
-    runState.minuteBeepIntervalId = setInterval(async () => {
-        try {
-            const ctx = await getAudioCtx();
-            if (!ctx || ctx.state !== 'running') return;
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.type = 'sine';
-            osc.frequency.value = 1000;
-            gain.gain.setValueAtTime(0.2, ctx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
-            osc.connect(gain); gain.connect(ctx.destination);
-            osc.start(); osc.stop(ctx.currentTime + 0.15);
-        } catch(e) {}
-    }, interval * 1000);
+// --- ИСПРАВЛЕНИЕ 1: Убрана слепая setInterval логика, теперь пик зависит от реального прошедшего времени ---
+function startMinuteBeep() {
+    if (runState) {
+        runState.lastMinuteBeepElapsed = 0;
+    }
 }
 
 function stopMinuteBeep() {
-    if (runState && runState.minuteBeepIntervalId) {
-        clearInterval(runState.minuteBeepIntervalId);
-        runState.minuteBeepIntervalId = null;
-    }
+    // Оставлено для совместимости, логика теперь в updateTimersUI
 }
 
 function getCurrentElapsed(type) {
@@ -1714,6 +1682,7 @@ function startTimer(type, duration) {
     runState[`${type}Paused`] = false;
     runState[`${type}Duration`] = duration;
     runState[`${type}BeepPlayed`] = false;
+    runState.lastMinuteBeepElapsed = 0; // Сброс счётчика пиканья для новой фазы
     if (!runState.tickInterval) {
         runState.tickInterval = setInterval(updateTimersUI, 1000);
     }
@@ -1752,6 +1721,22 @@ function stopTickInterval() {
 function updateTimersUI() {
     if (!runState) return;
     const { phase } = runState;
+    
+    // --- ИСПРАВЛЕНИЕ 1: Пиканье только по активному времени (игнорирует паузу) ---
+    if (DB.settings.minuteBeep && phase !== 'ready' && phase !== 'countdown' && phase !== 'finish') {
+        const isPaused = runState[`${phase}Paused`];
+        if (!isPaused) {
+            const elapsed = getCurrentElapsed(phase);
+            const interval = DB.settings.minuteBeepInterval || 60;
+            const currentBeepCount = Math.floor(elapsed / interval);
+            const lastBeepCount = Math.floor((runState.lastMinuteBeepElapsed || 0) / interval);
+
+            if (currentBeepCount > lastBeepCount && elapsed > 0) {
+                playBeep(1000, 0.15);
+                runState.lastMinuteBeepElapsed = elapsed;
+            }
+        }
+    }
     
     if (phase === 'work') {
         const elapsed = getCurrentElapsed('work');
@@ -1811,10 +1796,10 @@ function startWorkout(id) {
         restOvertime: 0, waterOvertime: 0,
         startTime: new Date(), totalWorkTime: 0,
         lastFinishedWorkElapsed: 0,
-        exerciseTimes: []
+        exerciseTimes: [],
+        lastMinuteBeepElapsed: 0 // Инициализация для исправления бага с паузой
     };
     document.getElementById('run-title').innerText = w.name;
-    warmUpAudio();
     acquireWakeLock();
     renderRun();
     showScreen('screen-run');
@@ -1995,8 +1980,6 @@ function renderRun() {
             phaseLabel.className = 'phase-label finished';
 			document.getElementById('current-exercise').style.color = 'var(--danger)';
             phaseLabel.style.display = 'block';
-           // startTimeLabel.style.color = 'var(--danger)';
-           // startTimeValue.style.color = 'var(--danger)';
             const subtitle = document.createElement('p');
             subtitle.id = 'finished-subtitle';
             subtitle.className = 'finished-subtitle';
@@ -2077,8 +2060,6 @@ function renderRun() {
             phaseLabel.innerText = "⏰ ВРЕМЯ ВЫШЛО";
             phaseLabel.className = 'phase-label finished';
 			document.getElementById('current-exercise').style.color = 'var(--danger)';
-           // startTimeLabel.style.color = 'var(--danger)';
-           // startTimeValue.style.color = 'var(--danger)';
             
             const subtitle = document.createElement('p');
             subtitle.id = 'water-finished-subtitle';
@@ -2139,6 +2120,7 @@ function hideAllPhases() {
 }
 
 function beginExerciseFlow() {
+    unlockAudio(); // --- ИСПРАВЛЕНИЕ 2: Разблокировка звука при старте ---
     const ex = runState.workout.exercises[runState.index];
     if (ex.waterBreak) {
         startWaterBreak();
@@ -2215,6 +2197,7 @@ function onWaterFinished() {
 
 function toggleWaterPause() {
     if (runState.waterPaused) {
+        unlockAudio(); // --- ИСПРАВЛЕНИЕ 2: Разблокировка при снятии с паузы ---
         resumeTimer('water');
     } else {
         pauseTimer('water');
@@ -2228,7 +2211,6 @@ function adjustWater(delta) {
         document.getElementById('water-timer').innerText = formatTime(runState.waterOvertime);
     } else {
         runState.waterDuration = Math.max(0, runState.waterDuration + delta);
-        // Если после корректировки время стало <= 0, сразу завершаем
         if (runState.waterDuration <= 0 && !runState.waterPaused) {
             onWaterFinished();
         }
@@ -2344,6 +2326,7 @@ function startExercise() {
 
 function toggleWorkPause() {
     if (runState.workPaused) {
+        unlockAudio(); // --- ИСПРАВЛЕНИЕ 2: Разблокировка при снятии с паузы ---
         resumeTimer('work');
     } else {
         pauseTimer('work');
@@ -2399,6 +2382,7 @@ function finishExercise() {
 
 function toggleRestPause() { 
     if (runState.restPaused) {
+        unlockAudio(); // --- ИСПРАВЛЕНИЕ 2: Разблокировка при снятии с паузы ---
         resumeTimer('rest');
     } else {
         pauseTimer('rest');
@@ -2761,6 +2745,10 @@ async function playBeep(freq = 800, duration = 0.3) {
         osc.start(); osc.stop(ctx.currentTime + duration);
     } catch(e) {}
 }
+
+// --- ИСПРАВЛЕНИЕ 2: Глобальный слушатель для гарантированного пробуждения звука в PWA при любом касании ---
+document.addEventListener('click', unlockAudio, { capture: true });
+document.addEventListener('touchstart', unlockAudio, { capture: true, passive: true });
 
 document.addEventListener('visibilitychange', () => {
     if (DB.settings.wakeLock && runState && document.visibilityState === 'visible') {
