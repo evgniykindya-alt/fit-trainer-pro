@@ -1261,6 +1261,16 @@ function restoreRunState(saved) {
     document.getElementById('run-title').innerText = workout.name;
     acquireWakeLock(); enableExitProtection();
     renderRun();
+    if (runState.phase === 'rest' && !runState.restBannerMode) {
+        const timerEl = document.getElementById('rest-timer');
+        if (timerEl) {
+            if (runState.restFinished) timerEl.innerText = formatTime(getOvertime('rest'));
+            else timerEl.innerText = formatTime(getRemainingTime('rest'));
+        }
+    } else if (runState.phase === 'work') {
+        const timerEl = document.getElementById('work-timer');
+        if (timerEl) timerEl.innerText = formatTime(getCurrentElapsed('work'));
+    }
     showScreen('screen-run');
     if (!runState.tickInterval) runState.tickInterval = setInterval(updateTimersUI, 1000);
     showToast('▶ Тренировка на паузе. Нажмите «Продолжить»', 4000);
@@ -2233,13 +2243,15 @@ function startFromPreview() { if (previewWorkoutId) startWorkout(previewWorkoutI
 let runState = null;
 
 function startTimer(type, duration) {
+    if (!runState) return;
     runState[`${type}StartTime`] = Date.now();
     runState[`${type}ElapsedBeforePause`] = 0;
     runState[`${type}Paused`] = false;
     runState[`${type}Duration`] = duration || 0;
     runState[`${type}BeepPlayed`] = false;
     runState.lastBeepTargetTime = undefined;
-    if (!runState.tickInterval) runState.tickInterval = setInterval(updateTimersUI, 1000);
+    if (runState.tickInterval) clearInterval(runState.tickInterval);
+    runState.tickInterval = setInterval(updateTimersUI, 1000);
 }
 function pauseTimer(type) { const e = getCurrentElapsed(type); runState[`${type}ElapsedBeforePause`] = e; runState[`${type}StartTime`] = null; runState[`${type}Paused`] = true; }
 function resumeTimer(type) { runState[`${type}StartTime`] = Date.now(); runState[`${type}Paused`] = false; }
@@ -2339,6 +2351,8 @@ function startExerciseNow() {
     else speak((el.name || 'Упражнение') + info);
     if (el.type === 'sets' && runState.currentSet > 1) speak(`Подход ${runState.currentSet}`);
     startTimer('work', 0);
+    const timerEl = document.getElementById('work-timer');
+    if (timerEl) timerEl.innerText = '00:00';
     saveRunState(); renderRun();
 }
 
@@ -2354,9 +2368,10 @@ function beginRestPhase(restEl) {
     } else {
         runState.restBannerMode = false;
         startTimer('rest', restEl.duration);
+        const timerEl = document.getElementById('rest-timer');
+        if (timerEl) timerEl.innerText = formatTime(restEl.duration);
     }
     
-    // Сброс заметки при входе в новый отдых
     const ta = document.getElementById('rest-note-textarea');
     const btn = document.getElementById('rest-note-toggle');
     if (ta) { ta.style.display = 'none'; ta.value = ''; }
@@ -2405,6 +2420,8 @@ function finishExercise() {
             runState.restBeepPlayed = false;
             runState.restBannerMode = false;
             startTimer('rest', el.restBetweenSets || 60);
+            const timerEl = document.getElementById('rest-timer');
+            if (timerEl) timerEl.innerText = formatTime(el.restBetweenSets || 60);
             saveRunState(); renderRun();
             if (DB.settings.announceNumbers) speak(`Подход ${runState.currentSet - 1} готов. Отдых. Следующий ${runState.currentSet}`);
             else speak(`Отдых. Следующий подход ${runState.currentSet}`);
@@ -2425,6 +2442,8 @@ function finishExercise() {
 function advanceAfterExercise() {
     runState.index++;
     runState.phase = 'ready';
+    runState.restFinished = false;
+    runState.restOvertime = 0;
     saveRunState();
     if (runState.index >= runState.workout.exercises.length) { showFinishScreen(); return; }
     renderRun();
@@ -2461,6 +2480,8 @@ function skipRest() {
     runState.index++;
     runState.phase = 'ready';
     runState.restPhase = null;
+    runState.restFinished = false;
+    runState.restOvertime = 0;
     saveRunState();
     if (runState.index >= runState.workout.exercises.length) { showFinishScreen(); return; }
     renderRun();
@@ -2471,8 +2492,12 @@ function beginBetweenSets() {
     runState.phase = 'work';
     runState.workPaused = false;
     runState.restPhase = null;
+    runState.restFinished = false;
+    runState.restOvertime = 0;
     speak(`Подход ${runState.currentSet}`);
     startTimer('work', 0);
+    const timerEl = document.getElementById('work-timer');
+    if (timerEl) timerEl.innerText = '00:00';
     saveRunState(); renderRun();
 }
 
@@ -2487,6 +2512,8 @@ function confirmRestFinished() {
     runState.index++;
     runState.phase = 'ready';
     runState.restPhase = null;
+    runState.restFinished = false;
+    runState.restOvertime = 0;
     saveRunState();
     if (runState.index >= runState.workout.exercises.length) { showFinishScreen(); return; }
     renderRun();
@@ -2542,6 +2569,8 @@ function undoLastElement() {
     runState.phase = 'work';
     runState.workPaused = false;
     runState.currentSet = 1;
+    runState.restFinished = false;
+    runState.restOvertime = 0;
     const elapsed = runState.lastFinishedWorkElapsed || 0;
     if (elapsed > 0) {
         runState.totalWorkTime = Math.max(0, runState.totalWorkTime - elapsed);
@@ -2551,6 +2580,8 @@ function undoLastElement() {
     runState.workElapsedBeforePause = 0;
     runState.workStartTime = Date.now();
     startTimer('work', 0);
+    const timerEl = document.getElementById('work-timer');
+    if (timerEl) timerEl.innerText = '00:00';
     saveRunState(); renderRun();
 }
 
@@ -2635,7 +2666,7 @@ function renderRun() {
     hideAllPhases();
     setBadge.style.display = 'none';
     document.getElementById('current-exercise').style.color = '';
-    phaseLabel.className = 'phase-label'; // Сброс цвета
+    phaseLabel.className = 'phase-label';
 
     if (DB.settings.showStartTime && runState.startTime) {
         startDisplay.style.display = 'block';
@@ -2648,31 +2679,49 @@ function renderRun() {
         setBadge.innerHTML = `Подход <span class="set-num">${runState.currentSet}</span> из ${el.setsCount}`;
     }
 
-    if (el.kind === 'rest') {
-        renderRestElement(el);
-        return;
-    }
-
-    // Упражнение
-    document.getElementById('current-exercise').innerText = el.name || 'Упражнение';
-    const exNum = getExerciseNumber(elements, index);
-    phaseLabel.innerText = `УПРАЖНЕНИЕ ${exNum} / ${totalEx}`;
-    phaseLabel.className = 'phase-label';
-
     if (phase === 'ready') {
-        let info = '';
-        if (el.type === 'reps') info = `<p style="text-align:center; color:var(--accent); font-size:1.2rem; font-weight:700; margin-bottom:10px;">🔢 ${el.targetReps || 10} повторов</p>`;
-        else if (el.type === 'sets') info = `<p style="text-align:center; color:var(--accent); font-size:1.2rem; font-weight:700; margin-bottom:10px;">🔁 ${el.setsCount}× ${el.setMode === 'reps' ? (el.targetReps || 10) + ' повт.' : (el.setDuration || 45) + ' сек'}</p>`;
-        document.getElementById('phase-ready').innerHTML = `
-            ${el.notes ? `<p style="text-align:center; color:var(--muted); font-size:0.9rem; margin-bottom:10px;">📝 ${escapeHtml(el.notes)}</p>` : ''}
-            ${info}
-            <p style="text-align:center; color:var(--muted);">Готов? Нажми чтобы начать.</p>
-            <button class="btn accent" onclick="beginCurrentElementFlow()">▶ Начать</button>`;
-        document.getElementById('phase-ready').style.display = 'block';
+        if (el.kind === 'rest') {
+            const prevIdx = findPrevExerciseIndex(elements, index);
+            const prevEx = prevIdx >= 0 ? elements[prevIdx] : null;
+            document.getElementById('current-exercise').innerText = prevEx ? (prevEx.name || 'Упражнение') : 'Отдых';
+            const isWater = el.restType === 'water';
+            phaseLabel.innerText = isWater ? 'НЕОБХОДИМО ПОПИТЬ ВОДЫ' : 'ОТДЫХ';
+            phaseLabel.className = 'phase-label';
+            let info = el.duration === null || el.duration === 0
+                ? `<p style="text-align:center; color:var(--accent); font-size:1.2rem; font-weight:700; margin-bottom:10px;">Без таймера</p>`
+                : `<p style="text-align:center; color:var(--accent); font-size:1.2rem; font-weight:700; margin-bottom:10px;">${formatTime(el.duration)}</p>`;
+            document.getElementById('phase-ready').innerHTML = `
+                ${info}
+                <p style="text-align:center; color:var(--muted);">Готов? Нажми чтобы начать.</p>
+                <button class="btn accent" onclick="beginCurrentElementFlow()">▶ Начать</button>`;
+            document.getElementById('phase-ready').style.display = 'block';
+        } else {
+            document.getElementById('current-exercise').innerText = el.name || 'Упражнение';
+            const exNum = getExerciseNumber(elements, index);
+            phaseLabel.innerText = `УПРАЖНЕНИЕ ${exNum} / ${totalEx}`;
+            phaseLabel.className = 'phase-label';
+            let info = '';
+            if (el.type === 'reps') info = `<p style="text-align:center; color:var(--accent); font-size:1.2rem; font-weight:700; margin-bottom:10px;">🔢 ${el.targetReps || 10} повторов</p>`;
+            else if (el.type === 'sets') info = `<p style="text-align:center; color:var(--accent); font-size:1.2rem; font-weight:700; margin-bottom:10px;">🔁 ${el.setsCount}× ${el.setMode === 'reps' ? (el.targetReps || 10) + ' повт.' : (el.setDuration || 45) + ' сек'}</p>`;
+            document.getElementById('phase-ready').innerHTML = `
+                ${el.notes ? `<p style="text-align:center; color:var(--muted); font-size:0.9rem; margin-bottom:10px;">📝 ${escapeHtml(el.notes)}</p>` : ''}
+                ${info}
+                <p style="text-align:center; color:var(--muted);">Готов? Нажми чтобы начать.</p>
+                <button class="btn accent" onclick="beginCurrentElementFlow()">▶ Начать</button>`;
+            document.getElementById('phase-ready').style.display = 'block';
+        }
     } else if (phase === 'countdown') {
+        document.getElementById('current-exercise').innerText = el.name || 'Упражнение';
+        const exNum = getExerciseNumber(elements, index);
+        phaseLabel.innerText = `УПРАЖНЕНИЕ ${exNum} / ${totalEx}`;
+        phaseLabel.className = 'phase-label';
         document.getElementById('countdown-timer').innerText = runState.countdownValue;
         document.getElementById('phase-countdown').style.display = 'block';
     } else if (phase === 'work') {
+        document.getElementById('current-exercise').innerText = el.name || 'Упражнение';
+        const exNum = getExerciseNumber(elements, index);
+        phaseLabel.innerText = `УПРАЖНЕНИЕ ${exNum} / ${totalEx}`;
+        phaseLabel.className = 'phase-label';
         const workTimer = document.getElementById('work-timer');
         const pauseBtn = document.getElementById('work-pause-btn');
         const finishBtn = document.getElementById('work-finish-btn');
@@ -2699,29 +2748,35 @@ function renderRun() {
             if (!hidePause) pauseBtn.innerText = '⏸ Пауза';
         }
         document.getElementById('phase-work').style.display = 'block';
+    } else if (phase === 'rest') {
+        renderRestElement(el);
     }
 }
 
 function renderRestElement(el) {
     const phaseLabel = document.getElementById('phase-label');
+    const isBetween = runState.restPhase === 'between-sets';
     const isWater = el.restType === 'water';
     const isBanner = runState.restBannerMode;
-    const prevIdx = findPrevExerciseIndex(runState.workout.exercises, runState.index);
-    const prevEx = prevIdx >= 0 ? runState.workout.exercises[prevIdx] : null;
 
-    // 1. Текст названия
-    const currentExerciseEl = document.getElementById('current-exercise');
-    currentExerciseEl.innerText = prevEx ? (prevEx.name || 'Упражнение') : 'Отдых';
-    if (runState.restFinished) {
-        currentExerciseEl.style.color = 'var(--danger)';
+    let displayTitle;
+    if (isBetween) {
+        displayTitle = el.name || 'Упражнение';
     } else {
-        currentExerciseEl.style.color = '';
+        const prevIdx = findPrevExerciseIndex(runState.workout.exercises, runState.index);
+        const prevEx = prevIdx >= 0 ? runState.workout.exercises[prevIdx] : null;
+        displayTitle = prevEx ? (prevEx.name || 'Упражнение') : 'Отдых';
     }
+    const currentExerciseEl = document.getElementById('current-exercise');
+    currentExerciseEl.innerText = displayTitle;
+    currentExerciseEl.style.color = runState.restFinished ? 'var(--danger)' : '';
 
-    // 2. Фаза
     if (runState.restFinished) {
         phaseLabel.innerText = '⏰ ВРЕМЯ ВЫШЛО';
         phaseLabel.className = 'phase-label finished';
+    } else if (isBetween) {
+        phaseLabel.innerText = 'ОТДЫХ МЕЖДУ ПОДХОДАМИ';
+        phaseLabel.className = 'phase-label';
     } else if (isWater) {
         phaseLabel.innerText = 'НЕОБХОДИМО ПОПИТЬ ВОДЫ';
         phaseLabel.className = 'phase-label';
@@ -2730,7 +2785,6 @@ function renderRestElement(el) {
         phaseLabel.className = 'phase-label';
     }
     
-    // 3. Иконка посредине
     const middleIcon = document.getElementById('rest-middle-icon');
     if (isWater && !runState.restFinished) {
         middleIcon.style.display = 'flex';
@@ -2738,7 +2792,6 @@ function renderRestElement(el) {
         middleIcon.style.display = 'none';
     }
 
-    // 4. Таймер (только стили, текст обновляет updateTimersUI)
     const timerEl = document.getElementById('rest-timer');
     if (isBanner) {
         timerEl.style.display = 'none';
@@ -2751,11 +2804,10 @@ function renderRestElement(el) {
         } else {
             timerEl.style.color = '';
             timerEl.className = 'big-timer' + (runState.restPaused ? ' paused' : '');
-            timerEl.innerText = formatTime(getRemainingTime('rest'));
+            // НЕ трогаем innerText, это делает updateTimersUI
         }
     }
     
-    // 5. Блок "Далее"
     const nextBlock = document.getElementById('next-exercise-block');
     if (runState.restFinished) {
         nextBlock.style.display = 'none';
@@ -2766,39 +2818,43 @@ function renderRestElement(el) {
         const labelEl = document.getElementById('next-exercise-label');
         nameEl.classList.remove('water', 'finish');
         
-        const next = findNextElement(runState.workout.exercises, runState.index);
-        if (!next) {
-            labelEl.innerText = 'Далее';
-            nameEl.innerText = 'Это последнее упражнение';
+        if (isBetween) {
+            labelEl.innerText = 'Следующий подход';
+            nameEl.innerText = `Подход ${runState.currentSet} из ${el.setsCount}`;
         } else {
-            const nx = next.el;
-            labelEl.innerText = 'Далее';
-            if (nx.kind === 'exercise') {
-                const num = getExerciseNumber(runState.workout.exercises, next.idx);
-                const info = nx.type === 'sets' ? ` (${nx.setsCount}×)` : nx.type === 'reps' ? ` (${nx.targetReps||10})` : '';
-                nameEl.innerText = (DB.settings.announceNumbers ? `${num}. ` : '') + (nx.name || 'Упражнение') + info;
+            const next = findNextElement(runState.workout.exercises, runState.index);
+            if (!next) {
+                labelEl.innerText = 'Далее';
+                nameEl.innerText = 'Это последнее упражнение';
             } else {
-                const isW = nx.restType === 'water';
-                nameEl.innerText = isW ? '💧 Необходимо попить воды' : '🛌 Отдых';
-                if (isW) nameEl.classList.add('water');
+                const nx = next.el;
+                labelEl.innerText = 'Далее';
+                if (nx.kind === 'exercise') {
+                    const num = getExerciseNumber(runState.workout.exercises, next.idx);
+                    const info = nx.type === 'sets' ? ` (${nx.setsCount}×)` : nx.type === 'reps' ? ` (${nx.targetReps||10})` : '';
+                    nameEl.innerText = (DB.settings.announceNumbers ? `${num}. ` : '') + (nx.name || 'Упражнение') + info;
+                } else {
+                    const isW = nx.restType === 'water';
+                    nameEl.innerText = isW ? '💧 Необходимо попить воды' : '🛌 Отдых';
+                    if (isW) nameEl.classList.add('water');
+                }
             }
         }
     }
 
-    // 6. Заметки
     const noteBlock = document.getElementById('rest-note-block');
-    if (runState.restFinished || prevIdx < 0) {
+    if (runState.restFinished || isBetween || runState.index < 0) {
         noteBlock.style.display = 'none';
     } else {
         noteBlock.style.display = 'block';
         const toggle = document.getElementById('rest-note-toggle');
-        const existing = runState.exerciseNotes[prevIdx];
+        const prevIdx = findPrevExerciseIndex(runState.workout.exercises, runState.index);
+        const existing = prevIdx >= 0 ? runState.exerciseNotes[prevIdx] : '';
         if (document.getElementById('rest-note-textarea').style.display === 'none') {
             toggle.innerText = existing ? '📝 Редактировать заметку' : '📝 Добавить заметку';
         }
     }
 
-    // 7. Кнопки
     const pauseBtn = document.getElementById('rest-pause-btn');
     const confirmBtn = document.getElementById('rest-confirm-btn');
     const skipBtn = document.getElementById('rest-skip-btn');
@@ -2809,21 +2865,21 @@ function renderRestElement(el) {
     if (isBanner) {
         pauseBtn.style.display = 'none';
         skipBtn.style.display = 'none';
-        undoBtn.style.display = prevIdx >= 0 ? 'block' : 'none';
+        undoBtn.style.display = (isBetween || findPrevExerciseIndex(runState.workout.exercises, runState.index) >= 0) ? 'block' : 'none';
         confirmBtn.style.display = 'none';
         bannerBtn.style.display = 'block';
         adjustDiv.style.display = 'none';
     } else if (runState.restFinished) {
         pauseBtn.style.display = 'none';
         skipBtn.style.display = 'none';
-        undoBtn.style.display = prevIdx >= 0 ? 'block' : 'none';
+        undoBtn.style.display = (isBetween || findPrevExerciseIndex(runState.workout.exercises, runState.index) >= 0) ? 'block' : 'none';
         confirmBtn.style.display = 'block';
         bannerBtn.style.display = 'none';
         adjustDiv.style.display = 'none';
     } else {
         pauseBtn.style.display = 'block';
         pauseBtn.innerText = runState.restPaused ? '▶ Продолжить' : '⏸ Пауза';
-        undoBtn.style.display = prevIdx >= 0 ? 'block' : 'none';
+        undoBtn.style.display = (isBetween || findPrevExerciseIndex(runState.workout.exercises, runState.index) >= 0) ? 'block' : 'none';
         skipBtn.style.display = 'block';
         confirmBtn.style.display = 'none';
         bannerBtn.style.display = 'none';
