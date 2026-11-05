@@ -147,7 +147,7 @@ textarea.input { min-height: 60px; resize: vertical; font-family: inherit; }
     font-size: 4.5rem; 
     font-weight: 700; 
     text-align: center; 
-    margin: 0; /* Убрал отступы */
+    margin: 0;
     font-variant-numeric: tabular-nums; 
     letter-spacing: -2px; 
     height: 6rem; 
@@ -157,7 +157,7 @@ textarea.input { min-height: 60px; resize: vertical; font-family: inherit; }
 }
 .big-timer.paused { color: var(--muted); }
 .big-timer.countdown { color: var(--warn); font-size: 7rem; height: 8rem; }
-.big-timer.overtime { color: var(--danger); font-size: 4.5rem; /* Размер оставил тем же */ }
+.big-timer.overtime { color: var(--danger); font-size: 4.5rem; }
 .big-timer.water { color: var(--water); }
 
 .rest-icon-display { 
@@ -538,7 +538,7 @@ details[open] summary::after { transform: rotate(180deg); }
     <div class="sound-section"><div class="sound-section-title">Режим звука</div><div class="sound-options" id="sound-mode-options"></div></div>
     <div class="sound-section"><div class="sound-section-title">Голос</div><div class="sound-options" id="voice-options"></div></div>
     <div class="sound-section"><div class="sound-section-title">Скорость речи</div><div class="sound-options" id="voice-rate-options"></div></div>
-    <div class="checkbox-row" id="announce-buttons-row"><input type="checkbox" id="set-announce-buttons"><label for="set-announce-buttons">👆 Озвучивать кнопки</label></div>
+    <div class="checkbox-row" id="announce-buttons-row"><input type="checkbox" id="set-announce-buttons"><label for="set-announce-buttons">👆 Озвучивать кнопки (в тренировке)</label></div>
     <div class="checkbox-row" id="announce-confirm-row"><input type="checkbox" id="set-announce-confirm"><label for="set-announce-confirm">✅ Озвучивать подтверждения</label></div>
     <div class="checkbox-row"><input type="checkbox" id="set-announce-numbers"><label for="set-announce-numbers">🔢 Озвучивать номер упражнения</label></div>
     <div class="checkbox-row"><input type="checkbox" id="set-minute-beep"><label for="set-minute-beep">⏱ Пикать каждую минуту</label></div>
@@ -1060,11 +1060,23 @@ function voiceConfirm(message) {
 }
 document.addEventListener('click', (e) => {
     if (!DB.settings.announceButtons || !isVoiceMode()) return;
+    // Только во время тренировки
+    if (!runState || runState.phase === 'finish') return;
+    const runScreen = document.getElementById('screen-run');
+    if (!runScreen || !runScreen.classList.contains('active')) return;
+
     try {
         const btn = e.target.closest('button, .menu-btn, .sound-option, .tab');
         if (!btn) return;
+        // Проверяем, что кнопка находится внутри экрана тренировки
+        if (!btn.closest('#screen-run')) return;
         if (btn.classList.contains('sheet-btn-cancel')) return;
-        if (btn.classList.contains('icon-btn')) { const t = btn.getAttribute('title') || ''; if (t) speakButton(t); return; }
+        
+        if (btn.classList.contains('icon-btn')) { 
+            const t = btn.getAttribute('title') || ''; 
+            if (t) speakButton(t); 
+            return; 
+        }
         let txt = (btn.innerText || btn.textContent || '').trim();
         if (!txt) { const t = btn.getAttribute('title') || ''; if (t) txt = t; }
         if (txt) speakButton(txt);
@@ -2430,7 +2442,9 @@ function toggleRestPause() {
 
 function adjustRest(d) {
     if (runState.restBannerMode) return;
-    if (runState.restFinished) { runState.restOvertime = Math.max(0, runState.restOvertime + d); document.getElementById('rest-timer').innerText = formatTime(runState.restOvertime); }
+    if (runState.restFinished) { 
+        runState.restOvertime = Math.max(0, runState.restOvertime + d); 
+    }
     else runState.restDuration = Math.max(0, runState.restDuration + d);
     saveRunState();
 }
@@ -2488,11 +2502,6 @@ function onRestFinished() {
     if (DB.settings.continuousBeep) {
         runState.restFinished = true;
         runState.restOvertime = 0;
-        runState.restOvertimeInterval = setInterval(() => {
-            runState.restOvertime++;
-            const el = document.getElementById('rest-timer');
-            if (el) el.innerText = formatTime(runState.restOvertime);
-        }, 1000);
         startRestAlarm();
         saveRunState(); renderRun();
     } else {
@@ -2729,20 +2738,20 @@ function renderRestElement(el) {
         middleIcon.style.display = 'none';
     }
 
-    // 4. Таймер
+    // 4. Таймер (только стили, текст обновляет updateTimersUI)
     const timerEl = document.getElementById('rest-timer');
     if (isBanner) {
         timerEl.style.display = 'none';
     } else {
         timerEl.style.display = 'flex';
-        timerEl.className = 'big-timer';
         if (runState.restFinished) {
             timerEl.style.color = 'var(--danger)';
-            timerEl.innerText = formatTime(runState.restOvertime || 0);
+            timerEl.className = 'big-timer overtime';
+            timerEl.innerText = formatTime(getOvertime('rest'));
         } else {
             timerEl.style.color = '';
+            timerEl.className = 'big-timer' + (runState.restPaused ? ' paused' : '');
             timerEl.innerText = formatTime(getRemainingTime('rest'));
-            if (runState.restPaused) timerEl.classList.add('paused');
         }
     }
     
