@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Fit Trainer Pro v1.3">
+<meta name="apple-mobile-web-app-title" content="Fit Trainer Pro v1.5">
 <meta name="theme-color" content="#0f0f12">
 <meta name="mobile-web-app-capable" content="yes">
-<title>Fit Trainer Pro v1.3</title>
-<link rel="manifest" href='data:application/manifest+json,{"name":"Fit Trainer Pro v1.3","short_name":"FitTrainer","start_url":".","display":"standalone","background_color":"%230f0f12","theme_color":"%230f0f12","icons":[{"src":"data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%230f0f12%22/%3E%3Ctext x=%2250%22 y=%2268%22 font-size=%2260%22 text-anchor=%22middle%22%3E💪%3C/text%3E%3C/svg%3E","sizes":"192x192","type":"image/svg+xml"}]}'>
+<title>Fit Trainer Pro v1.5</title>
+<link rel="manifest" href='data:application/manifest+json,{"name":"Fit Trainer Pro v1.5","short_name":"FitTrainer","start_url":".","display":"standalone","background_color":"%230f0f12","theme_color":"%230f0f12","icons":[{"src":"data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%230f0f12%22/%3E%3Ctext x=%2250%22 y=%2268%22 font-size=%2260%22 text-anchor=%22middle%22%3E💪%3C/text%3E%3C/svg%3E","sizes":"192x192","type":"image/svg+xml"}]}'>
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%230f0f12'/%3E%3Ctext x='50' y='68' font-size='60' text-anchor='middle'%3E💪%3C/text%3E%3C/svg%3E">
 <style>
 :root {
@@ -17,9 +17,29 @@
     --primary: #bb86fc; --accent: #03dac6; --danger: #ff5c6c;
     --text: #fff; --muted: #8a8a95; --warn: #ff9800;
     --blue: #42a5f5; --water: #4fc3f7;
+    --border: #333;
+    --surface-2: rgba(255, 255, 255, 0.03);
+    --primary-soft: rgba(187, 134, 252, 0.1);
+    --accent-soft: rgba(3, 218, 198, 0.1);
+    --water-soft: rgba(79, 195, 247, 0.1);
+    --water-soft-2: rgba(79, 195, 247, 0.08);
     --sat: env(safe-area-inset-top, 20px);
     --sab: env(safe-area-inset-bottom, 0px);
 }
+
+body.light {
+    --bg: #f4f4f7; --card: #ffffff; --card-2: #ecedf1;
+    --primary: #7c4dff; --accent: #00bfa5; --danger: #e91e63;
+    --text: #1c1c22; --muted: #6a6a7a; --warn: #e67e00;
+    --blue: #1976d2; --water: #0288d1;
+    --border: #d8d8e0;
+    --surface-2: rgba(0, 0, 0, 0.03);
+    --primary-soft: rgba(124, 77, 255, 0.1);
+    --accent-soft: rgba(0, 191, 165, 0.1);
+    --water-soft: rgba(2, 136, 209, 0.1);
+    --water-soft-2: rgba(2, 136, 209, 0.08);
+}
+
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; }
 html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; }
 body {
@@ -28,6 +48,7 @@ body {
     min-height: 100vh; min-height: 100dvh;
     -webkit-font-smoothing: antialiased;
     overscroll-behavior: none; user-select: none;
+    transition: background-color 0.2s, color 0.2s;
 }
 .app-container { width: 100%; height: 100vh; height: 100dvh; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: var(--sat) 0 var(--sab) 0; }
 .screen { display: none; padding: 15px 15px 10px; min-height: 100%; }
@@ -112,7 +133,7 @@ body.no-scroll {
 
 .drag-placeholder.active-drop {
     border-color: var(--accent);
-    background: rgba(3, 218, 198, 0.1);
+    background: var(--accent-soft);
 }
 .workout-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; gap: 10px; }
 .workout-info { flex: 1; min-width: 0; }
@@ -120,29 +141,29 @@ body.no-scroll {
 .workout-info .meta { color: var(--muted); font-size: 0.85rem; margin-top: 4px; }
 .workout-actions { display: flex; gap: 8px; flex-shrink: 0; }
 .workout-actions .icon-btn { background: var(--card-2); border: none; color: var(--text); width: 44px; height: 44px; border-radius: 12px; cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; }
-.workout-actions .icon-btn:active { background: #333; }
+.workout-actions .icon-btn:active { background: var(--border); }
 .btn-start-workout { width: 100%; margin: 0; padding: 16px; font-size: 1.1rem; }
 
-.input, .select { background: var(--card-2); border: 1px solid #333; color: var(--text); padding: 12px; border-radius: 10px; font-size: 1rem; width: 100%; margin-bottom: 8px; -webkit-appearance: none; appearance: none; }
+.input, .select { background: var(--card-2); border: 1px solid var(--border); color: var(--text); padding: 12px; border-radius: 10px; font-size: 1rem; width: 100%; margin-bottom: 8px; -webkit-appearance: none; appearance: none; }
 select.select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%238a8a95' d='M6 8L0 0h12z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
 .input:focus, .select:focus { outline: none; border-color: var(--primary); }
 textarea.input { min-height: 60px; resize: vertical; font-family: inherit; }
 
 .exercise-block { background: var(--card-2); border-radius: 14px; padding: 12px; margin-bottom: 10px; border-left: 3px solid var(--primary); }
-.exercise-block.water-break { border-left-color: var(--water); background: rgba(79, 195, 247, 0.08); }
+.exercise-block.water-break { border-left-color: var(--water); background: var(--water-soft-2); }
 .exercise-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
 .exercise-number { background: var(--primary); color: #000; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; flex-shrink: 0; }
 .exercise-block.water-break .exercise-number { background: var(--water); }
-.exercise-name-input { margin: 0; flex: 1; padding: 8px; background: var(--card); border: 1px solid #333; color: var(--text); border-radius: 8px; font-size: 0.95rem; min-width: 0; }
+.exercise-name-input { margin: 0; flex: 1; padding: 8px; background: var(--card); border: 1px solid var(--border); color: var(--text); border-radius: 8px; font-size: 0.95rem; min-width: 0; }
 .exercise-controls { display: flex; gap: 6px; margin-left: auto; flex-shrink: 0; }
-.exercise-controls .icon-btn { width: 36px; height: 36px; background: var(--card); border: 1px solid #333; border-radius: 10px; color: var(--text); display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+.exercise-controls .icon-btn { width: 36px; height: 36px; background: var(--card); border: 1px solid var(--border); border-radius: 10px; color: var(--text); display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
 .exercise-controls .icon-btn:active { background: var(--primary); color: #000; transform: scale(0.95); }
 .exercise-controls .icon-btn:disabled { opacity: 0.3; pointer-events: none; }
 .exercise-controls .icon-btn svg { width: 18px; height: 18px; stroke: currentColor; }
 .exercise-controls .icon-btn.delete-btn { color: var(--danger); }
 .exercise-controls .icon-btn.delete-btn:active { background: var(--danger); color: #fff; }
 
-.rest-row, .notes-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; padding-top: 8px; border-top: 1px solid #333; }
+.rest-row, .notes-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); }
 .rest-row label, .notes-row label { color: var(--muted); font-size: 0.85rem; flex-shrink: 0; }
 .rest-row .select { flex: 1; margin: 0; padding: 8px 32px 8px 10px; font-size: 0.9rem; }
 .notes-row textarea { flex: 1; margin: 0; padding: 8px; min-height: 36px; font-size: 0.9rem; }
@@ -156,14 +177,14 @@ textarea.input { min-height: 60px; resize: vertical; font-family: inherit; }
 .sound-options { display: flex; flex-direction: column; gap: 8px; }
 .sound-option { display: flex; align-items: center; gap: 10px; background: var(--card-2); border: 2px solid transparent; padding: 10px 12px; border-radius: 12px; cursor: pointer; transition: all 0.15s; }
 .sound-option:active { transform: scale(0.98); }
-.sound-option.selected { border-color: var(--primary); background: rgba(187, 134, 252, 0.1); }
+.sound-option.selected { border-color: var(--primary); background: var(--primary-soft); }
 .sound-option .radio { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--muted); flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
 .sound-option.selected .radio { border-color: var(--primary); }
 .sound-option.selected .radio::after { content: ''; width: 10px; height: 10px; border-radius: 50%; background: var(--primary); }
 .sound-option .sound-info { flex: 1; min-width: 0; }
 .sound-option .sound-name { font-weight: 600; font-size: 0.95rem; }
 .sound-option .sound-desc { color: var(--muted); font-size: 0.8rem; margin-top: 2px; }
-.sound-option .preview-btn { background: var(--card); border: 1px solid #333; color: var(--accent); width: 38px; height: 38px; border-radius: 50%; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 1rem; }
+.sound-option .preview-btn { background: var(--card); border: 1px solid var(--border); color: var(--accent); width: 38px; height: 38px; border-radius: 50%; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 1rem; }
 .sound-option .preview-btn:active { background: var(--accent); color: #000; }
 
 .big-timer { font-size: 4.5rem; font-weight: 700; text-align: center; margin: 16px 0; font-variant-numeric: tabular-nums; letter-spacing: -2px; }
@@ -225,8 +246,8 @@ textarea.input { min-height: 60px; resize: vertical; font-family: inherit; }
     line-height: 1.2;
 }
 
-.next-exercise-block { text-align: center; margin: 8px 0 16px; padding: 12px 16px; background: var(--card-2); border-radius: 14px; border: 1px solid #333; }
-.next-exercise-block.water { background: rgba(79, 195, 247, 0.1); border-color: var(--water); }
+.next-exercise-block { text-align: center; margin: 8px 0 16px; padding: 12px 16px; background: var(--card-2); border-radius: 14px; border: 1px solid var(--border); }
+.next-exercise-block.water { background: var(--water-soft); border-color: var(--water); }
 .next-exercise-label { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); font-weight: 600; margin-bottom: 6px; }
 .next-exercise-name { font-size: 1.4rem; font-weight: 700; color: var(--accent); line-height: 1.25; word-break: break-word; overflow-wrap: break-word; hyphens: auto; }
 .next-exercise-name.finish { color: var(--warn); }
@@ -246,10 +267,10 @@ textarea.input { min-height: 60px; resize: vertical; font-family: inherit; }
 
 .empty-state { text-align: center; color: var(--muted); padding: 40px 20px; font-size: 0.95rem; }
 
-.finish-card { background: linear-gradient(135deg, #1c1c22 0%, #26262e 100%); border-radius: 22px; padding: 22px 18px; margin: 16px 0; border: 1px solid #333; min-height: 3px; }
+.finish-card { background: linear-gradient(135deg, var(--card) 0%, var(--card-2) 100%); border-radius: 22px; padding: 22px 18px; margin: 16px 0; border: 1px solid var(--border); min-height: 3px; }
 .finish-title { text-align: center; font-size: 1.96rem; font-weight: 800; margin-bottom: 16px; } 
 .stats-grid { display: flex; flex-direction: column; gap: 10px; }
-.stat-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: rgba(255,255,255,0.03); border-radius: 10px; }
+.stat-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: var(--surface-2); border-radius: 10px; }
 .stat-label { color: var(--muted); font-size: 1.05rem; display: flex; align-items: center; gap: 6px; font-weight: 700; }
 .stat-value { font-size: 1rem; font-weight: 600; font-variant-numeric: tabular-nums; }
 .stat-value.highlight { color: var(--accent); font-size: 1.2rem; }
@@ -270,7 +291,7 @@ details[open] summary::after { transform: rotate(180deg); }
 .history-actions .icon-btn.delete { color: var(--danger); }
 
 .preview-exercise { background: var(--card-2); border-radius: 10px; padding: 12px; margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
-.preview-exercise.water { background: rgba(79, 195, 247, 0.1); border-left: 3px solid var(--water); }
+.preview-exercise.water { background: var(--water-soft); border-left: 3px solid var(--water); }
 .preview-exercise .num { background: var(--primary); color: #000; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; flex-shrink: 0; }
 .preview-exercise.water .num { background: var(--water); }
 .preview-exercise .info { flex: 1; min-width: 0; }
@@ -323,7 +344,7 @@ details[open] summary::after { transform: rotate(180deg); }
 <div class="app-container">
 
 <div id="screen-home" class="screen active">
-    <h1>💪 Fit Trainer Pro v1.3</h1>
+    <h1>💪 Fit Trainer Pro v1.5</h1>
     <button class="menu-btn" onclick="showScreen('screen-workouts')">
         <span class="icon">🏋️</span>
         <div><div>Мои тренировки</div><div class="sub">Создать, редактировать, запустить</div></div>
@@ -338,7 +359,7 @@ details[open] summary::after { transform: rotate(180deg); }
     </button>
     <button class="menu-btn" onclick="showScreen('screen-settings')" style="border-color:var(--warn)">
         <span class="icon">⚙️</span>
-        <div><div>Настройки</div><div class="sub">Экран, голос, звук, экспорт</div></div>
+        <div><div>Настройки</div><div class="sub">Тема, экран, голос, звук, экспорт</div></div>
     </button>
 </div>
 
@@ -491,6 +512,12 @@ details[open] summary::after { transform: rotate(180deg); }
         <h1>Настройки</h1>
         <div class="spacer"></div>
     </div>
+    <h2>🎨 Тема оформления</h2>
+    <div class="sound-section">
+        <div class="sound-section-title">Выбери тему</div>
+        <div class="sound-options" id="theme-mode-options"></div>
+    </div>
+
     <h2>Поведение</h2>
     <div class="checkbox-row">
         <input type="checkbox" id="set-wakelock">
@@ -551,14 +578,57 @@ details[open] summary::after { transform: rotate(180deg); }
     <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)">
     <button class="btn danger" onclick="clearHistory()">🗑 Очистить всю историю</button>
     <button class="btn ghost" onclick="restoreBuiltins()">🔄 Восстановить все шаблоны</button>
+
+    <h2>О приложении</h2>
+    <div class="card" style="color:var(--muted); font-size:0.85rem; line-height:1.6;">
+        Fit Trainer Pro v1.5<br>
+        Работает офлайн через Service Worker.<br>
+        Все данные хранятся локально на устройстве.
+    </div>
 </div>
 
 </div>
 
 <script>
+/* ===================== ГЛОБАЛЬНЫЕ ОБРАБОТЧИКИ ОШИБОК ===================== */
+window.addEventListener('error', (e) => {
+    console.error('[FT error]', e.error || e.message);
+});
+window.addEventListener('unhandledrejection', (e) => {
+    console.error('[FT unhandled]', e.reason);
+});
+/* ===================== /ГЛОБАЛЬНЫЕ ОБРАБОТЧИКИ ОШИБОК ===================== */
+
 const Storage = {
-    get(key, defaultValue) { try { const item = localStorage.getItem(key); return item ? JSON.parse(item) : defaultValue; } catch (e) { return defaultValue; } },
-    set(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) {} }
+    get(key, defaultValue) {
+        try {
+            const item = localStorage.getItem(key);
+            return item ? JSON.parse(item) : defaultValue;
+        } catch (e) {
+            console.warn('[Storage.get] failed for', key, e);
+            return defaultValue;
+        }
+    },
+    set(key, value) {
+        try {
+            localStorage.setItem(key, JSON.stringify(value));
+            return true;
+        } catch (e) {
+            console.warn('[Storage.set] failed for', key, e);
+            // Мягкое уведомление
+            try {
+                if (!document.getElementById('storage-error-toast')) {
+                    const t = document.createElement('div');
+                    t.id = 'storage-error-toast';
+                    t.style.cssText = 'position:fixed;top:20px;left:20px;right:20px;background:var(--danger);color:#fff;padding:14px 18px;border-radius:14px;z-index:99999;font-size:0.9rem;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,0.3);';
+                    t.textContent = '⚠️ Не удалось сохранить. Возможно, мало места.';
+                    document.body.appendChild(t);
+                    setTimeout(() => { try { t.remove(); } catch(e) {} }, 4000);
+                }
+            } catch(e2) {}
+            return false;
+        }
+    }
 };
 
 const DB = {
@@ -567,6 +637,21 @@ const DB = {
     history: Storage.get('ft_history', []),
     settings: Storage.get('ft_settings', {})
 };
+
+/* ===================== ВАЛИДАЦИЯ DB ===================== */
+function validateDB() {
+    if (!Array.isArray(DB.workouts)) DB.workouts = [];
+    if (!Array.isArray(DB.templates)) DB.templates = [];
+    if (!Array.isArray(DB.history)) DB.history = [];
+    if (!DB.settings || typeof DB.settings !== 'object' || Array.isArray(DB.settings)) DB.settings = {};
+    DB.workouts = DB.workouts.filter(w => w && typeof w === 'object' && w.id && Array.isArray(w.exercises));
+    DB.templates = DB.templates.filter(t => t && typeof t === 'object' && t.id && Array.isArray(t.exercises));
+    DB.history = DB.history.filter(h => h && typeof h === 'object' && h.id && h.startTime);
+}
+try { validateDB(); } catch (e) {
+    console.error('[validateDB]', e);
+}
+/* ===================== /ВАЛИДАЦИЯ DB ===================== */
 
 function saveDB(key) {
     const map = { workouts: 'ft_workouts', templates: 'ft_templates', history: 'ft_history', settings: 'ft_settings' };
@@ -580,9 +665,11 @@ DB.settings = Object.assign({
     minuteBeep: false, minuteBeepInterval: 60,
     announceNumbers: true,
     countdownDuration: 3,
-    showStartTime: false
+    showStartTime: false,
+    themeMode: 'auto'
 }, DB.settings);
 if (!Array.isArray(DB.settings.hiddenBuiltins)) DB.settings.hiddenBuiltins = [];
+if (!['auto','light','dark'].includes(DB.settings.themeMode)) DB.settings.themeMode = 'auto';
 
 // === режим звука ===
 if (DB.settings.soundMode !== 'voice' && DB.settings.soundMode !== 'beep') {
@@ -594,6 +681,90 @@ function isVoiceMode() { return DB.settings.soundMode === 'voice'; }
 function isBeepMode() { return DB.settings.soundMode !== 'voice'; }
 function getAutoAdvanceDelay() { return isVoiceMode() ? 1500 : 900; }
 // === /режим звука ===
+
+/* ===================== ТЕМА ===================== */
+function applyTheme() {
+    try {
+        const mode = DB.settings.themeMode || 'auto';
+        let effective = mode;
+        if (mode === 'auto') {
+            effective = (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
+        }
+        document.body.classList.toggle('light', effective === 'light');
+        const meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.setAttribute('content', effective === 'light' ? '#f4f4f7' : '#0f0f12');
+        const metaStatus = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+        if (metaStatus) metaStatus.setAttribute('content', effective === 'light' ? 'default' : 'black-translucent');
+    } catch(e) { console.warn('[applyTheme]', e); }
+}
+
+function renderThemeModeOptions() {
+    const c = document.getElementById('theme-mode-options');
+    if (!c) return;
+    const modes = [
+        { v: 'auto',  name: '🌗 Авто',    desc: 'Как в системе' },
+        { v: 'light', name: '☀️ Светлая', desc: 'Всегда светлая' },
+        { v: 'dark',  name: '🌙 Тёмная',  desc: 'Всегда тёмная' }
+    ];
+    const current = DB.settings.themeMode || 'auto';
+    c.innerHTML = modes.map(m => {
+        const selected = current === m.v;
+        return `
+            <div class="sound-option ${selected ? 'selected' : ''}" onclick="selectThemeMode('${m.v}')">
+                <div class="radio"></div>
+                <div class="sound-info">
+                    <div class="sound-name">${m.name}</div>
+                    <div class="sound-desc">${m.desc}</div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function selectThemeMode(mode) {
+    if (!['auto','light','dark'].includes(mode)) return;
+    DB.settings.themeMode = mode;
+    saveDB('settings');
+    applyTheme();
+    renderThemeModeOptions();
+}
+/* ===================== /ТЕМА ===================== */
+
+/* ===================== БЕЗОПАСНЫЙ РЕЖИМ ===================== */
+let safeModeActive = false;
+
+function showSafeMode(reason) {
+    if (safeModeActive) return;
+    safeModeActive = true;
+    try {
+        const div = document.createElement('div');
+        div.id = 'safe-mode-overlay';
+        div.style.cssText = 'position:fixed;inset:0;background:#0f0f12;color:#fff;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;font-family:-apple-system,BlinkMacSystemFont,sans-serif;text-align:center;gap:16px;';
+        div.innerHTML = `
+            <div style="font-size:2.5rem;">⚠️</div>
+            <div style="font-size:1.3rem;font-weight:700;">Что-то пошло не так</div>
+            <div style="color:#8a8a95;font-size:0.95rem;max-width:340px;line-height:1.5;">
+                ${reason || 'Приложение не смогло загрузить данные.'}<br><br>
+                Попробуйте перезагрузить. Если не помогает — сбросьте данные.
+            </div>
+            <button id="safeReloadBtn" style="background:#bb86fc;color:#000;border:none;padding:14px 28px;border-radius:14px;font-size:1rem;font-weight:600;margin-top:8px;cursor:pointer;">🔄 Перезагрузить</button>
+            <button id="safeResetBtn" style="background:transparent;color:#ff5c6c;border:2px solid #ff5c6c;padding:14px 28px;border-radius:14px;font-size:1rem;font-weight:600;cursor:pointer;">🗑 Сбросить все данные</button>
+        `;
+        document.body.appendChild(div);
+        document.getElementById('safeReloadBtn').onclick = () => location.reload();
+        document.getElementById('safeResetBtn').onclick = () => {
+            if (confirm('Удалить все данные и восстановить приложение?')) {
+                try {
+                    ['ft_workouts','ft_templates','ft_history','ft_settings','ft_run_state'].forEach(k => localStorage.removeItem(k));
+                } catch(e) {}
+                location.reload();
+            }
+        };
+    } catch(e) {
+        alert('Критическая ошибка приложения. Перезагрузите страницу.');
+    }
+}
+/* ===================== /БЕЗОПАСНЫЙ РЕЖИМ ===================== */
 
 /* === защита от случайного выхода === */
 let exitProtectionActive = false;
@@ -865,7 +1036,7 @@ function announceFinalThree() {
     else playBeep(600, 0.1);
 }
 
-/* ==== Склонение минут и тексты для минутных меток ==== */
+/* ==== Склонение минут ==== */
 function numberWord(n) {
     const words = ['ноль','одна','две','три','четыре','пять','шесть','семь','восемь','девять','десять'];
     if (n >= 0 && n <= 10) return words[n];
@@ -887,17 +1058,48 @@ function remainingMinutesText(n) {
 }
 /* ==== /Склонение минут ==== */
 
-/* ===================== УВЕДОМЛЕНИЯ ===================== */
+/* ===================== SERVICE WORKER / УВЕДОМЛЕНИЯ ===================== */
 let swRegistration = null;
 
-async function initNotifications() {
+async function initServiceWorker() {
     if (!('serviceWorker' in navigator)) return;
-    if (!('Notification' in window)) return;
     try {
         swRegistration = await navigator.serviceWorker.register('./sw.js');
+        console.log('[SW] registered');
+        swRegistration.addEventListener('updatefound', () => {
+            const newWorker = swRegistration.installing;
+            if (!newWorker) return;
+            newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                    showUpdateToast();
+                }
+            });
+        });
     } catch (e) {
         console.warn('SW registration failed', e);
     }
+}
+
+function showUpdateToast() {
+    if (document.getElementById('update-toast')) return;
+    try {
+        const toast = document.createElement('div');
+        toast.id = 'update-toast';
+        toast.style.cssText = 'position:fixed;bottom:20px;left:20px;right:20px;background:var(--card);border:1px solid var(--primary);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px;z-index:9998;box-shadow:0 8px 24px rgba(0,0,0,0.4);color:var(--text);font-size:0.9rem;';
+        toast.innerHTML = `
+            <div style="flex:1;">🔄 Доступно обновление приложения</div>
+            <button id="update-now-btn" style="background:var(--primary);color:#000;border:none;padding:8px 14px;border-radius:10px;font-weight:600;font-size:0.85rem;cursor:pointer;">Обновить</button>
+            <button id="update-later-btn" style="background:transparent;color:var(--muted);border:none;padding:8px 10px;font-size:0.85rem;cursor:pointer;">Позже</button>
+        `;
+        document.body.appendChild(toast);
+        document.getElementById('update-now-btn').onclick = () => {
+            if (swRegistration && swRegistration.waiting) {
+                swRegistration.waiting.postMessage({ type: 'SKIP_WAITING' });
+                setTimeout(() => location.reload(), 300);
+            } else location.reload();
+        };
+        document.getElementById('update-later-btn').onclick = () => toast.remove();
+    } catch(e) {}
 }
 
 async function requestNotificationPermission() {
@@ -924,7 +1126,7 @@ async function showRestFinishedNotification(nextName) {
         });
     } catch (e) {}
 }
-/* ===================== /УВЕДОМЛЕНИЯ ===================== */
+/* ===================== /SERVICE WORKER / УВЕДОМЛЕНИЯ ===================== */
 
 /* ===================== АВТОСОХРАНЕНИЕ ===================== */
 const RUN_STATE_KEY = 'ft_run_state';
@@ -1913,7 +2115,6 @@ function updateTimersUI() {
     if (!runState) return;
     const { phase } = runState;
     
-    // Минутные метки: голосом (прошло/осталось) или пиком
     if (DB.settings.minuteBeep && phase !== 'ready' && phase !== 'countdown' && phase !== 'finish') {
         const isPaused = runState[`${phase}Paused`];
         if (!isPaused) {
@@ -1974,7 +2175,6 @@ function updateTimersUI() {
         if (remaining === 0 && !runState.waterFinished && !runState.waterPaused) onWaterFinished();
     }
     
-    // Автосохранение (раз в ~3 секунды)
     saveCounter++;
     if (saveCounter % 3 === 0) saveRunState();
 }
@@ -1983,10 +2183,7 @@ async function startWorkout(id) {
     const w = DB.workouts.find(x => x.id === id);
     if (!w) return;
     
-    try {
-        await initNotifications();
-        await requestNotificationPermission();
-    } catch(e) {}
+    try { await requestNotificationPermission(); } catch(e) {}
 
     runState = {
         workout: w, index: 0, phase: 'ready',
@@ -2717,7 +2914,7 @@ function showFinishScreen() {
                 <div class="stat-row"><div class="stat-label">💪 Время упражнений</div><div class="stat-value highlight">${formatTime(runState.totalWorkTime)}</div></div>
             </div>
         </div>
-        <details style="margin-top: 12px; background: var(--card); border-radius: 14px; border: 1px solid #333;">
+        <details style="margin-top: 12px; background: var(--card); border-radius: 14px; border: 1px solid var(--border);">
             <summary style="padding: 14px 16px; font-weight: 600; color: var(--text);"><span>📊 Время по упражнениям</span></summary>
             <div style="padding: 0 16px 16px; display: flex; flex-direction: column; gap: 8px;">
                 ${runState.workout.exercises.filter(e => !e.waterBreak).map((ex, i) => {
@@ -2738,16 +2935,13 @@ function showFinishScreen() {
 }
 
 function confirmExit() {
-    // Если тренировки нет или она уже завершена — просто переходим
     if (!runState || runState.phase === 'finish') {
         showScreen('screen-workouts');
         return true;
     }
-
     if (!confirm('Выйти из тренировки?\n\nПрогресс сохранится — сможете продолжить позже.')) {
         return false;
     }
-
     stopTickInterval();
     if (runState.countdownInterval) clearInterval(runState.countdownInterval);
     stopMinuteBeep();
@@ -2881,6 +3075,7 @@ function renderSettings() {
     document.getElementById('set-announce-numbers').checked = DB.settings.announceNumbers;
     document.getElementById('set-show-start-time').checked = DB.settings.showStartTime;
     
+    renderThemeModeOptions();
     renderSoundModeOptions();
     renderSoundOptions();
     renderMinuteBeepOptions();
@@ -2938,8 +3133,11 @@ function importData(event) {
             if (DB.settings.soundMode !== 'voice' && DB.settings.soundMode !== 'beep') {
                 DB.settings.soundMode = DB.settings.voice ? 'voice' : 'beep';
             }
+            if (!['auto','light','dark'].includes(DB.settings.themeMode)) DB.settings.themeMode = 'auto';
             DB.settings.voice = (DB.settings.soundMode === 'voice');
             saveDB('workouts'); saveDB('templates'); saveDB('history'); saveDB('settings');
+            validateDB();
+            applyTheme();
             alert('Импорт успешен!');
             showScreen('screen-home');
         } catch(err) { alert('Ошибка импорта: ' + err.message); }
@@ -2974,8 +3172,34 @@ document.addEventListener('visibilitychange', () => {
     }
 });
 
+/* ===================== СТАРТ ПРИЛОЖЕНИЯ ===================== */
+try {
+    applyTheme();
+    try {
+        const mq = window.matchMedia('(prefers-color-scheme: light)');
+        if (mq && mq.addEventListener) {
+            mq.addEventListener('change', () => {
+                if ((DB.settings.themeMode || 'auto') === 'auto') applyTheme();
+            });
+        }
+    } catch(e) {}
+} catch(e) { console.warn('[init theme]', e); }
+
 window.addEventListener('load', () => {
-    initNotifications();
-    setTimeout(() => offerResumeSavedSession(), 400);
+    try {
+        initServiceWorker();
+    } catch(e) { console.warn('[init SW]', e); }
+
+    setTimeout(() => {
+        try {
+            offerResumeSavedSession();
+        } catch(e) {
+            console.error('[resume]', e);
+            showSafeMode('Ошибка при восстановлении тренировки: ' + (e.message || e));
+        }
+    }, 400);
 });
+/* ===================== /СТАРТ ПРИЛОЖЕНИЯ ===================== */
 </script>
+</body>
+</html>
