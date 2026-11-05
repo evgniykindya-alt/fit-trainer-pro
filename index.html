@@ -304,7 +304,7 @@ details[open] summary::after { transform: rotate(180deg); }
 .streak-cell.lv3 { background: var(--primary); }
 .streak-cell.today { outline: 1px solid var(--accent); }
 
-.heatmap-grid { display: grid; grid-template-columns: repeat(13, 1fr); gap: 5px; margin-top: 10px; }
+.heatmap-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 5px; margin-top: 10px; }
 .heatmap-cell { aspect-ratio: 1; border-radius: 3px; background: var(--card-2); cursor: pointer; }
 .heatmap-cell.lv1 { background: rgba(187,134,252,0.25); }
 .heatmap-cell.lv2 { background: rgba(187,134,252,0.5); }
@@ -1571,22 +1571,17 @@ function renderStreakBanner() {
         </div>`;
     } catch(e) { el.innerHTML = ''; }
 }
-function buildHeatmap90() {
-    const today = new Date(); today.setHours(0,0,0,0);
-    const start = addDays(today, -89);
-    const dow = start.getDay();
-    const shift = (dow === 0 ? 6 : dow - 1);
-    let cur = addDays(start, -shift);
-    const todayKey = formatDateKey(today);
+function buildHeatmap30() {
     let html = '';
-    for (let i = 0; i < 91; i++) {
-        const k = formatDateKey(cur);
+    const today = new Date(); today.setHours(0,0,0,0);
+    const todayKey = formatDateKey(today);
+    for (let i = 29; i >= 0; i--) {
+        const d = addDays(today, -i);
+        const k = formatDateKey(d);
         const lv = dayLevel(k);
         const isToday = k === todayKey;
-        const isFuture = cur > today;
         const cls = `heatmap-cell${lv ? ' lv' + lv : ''}${isToday ? ' today' : ''}`;
-        html += `<div class="${cls}" style="${isFuture ? 'opacity:0.15;' : ''}" onclick="showDayActivityDetail('${k}')"></div>`;
-        cur = addDays(cur, 1);
+        html += `<div class="${cls}" onclick="showDayActivityDetail('${k}')"></div>`;
     }
     return html;
 }
@@ -1603,10 +1598,8 @@ function renderActivity() {
             <div style="color:var(--muted); font-size:0.9rem;">подряд · рекорд ${record}</div>
         </div>
         <div class="card">
-            <div style="font-weight:700; margin-bottom:4px;">📅 Активность 90 дней</div>
-            <div style="overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:10px;">
-                <div class="heatmap-grid" style="min-width:380px;">${buildHeatmap90()}</div>
-            </div>
+            <div style="font-weight:700; margin-bottom:4px;">📅 Активность 30 дней</div>
+            <div class="heatmap-grid">${buildHeatmap30()}</div>
             <div class="heatmap-legend">
                 <span>меньше</span>
                 <div class="heatmap-legend-box" style="background:var(--card-2);"></div>
@@ -2452,10 +2445,59 @@ function toggleRestPause() {
 
 function adjustRest(d) {
     if (runState.restBannerMode) return;
-    if (runState.restFinished) { 
-        runState.restOvertime = Math.max(0, runState.restOvertime + d); 
+    
+    if (runState.restFinished) {
+        // In overtime, clicking -30 means we want to rewind time, so we ADD to the base duration
+        runState.restDuration = Math.max(0, runState.restDuration - d);
+        const elapsed = getCurrentElapsed('rest');
+        if (runState.restDuration > elapsed) {
+            runState.restFinished = false;
+            runState.restOvertime = 0;
+            runState.restBeepPlayed = false;
+            stopRestAlarm();
+            if (runState.restOvertimeInterval) {
+                clearInterval(runState.restOvertimeInterval);
+                runState.restOvertimeInterval = null;
+            }
+        }
+    } else {
+        // In normal countdown, clicking -30 means we subtract from duration
+        runState.restDuration = Math.max(0, runState.restDuration + d);
+        if (runState.restDuration <= getCurrentElapsed('rest')) {
+            onRestFinished();
+        }
     }
-    else runState.restDuration = Math.max(0, runState.restDuration + d);
+    
+    updateTimersUI();
+    renderRun();
+    saveRunState();
+}
+
+function adjustWater(d) {
+    if (runState.waterBannerMode) return;
+    
+    if (runState.waterFinished) {
+        runState.waterDuration = Math.max(0, runState.waterDuration - d);
+        const elapsed = getCurrentElapsed('water');
+        if (runState.waterDuration > elapsed) {
+            runState.waterFinished = false;
+            runState.waterOvertime = 0;
+            runState.waterBeepPlayed = false;
+            stopWaterAlarm();
+            if (runState.waterOvertimeInterval) {
+                clearInterval(runState.waterOvertimeInterval);
+                runState.waterOvertimeInterval = null;
+            }
+        }
+    } else {
+        runState.waterDuration = Math.max(0, runState.waterDuration + d);
+        if (runState.waterDuration <= getCurrentElapsed('water')) {
+            onWaterFinished();
+        }
+    }
+    
+    updateTimersUI();
+    renderRun();
     saveRunState();
 }
 
