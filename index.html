@@ -169,7 +169,8 @@ textarea.input { min-height: 60px; resize: vertical; font-family: inherit; }
 }
 @keyframes waterPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
 
-.phase-header { width: 100%; height: 1.5rem; margin: 10px 0; display: flex; align-items: center; justify-content: center; }
+/* ИЗМЕНЕНО: уменьшены отступы и высота phase-header */
+.phase-header { width: 100%; min-height: 1rem; margin: 4px 0; display: flex; align-items: center; justify-content: center; }
 .phase-label { text-align: center; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 2px; color: var(--muted); font-weight: 600; width: 100%; display: block; margin: 0; }
 .phase-label.work { color: var(--accent); }
 .phase-label.finished { color: var(--danger); font-size: 1.3rem; letter-spacing: 1.5px; font-weight: 700; }
@@ -179,11 +180,12 @@ textarea.input { min-height: 60px; resize: vertical; font-family: inherit; }
 
 .start-time-display { position: relative; right: 10px; text-align: right; font-size: 0.85rem; font-weight: 600; white-space: nowrap; color: var(--muted) !important; }
 
+/* ИЗМЕНЕНО: уменьшены вертикальные отступы */
 .current-exercise { 
     text-align: center; 
     font-size: 3rem; 
     font-weight: 700; 
-    margin: 10px 0; 
+    margin: 6px 0; 
     letter-spacing: -0.5px; 
     word-break: break-word; 
     line-height: 1.2; 
@@ -456,7 +458,7 @@ details[open] summary::after { transform: rotate(180deg); }
         <div class="spacer"></div>
     </div>
     <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
-    <div class="phase-header"><div class="phase-label" id="phase-label">УПРАЖНЕНИЕ</div></div>
+    <div class="phase-header" id="phase-header-el"><div class="phase-label" id="phase-label">УПРАЖНЕНИЕ</div></div>
     <div class="current-exercise" id="current-exercise">—</div>
     <div id="set-badge" class="set-badge" style="display:none;"></div>
     <div id="phase-ready" style="display:none;"></div>
@@ -1967,7 +1969,7 @@ function renderPreviewElements(exercises) {
         }
         const exNum = getExerciseNumber(exercises, i);
         let info = '';
-        if (e.type === 'sets') info = `${e.setsCount}×${e.setMode === 'reps' ? (e.targetReps||10) + ' повт' : formatTime(e.setDuration||45)}`;
+        if (e.type === 'sets') info = `${e.setsCount || 3}×${e.setMode === 'reps' ? (e.targetReps||10) + ' повт' : formatTime(e.setDuration||45)}`;
         else if (e.type === 'reps') info = `${e.targetReps || 10} повторов`;
         else info = 'по времени';
         const icon = e.type === 'sets' ? ' 🔁' : e.type === 'reps' ? ' 🔢' : '';
@@ -2127,7 +2129,22 @@ function addRest() {
     editorExercises.push({ kind: 'rest', restType: 'rest', duration: 60, notes: '' });
     renderEditorExercises();
 }
-function updateElement(i, f, v) { if (editorExercises[i]) editorExercises[i][f] = v; }
+function updateElement(i, f, v) { 
+    if (!editorExercises[i]) return; 
+    editorExercises[i][f] = v;
+    if (f === 'type') {
+        const ex = editorExercises[i];
+        if (v === 'sets') {
+            if (ex.setsCount === undefined || ex.setsCount === null) ex.setsCount = 3;
+            if (ex.setMode === undefined) ex.setMode = 'reps';
+            if (ex.targetReps === undefined || ex.targetReps === null) ex.targetReps = 10;
+            if (ex.setDuration === undefined || ex.setDuration === null) ex.setDuration = 45;
+            if (ex.restBetweenSets === undefined || ex.restBetweenSets === null) ex.restBetweenSets = 60;
+        } else if (v === 'reps') {
+            if (ex.targetReps === undefined || ex.targetReps === null) ex.targetReps = 10;
+        }
+    }
+}
 function removeElement(i) { editorExercises.splice(i, 1); renderEditorExercises(); }
 function moveElement(i, d) {
     const j = i + d;
@@ -2144,6 +2161,19 @@ function saveWorkout() {
     if (!hasExercise) { alert('Добавь хотя бы одно упражнение'); return; }
     const emptyNames = editorExercises.filter(e => e.kind === 'exercise' && !e.name.trim());
     if (emptyNames.length > 0) { if (!voiceConfirm(`У ${emptyNames.length} упражнений не указано название. Продолжить?`)) return; }
+    // Нормализация: гарантируем, что у sets-упражнений есть все поля
+    editorExercises.forEach(ex => {
+        if (ex.kind === 'exercise' && ex.type === 'sets') {
+            if (ex.setsCount === undefined || ex.setsCount === null) ex.setsCount = 3;
+            if (ex.setMode === undefined) ex.setMode = 'reps';
+            if (ex.setMode === 'reps' && (ex.targetReps === undefined || ex.targetReps === null)) ex.targetReps = 10;
+            if (ex.setMode === 'time' && (ex.setDuration === undefined || ex.setDuration === null)) ex.setDuration = 45;
+            if (ex.restBetweenSets === undefined || ex.restBetweenSets === null) ex.restBetweenSets = 60;
+        }
+        if (ex.kind === 'exercise' && ex.type === 'reps') {
+            if (ex.targetReps === undefined || ex.targetReps === null) ex.targetReps = 10;
+        }
+    });
     const autoStart = document.getElementById('auto-start').checked;
     const data = { name, autoStart, exercises: editorExercises };
     if (editingIsTemplate) {
@@ -2241,7 +2271,7 @@ function startTimer(type, duration) {
     runState.lastBeepTargetTime = undefined;
     if (runState.tickInterval) clearInterval(runState.tickInterval);
     runState.tickInterval = setInterval(updateTimersUI, 1000);
-    updateTimersUI(); // Синхронизация сразу при старте
+    updateTimersUI();
 }
 function pauseTimer(type) { const e = getCurrentElapsed(type); runState[`${type}ElapsedBeforePause`] = e; runState[`${type}StartTime`] = null; runState[`${type}Paused`] = true; }
 function resumeTimer(type) { runState[`${type}StartTime`] = Date.now(); runState[`${type}Paused`] = false; }
@@ -2336,7 +2366,7 @@ function startExerciseNow() {
     const n = getExerciseNumber(runState.workout.exercises, runState.index);
     let info = '';
     if (el.type === 'reps') info = `, ${el.targetReps || 10} повторов`;
-    else if (el.type === 'sets') info = `, ${el.setsCount} подходов`;
+    else if (el.type === 'sets') info = `, ${el.setsCount || 3} подходов`;
     if (DB.settings.announceNumbers) speak(n + '. ' + (el.name || 'Упражнение') + info);
     else speak((el.name || 'Упражнение') + info);
     if (el.type === 'sets' && runState.currentSet > 1) speak(`Подход ${runState.currentSet}`);
@@ -2397,7 +2427,8 @@ function finishExercise() {
         if (!runState.setResults[runState.index]) runState.setResults[runState.index] = [];
         let val = el.setMode === 'time' ? Math.min(elapsed, el.setDuration || elapsed) : (el.targetReps || 0);
         runState.setResults[runState.index].push(val);
-        const isLastSet = runState.currentSet >= (el.setsCount || 1);
+        const totalSets = el.setsCount || 3;
+        const isLastSet = runState.currentSet >= totalSets;
         if (!isLastSet) {
             runState.currentSet++;
             runState.phase = 'rest';
@@ -2447,7 +2478,6 @@ function adjustRest(d) {
     if (runState.restBannerMode) return;
     
     if (runState.restFinished) {
-        // In overtime, clicking -30 means we want to rewind time, so we ADD to the base duration
         runState.restDuration = Math.max(0, runState.restDuration - d);
         const elapsed = getCurrentElapsed('rest');
         if (runState.restDuration > elapsed) {
@@ -2461,7 +2491,6 @@ function adjustRest(d) {
             }
         }
     } else {
-        // In normal countdown, clicking -30 means we subtract from duration
         runState.restDuration = Math.max(0, runState.restDuration + d);
         if (runState.restDuration <= getCurrentElapsed('rest')) {
             onRestFinished();
@@ -2684,9 +2713,15 @@ function renderRun() {
     if (index >= elements.length) { showFinishScreen(); return; }
     const el = elements[index];
     const phaseLabel = document.getElementById('phase-label');
+    const phaseHeaderEl = document.getElementById('phase-header-el');
+    const currentExEl = document.getElementById('current-exercise');
     const startDisplay = document.getElementById('start-time-display');
     const startValue = document.getElementById('start-time-value');
     const setBadge = document.getElementById('set-badge');
+
+    // Показываем phase-header и current-exercise (могли быть скрыты на экране завершения)
+    if (phaseHeaderEl) phaseHeaderEl.style.display = 'flex';
+    if (currentExEl) currentExEl.style.display = 'flex';
 
     const totalEx = getTotalExerciseCount(elements);
     const doneEx = runState.exerciseTimes.length;
@@ -2695,7 +2730,7 @@ function renderRun() {
 
     hideAllPhases();
     setBadge.style.display = 'none';
-    document.getElementById('current-exercise').style.color = '';
+    currentExEl.style.color = '';
     phaseLabel.className = 'phase-label';
 
     if (DB.settings.showStartTime && runState.startTime) {
@@ -2706,14 +2741,14 @@ function renderRun() {
 
     if (el.kind === 'exercise' && el.type === 'sets' && (phase === 'work' || phase === 'countdown' || phase === 'ready')) {
         setBadge.style.display = 'block';
-        setBadge.innerHTML = `Подход <span class="set-num">${runState.currentSet}</span> из ${el.setsCount}`;
+        setBadge.innerHTML = `Подход <span class="set-num">${runState.currentSet}</span> из ${el.setsCount || 3}`;
     }
 
     if (phase === 'ready') {
         if (el.kind === 'rest') {
             const prevIdx = findPrevExerciseIndex(elements, index);
             const prevEx = prevIdx >= 0 ? elements[prevIdx] : null;
-            document.getElementById('current-exercise').innerText = prevEx ? (prevEx.name || 'Упражнение') : 'Отдых';
+            currentExEl.innerText = prevEx ? (prevEx.name || 'Упражнение') : 'Отдых';
             const isWater = el.restType === 'water';
             phaseLabel.innerText = isWater ? 'НЕОБХОДИМО ПОПИТЬ ВОДЫ' : 'ОТДЫХ';
             phaseLabel.className = 'phase-label';
@@ -2726,13 +2761,13 @@ function renderRun() {
                 <button class="btn accent" onclick="beginCurrentElementFlow()">▶ Начать</button>`;
             document.getElementById('phase-ready').style.display = 'block';
         } else {
-            document.getElementById('current-exercise').innerText = el.name || 'Упражнение';
+            currentExEl.innerText = el.name || 'Упражнение';
             const exNum = getExerciseNumber(elements, index);
             phaseLabel.innerText = `УПРАЖНЕНИЕ ${exNum} / ${totalEx}`;
             phaseLabel.className = 'phase-label';
             let info = '';
             if (el.type === 'reps') info = `<p style="text-align:center; color:var(--accent); font-size:1.2rem; font-weight:700; margin-bottom:10px;">🔢 ${el.targetReps || 10} повторов</p>`;
-            else if (el.type === 'sets') info = `<p style="text-align:center; color:var(--accent); font-size:1.2rem; font-weight:700; margin-bottom:10px;">🔁 ${el.setsCount}× ${el.setMode === 'reps' ? (el.targetReps || 10) + ' повт.' : (el.setDuration || 45) + ' сек'}</p>`;
+            else if (el.type === 'sets') info = `<p style="text-align:center; color:var(--accent); font-size:1.2rem; font-weight:700; margin-bottom:10px;">🔁 ${el.setsCount || 3}× ${el.setMode === 'reps' ? (el.targetReps || 10) + ' повт.' : (el.setDuration || 45) + ' сек'}</p>`;
             document.getElementById('phase-ready').innerHTML = `
                 ${el.notes ? `<p style="text-align:center; color:var(--muted); font-size:0.9rem; margin-bottom:10px;">📝 ${escapeHtml(el.notes)}</p>` : ''}
                 ${info}
@@ -2741,14 +2776,14 @@ function renderRun() {
             document.getElementById('phase-ready').style.display = 'block';
         }
     } else if (phase === 'countdown') {
-        document.getElementById('current-exercise').innerText = el.name || 'Упражнение';
+        currentExEl.innerText = el.name || 'Упражнение';
         const exNum = getExerciseNumber(elements, index);
         phaseLabel.innerText = `УПРАЖНЕНИЕ ${exNum} / ${totalEx}`;
         phaseLabel.className = 'phase-label';
         document.getElementById('countdown-timer').innerText = runState.countdownValue;
         document.getElementById('phase-countdown').style.display = 'block';
     } else if (phase === 'work') {
-        document.getElementById('current-exercise').innerText = el.name || 'Упражнение';
+        currentExEl.innerText = el.name || 'Упражнение';
         const exNum = getExerciseNumber(elements, index);
         phaseLabel.innerText = `УПРАЖНЕНИЕ ${exNum} / ${totalEx}`;
         phaseLabel.className = 'phase-label';
@@ -2763,7 +2798,7 @@ function renderRun() {
             if (el.setMode === 'reps') { showReps = true; targetText = el.targetReps || 10; }
             if (el.setMode === 'time') { hidePause = true; finishText = '✅ Завершить подход'; }
             else finishText = `✅ Подход ${runState.currentSet} сделан`;
-            if (runState.currentSet === el.setsCount && el.setMode === 'reps') finishText = '✅ Последний подход';
+            if (runState.currentSet === (el.setsCount || 3) && el.setMode === 'reps') finishText = '✅ Последний подход';
         }
         pauseBtn.style.display = hidePause ? 'none' : 'block';
         repsInfo.style.display = showReps ? 'block' : 'none';
@@ -2830,7 +2865,6 @@ function renderRestElement(el) {
         if (runState.restFinished) {
             timerEl.style.color = 'var(--danger)';
             timerEl.className = 'big-timer overtime';
-            // Текст обновляет updateTimersUI
         } else {
             timerEl.style.color = '';
             timerEl.className = 'big-timer' + (runState.restPaused ? ' paused' : '');
@@ -2849,7 +2883,7 @@ function renderRestElement(el) {
         
         if (isBetween) {
             labelEl.innerText = 'Следующий подход';
-            nameEl.innerText = `Подход ${runState.currentSet} из ${el.setsCount}`;
+            nameEl.innerText = `Подход ${runState.currentSet} из ${el.setsCount || 3}`;
         } else {
             const next = findNextElement(runState.workout.exercises, runState.index);
             if (!next) {
@@ -2860,7 +2894,7 @@ function renderRestElement(el) {
                 labelEl.innerText = 'Далее';
                 if (nx.kind === 'exercise') {
                     const num = getExerciseNumber(runState.workout.exercises, next.idx);
-                    const info = nx.type === 'sets' ? ` (${nx.setsCount}×)` : nx.type === 'reps' ? ` (${nx.targetReps||10})` : '';
+                    const info = nx.type === 'sets' ? ` (${nx.setsCount || 3}×)` : nx.type === 'reps' ? ` (${nx.targetReps||10})` : '';
                     nameEl.innerText = (DB.settings.announceNumbers ? `${num}. ` : '') + (nx.name || 'Упражнение') + info;
                 } else {
                     const isW = nx.restType === 'water';
@@ -2948,8 +2982,13 @@ function showFinishScreen() {
     clearSavedRunState(); disableExitProtection();
     const endTime = new Date();
     const totalDuration = Math.floor((endTime - runState.startTime) / 1000);
+    // Скрываем пустые элементы, чтобы не было большого промежутка перед "Готово!"
     document.getElementById('phase-label').style.display = 'none';
-    document.getElementById('current-exercise').innerText = '';
+    const phaseHeaderEl = document.getElementById('phase-header-el');
+    if (phaseHeaderEl) phaseHeaderEl.style.display = 'none';
+    const currentExEl = document.getElementById('current-exercise');
+    currentExEl.innerText = '';
+    currentExEl.style.display = 'none';
     document.getElementById('start-time-display').style.display = 'none';
     const sb = document.getElementById('set-badge');
     if (sb) sb.style.display = 'none';
