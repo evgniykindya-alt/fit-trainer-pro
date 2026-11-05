@@ -6,9 +6,16 @@ const PRECACHE_URLS = ['./', './index.html'];
 self.addEventListener('install', (event) => {
     self.skipWaiting();
     event.waitUntil(
-        caches.open(CACHE_NAME)
-            .then((cache) => cache.addAll(PRECACHE_URLS))
-            .catch((e) => console.warn('[SW] precache failed', e))
+        caches.open(CACHE_NAME).then((cache) => {
+            // ИСПРАВЛЕНО: individual add вместо addAll.
+            // Если один URL упадёт — остальные всё равно закэшируются,
+            // и SW не останется с пустым кэшем.
+            return Promise.all(
+                PRECACHE_URLS.map((url) =>
+                    cache.add(url).catch((e) => console.warn('[SW] precache skip', url, e))
+                )
+            );
+        }).catch((e) => console.warn('[SW] precache failed', e))
     );
 });
 
@@ -34,8 +41,13 @@ self.addEventListener('fetch', (event) => {
         event.respondWith(
             fetch(req)
                 .then((res) => {
-                    const copy = res.clone();
-                    caches.open(CACHE_NAME).then((c) => c.put(req, copy)).catch(() => {});
+                    // ИСПРАВЛЕНО: кэшируем только успешные ответы (2xx).
+                    // Раньше 404/500 от сервера тоже попадали в кэш и потом
+                    // показывались офлайн вместо приложения.
+                    if (res && res.ok) {
+                        const copy = res.clone();
+                        caches.open(CACHE_NAME).then((c) => c.put(req, copy)).catch(() => {});
+                    }
                     return res;
                 })
                 .catch(() => caches.match(req)
@@ -58,7 +70,12 @@ self.addEventListener('fetch', (event) => {
                     caches.open(CACHE_NAME).then((c) => c.put(req, copy)).catch(() => {});
                 }
                 return res;
-            }).catch(() => cached);
+            }).catch(() => {
+                // ИСПРАВЛЕНО: если офлайн и в кэше нет — возвращаем
+                // пустой 504 вместо undefined (иначе respondWith крашится
+                // и браузер показывает неинформативную "Failed to fetch").
+                return new Response('', { status: 504, statusText: 'Offline' });
+            });
         })
     );
 });
