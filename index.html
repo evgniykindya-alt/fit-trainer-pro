@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Fit Trainer Pro v1.4">
+<meta name="apple-mobile-web-app-title" content="Fit Trainer Pro v1.5">
 <meta name="theme-color" content="#0f0f12">
-<title>Fit Trainer Pro v1.4</title>
-<link rel="manifest" href='data:application/manifest+json,{"name":"Fit Trainer Pro v1.4","short_name":"FitTrainer","start_url":".","display":"standalone","background_color":"%230f0f12","theme_color":"%230f0f12","icons":[{"src":"data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%230f0f12%22/%3E%3Ctext x=%2250%22 y=%2268%22 font-size=%2260%22 text-anchor=%22middle%22%3E💪%3C/text%3E%3C/svg%3E","sizes":"192x192","type":"image/svg+xml"}]}'>
+<title>Fit Trainer Pro v1.5</title>
+<link rel="manifest" href='data:application/manifest+json,{"name":"Fit Trainer Pro v1.5","short_name":"FitTrainer","start_url":".","display":"standalone","background_color":"%230f0f12","theme_color":"%230f0f12","icons":[{"src":"data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%230f0f12%22/%3E%3Ctext x=%2250%22 y=%2268%22 font-size=%2260%22 text-anchor=%22middle%22%3E💪%3C/text%3E%3C/svg%3E","sizes":"192x192","type":"image/svg+xml"}]}'>
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%230f0f12'/%3E%3Ctext x='50' y='68' font-size='60' text-anchor='middle'%3E💪%3C/text%3E%3C/svg%3E">
 <style>
 :root {
@@ -56,7 +56,6 @@ h2 { color: var(--primary); margin: 24px 0 12px; font-size: 1.15rem; font-weight
 .top-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
 .top-bar .spacer { width: 44px; flex-shrink: 0; }
 .top-bar h1 { flex: 1; text-align: center; margin: 0; font-size: 1.3rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-/* Название тренировки - белое */
 #run-title { color: var(--text) !important; }
 
 .back-btn { background: var(--card); border: none; color: var(--text); width: 44px; height: 44px; border-radius: 50%; font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
@@ -142,7 +141,6 @@ textarea.input { min-height: 60px; resize: vertical; font-family: inherit; }
 .sound-option .sound-desc { color: var(--muted); font-size: 0.8rem; margin-top: 2px; }
 .sound-option .preview-btn { background: var(--card); border: 1px solid var(--border); color: var(--accent); width: 38px; height: 38px; border-radius: 50%; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
 
-/* Фикс высоты для таймера, чтобы не прыгал */
 .big-timer { 
     font-size: 4.5rem; 
     font-weight: 700; 
@@ -181,7 +179,6 @@ textarea.input { min-height: 60px; resize: vertical; font-family: inherit; }
 
 .start-time-display { position: relative; right: 10px; text-align: right; font-size: 0.85rem; font-weight: 600; white-space: nowrap; color: var(--muted) !important; }
 
-/* Фикс высоты для названия упражнения, чтобы не прыгало */
 .current-exercise { 
     text-align: center; 
     font-size: 3rem; 
@@ -300,14 +297,14 @@ details[open] summary::after { transform: rotate(180deg); }
 .streak-banner-title { font-size: 1.2rem; font-weight: 700; }
 .streak-banner-title .fire { color: var(--fire); }
 .streak-banner-record { font-size: 0.85rem; color: var(--muted); }
-.streak-banner-grid { display: grid; grid-template-columns: repeat(30, 1fr); gap: 2px; margin-top: 10px; }
+.streak-banner-grid { display: grid; grid-template-columns: repeat(15, 1fr); gap: 4px; margin-top: 10px; }
 .streak-cell { aspect-ratio: 1; border-radius: 2px; background: var(--card-2); }
 .streak-cell.lv1 { background: rgba(187,134,252,0.25); }
 .streak-cell.lv2 { background: rgba(187,134,252,0.5); }
 .streak-cell.lv3 { background: var(--primary); }
 .streak-cell.today { outline: 1px solid var(--accent); }
 
-.heatmap-grid { display: grid; grid-template-columns: repeat(13, 1fr); gap: 3px; margin-top: 10px; }
+.heatmap-grid { display: grid; grid-template-columns: repeat(13, 1fr); gap: 5px; margin-top: 10px; }
 .heatmap-cell { aspect-ratio: 1; border-radius: 3px; background: var(--card-2); cursor: pointer; }
 .heatmap-cell.lv1 { background: rgba(187,134,252,0.25); }
 .heatmap-cell.lv2 { background: rgba(187,134,252,0.5); }
@@ -335,7 +332,7 @@ details[open] summary::after { transform: rotate(180deg); }
 <div class="app-container">
 
 <div id="screen-home" class="screen active">
-    <h1>💪 Fit Trainer Pro v1.4</h1>
+    <h1>💪 Fit Trainer Pro v1.5</h1>
     <div id="streak-banner-home"></div>
     <div id="home-today-banner" style="display:none;"></div>
     <button class="menu-btn" onclick="showScreen('screen-workouts')">
@@ -564,7 +561,7 @@ details[open] summary::after { transform: rotate(180deg); }
     <button class="btn ghost" onclick="restoreBuiltins()">🔄 Восстановить шаблоны</button>
     <h2>ℹ️ О приложении</h2>
     <div class="card" style="color:var(--muted); font-size:0.85rem; line-height:1.6;">
-        <strong style="color:var(--text);">Fit Trainer Pro v1.4</strong><br>
+        <strong style="color:var(--text);">Fit Trainer Pro v1.5</strong><br>
         Работает офлайн через Service Worker.<br>
         Данные хранятся локально.
     </div>
@@ -1060,7 +1057,6 @@ function voiceConfirm(message) {
 }
 document.addEventListener('click', (e) => {
     if (!DB.settings.announceButtons || !isVoiceMode()) return;
-    // Только во время тренировки
     if (!runState || runState.phase === 'finish') return;
     const runScreen = document.getElementById('screen-run');
     if (!runScreen || !runScreen.classList.contains('active')) return;
@@ -1068,7 +1064,6 @@ document.addEventListener('click', (e) => {
     try {
         const btn = e.target.closest('button, .menu-btn, .sound-option, .tab');
         if (!btn) return;
-        // Проверяем, что кнопка находится внутри экрана тренировки
         if (!btn.closest('#screen-run')) return;
         if (btn.classList.contains('sheet-btn-cancel')) return;
         
@@ -1609,7 +1604,9 @@ function renderActivity() {
         </div>
         <div class="card">
             <div style="font-weight:700; margin-bottom:4px;">📅 Активность 90 дней</div>
-            <div class="heatmap-grid">${buildHeatmap90()}</div>
+            <div style="overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:10px;">
+                <div class="heatmap-grid" style="min-width:380px;">${buildHeatmap90()}</div>
+            </div>
             <div class="heatmap-legend">
                 <span>меньше</span>
                 <div class="heatmap-legend-box" style="background:var(--card-2);"></div>
@@ -2070,7 +2067,6 @@ function renderEditorExercises() {
                 ${header}${typeRow}${durRow}
             </div>`;
         }
-        // Exercise
         const num = getExerciseNumber(editorExercises, i);
         const exType = el.type || 'time';
         let typeRow = `<div class="type-row">
@@ -2252,6 +2248,7 @@ function startTimer(type, duration) {
     runState.lastBeepTargetTime = undefined;
     if (runState.tickInterval) clearInterval(runState.tickInterval);
     runState.tickInterval = setInterval(updateTimersUI, 1000);
+    updateTimersUI(); // Синхронизация сразу при старте
 }
 function pauseTimer(type) { const e = getCurrentElapsed(type); runState[`${type}ElapsedBeforePause`] = e; runState[`${type}StartTime`] = null; runState[`${type}Paused`] = true; }
 function resumeTimer(type) { runState[`${type}StartTime`] = Date.now(); runState[`${type}Paused`] = false; }
@@ -2351,8 +2348,6 @@ function startExerciseNow() {
     else speak((el.name || 'Упражнение') + info);
     if (el.type === 'sets' && runState.currentSet > 1) speak(`Подход ${runState.currentSet}`);
     startTimer('work', 0);
-    const timerEl = document.getElementById('work-timer');
-    if (timerEl) timerEl.innerText = '00:00';
     saveRunState(); renderRun();
 }
 
@@ -2368,8 +2363,6 @@ function beginRestPhase(restEl) {
     } else {
         runState.restBannerMode = false;
         startTimer('rest', restEl.duration);
-        const timerEl = document.getElementById('rest-timer');
-        if (timerEl) timerEl.innerText = formatTime(restEl.duration);
     }
     
     const ta = document.getElementById('rest-note-textarea');
@@ -2420,8 +2413,6 @@ function finishExercise() {
             runState.restBeepPlayed = false;
             runState.restBannerMode = false;
             startTimer('rest', el.restBetweenSets || 60);
-            const timerEl = document.getElementById('rest-timer');
-            if (timerEl) timerEl.innerText = formatTime(el.restBetweenSets || 60);
             saveRunState(); renderRun();
             if (DB.settings.announceNumbers) speak(`Подход ${runState.currentSet - 1} готов. Отдых. Следующий ${runState.currentSet}`);
             else speak(`Отдых. Следующий подход ${runState.currentSet}`);
@@ -2496,8 +2487,6 @@ function beginBetweenSets() {
     runState.restOvertime = 0;
     speak(`Подход ${runState.currentSet}`);
     startTimer('work', 0);
-    const timerEl = document.getElementById('work-timer');
-    if (timerEl) timerEl.innerText = '00:00';
     saveRunState(); renderRun();
 }
 
@@ -2530,7 +2519,8 @@ function onRestFinished() {
         runState.restFinished = true;
         runState.restOvertime = 0;
         startRestAlarm();
-        saveRunState(); renderRun();
+        updateTimersUI();
+        renderRun();
     } else {
         playEndBeep();
         if (isVoiceMode()) speakCritical('отдых закончен');
@@ -2580,8 +2570,6 @@ function undoLastElement() {
     runState.workElapsedBeforePause = 0;
     runState.workStartTime = Date.now();
     startTimer('work', 0);
-    const timerEl = document.getElementById('work-timer');
-    if (timerEl) timerEl.innerText = '00:00';
     saveRunState(); renderRun();
 }
 
@@ -2800,11 +2788,10 @@ function renderRestElement(el) {
         if (runState.restFinished) {
             timerEl.style.color = 'var(--danger)';
             timerEl.className = 'big-timer overtime';
-            timerEl.innerText = formatTime(getOvertime('rest'));
+            // Текст обновляет updateTimersUI
         } else {
             timerEl.style.color = '';
             timerEl.className = 'big-timer' + (runState.restPaused ? ' paused' : '');
-            // НЕ трогаем innerText, это делает updateTimersUI
         }
     }
     
