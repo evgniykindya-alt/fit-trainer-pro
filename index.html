@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Fit Trainer Pro v1.4">
+<meta name="apple-mobile-web-app-title" content="Fit Trainer Pro v1.3">
 <meta name="theme-color" content="#0f0f12">
 <meta name="mobile-web-app-capable" content="yes">
-<title>Fit Trainer Pro v1.4</title>
-<link rel="manifest" href='data:application/manifest+json,{"name":"Fit Trainer Pro v1.4","short_name":"FitTrainer","start_url":".","display":"standalone","background_color":"%230f0f12","theme_color":"%230f0f12","icons":[{"src":"data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%230f0f12%22/%3E%3Ctext x=%2250%22 y=%2268%22 font-size=%2260%22 text-anchor=%22middle%22%3E💪%3C/text%3E%3C/svg%3E","sizes":"192x192","type":"image/svg+xml"}]}'>
+<title>Fit Trainer Pro v1.3</title>
+<link rel="manifest" href='data:application/manifest+json,{"name":"Fit Trainer Pro v1.3","short_name":"FitTrainer","start_url":".","display":"standalone","background_color":"%230f0f12","theme_color":"%230f0f12","icons":[{"src":"data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%230f0f12%22/%3E%3Ctext x=%2250%22 y=%2268%22 font-size=%2260%22 text-anchor=%22middle%22%3E💪%3C/text%3E%3C/svg%3E","sizes":"192x192","type":"image/svg+xml"}]}'>
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%230f0f12'/%3E%3Ctext x='50' y='68' font-size='60' text-anchor='middle'%3E💪%3C/text%3E%3C/svg%3E">
 <style>
 :root {
@@ -323,7 +323,7 @@ details[open] summary::after { transform: rotate(180deg); }
 <div class="app-container">
 
 <div id="screen-home" class="screen active">
-    <h1>💪 Fit Trainer Pro v1.4</h1>
+    <h1>💪 Fit Trainer Pro v1.3</h1>
     <button class="menu-btn" onclick="showScreen('screen-workouts')">
         <span class="icon">🏋️</span>
         <div><div>Мои тренировки</div><div class="sub">Создать, редактировать, запустить</div></div>
@@ -595,13 +595,12 @@ function isBeepMode() { return DB.settings.soundMode !== 'voice'; }
 function getAutoAdvanceDelay() { return isVoiceMode() ? 1500 : 900; }
 // === /режим звука ===
 
-/* === NEW: защита от случайного выхода === */
+/* === защита от случайного выхода === */
 let exitProtectionActive = false;
 
 function enableExitProtection() {
     if (exitProtectionActive) return;
     exitProtectionActive = true;
-    // Добавляем «якорное» состояние, чтобы поймать кнопку/свайп «назад»
     try {
         history.pushState({ ftProtected: true, ts: Date.now() }, '', location.href);
     } catch(e) {}
@@ -619,7 +618,6 @@ window.addEventListener('popstate', (e) => {
     }
     const exited = confirmExit();
     if (!exited) {
-        // Пользователь остался — возвращаем защиту
         try {
             history.pushState({ ftProtected: true, ts: Date.now() }, '', location.href);
         } catch(err) {}
@@ -1668,7 +1666,7 @@ async function startRestAlarm() {
         let voiceCount = 0;
         function voiceNext() {
             if (voiceCount >= 20) return;
-            speakCritical('время');
+            speakCritical('время вышло');
             voiceCount++;
             restVoiceTimeout = setTimeout(voiceNext, 5000);
         }
@@ -1710,7 +1708,7 @@ async function startWaterAlarm() {
         let voiceCount = 0;
         function voiceNext() {
             if (voiceCount >= 20) return;
-            speakCritical('время');
+            speakCritical('время вышло');
             voiceCount++;
             waterVoiceTimeout = setTimeout(voiceNext, 5000);
         }
@@ -2498,8 +2496,7 @@ function startCountdown() {
         } else {
             clearInterval(runState.countdownInterval);
             if (isVoiceMode()) {
-                speakCritical('старт');
-                setTimeout(() => startExercise(), 700);
+                setTimeout(() => startExercise(), 500);
             } else {
                 playBeep(900, 0.3);
                 setTimeout(() => startExercise(), 300);
@@ -2679,6 +2676,7 @@ function confirmRestFinished() {
 }
 
 function showFinishScreen() {
+    if (runState) runState.phase = 'finish';
     stopMinuteBeep();
     stopRestOvertime();
     stopWaterOvertime();
@@ -2739,39 +2737,17 @@ function showFinishScreen() {
     releaseWakeLock();
 }
 
-/* === NEW: усиленная защита от случайного выхода === */
 function confirmExit() {
-    // Если тренировки нет — просто переходим
+    // Если тренировки нет или она уже завершена — просто переходим
     if (!runState || runState.phase === 'finish') {
         showScreen('screen-workouts');
         return true;
     }
 
-    const phase = runState.phase;
-    const idx = runState.index;
-    const totalEx = getTotalExerciseCount(runState.workout.exercises);
-    const elapsed = Math.floor((Date.now() - runState.startTime.getTime()) / 1000);
-    const workDone = runState.totalWorkTime;
-
-    let info = `Тренировка «${runState.workout.name}» идёт ${formatTime(elapsed)}.\n`;
-    info += `Выполнено упражнений: ${runState.exerciseTimes.length} из ${totalEx}.\n\n`;
-
-    if (phase === 'work') info += `⚠️ Сейчас идёт упражнение ${Math.min(idx + 1, totalEx)}.\n`;
-    else if (phase === 'rest') info += `Сейчас идёт отдых.\n`;
-    else if (phase === 'water') info += `Сейчас перерыв на воду.\n`;
-    else if (phase === 'countdown') info += `Идёт обратный отсчёт.\n`;
-    else if (phase === 'ready') info += `Сейчас экран готовности к упражнению ${Math.min(idx + 1, totalEx)}.\n`;
-
-    info += `\nПрогресс сохранится — можно будет продолжить позже.\n\nТочно выйти?`;
-
-    if (!confirm(info)) return false;
-
-    // Дополнительное подтверждение, если в фазе упражнения или тренировка идёт долго
-    if (phase === 'work' || elapsed > 180) {
-        if (!confirm('Точно-точно выйти? Текущий таймер упражнения остановится.')) return false;
+    if (!confirm('Выйти из тренировки?\n\nПрогресс сохранится — сможете продолжить позже.')) {
+        return false;
     }
 
-    // Останавливаем всё
     stopTickInterval();
     if (runState.countdownInterval) clearInterval(runState.countdownInterval);
     stopMinuteBeep();
@@ -2780,17 +2756,12 @@ function confirmExit() {
     stopRestOvertime();
     stopWaterOvertime();
     releaseWakeLock();
-
-    // Сохраняем прогресс для возможного продолжения
     saveRunState();
-
-    // Снимаем защиту и выходим
     disableExitProtection();
     runState = null;
     showScreen('screen-workouts');
     return true;
 }
-/* === /усиленная защита от случайного выхода === */
 
 function renderHistory() { renderHistoryList(); renderHistoryStats(); renderHistoryRecords(); }
 function switchHistoryTab(tab, el) {
