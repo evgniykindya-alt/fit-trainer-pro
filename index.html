@@ -496,9 +496,9 @@ details[open] summary::after { transform: rotate(180deg); }
         <input type="checkbox" id="set-wakelock">
         <label for="set-wakelock">🔒 Не гасить экран во время тренировки</label>
     </div>
-    <div class="checkbox-row">
-        <input type="checkbox" id="set-voice">
-        <label for="set-voice">🔊 Голосовые подсказки</label>
+    <div class="sound-section">
+        <div class="sound-section-title">🔉 Режим звука</div>
+        <div class="sound-options" id="sound-mode-options"></div>
     </div>
     <div class="checkbox-row">
         <input type="checkbox" id="set-countdown">
@@ -583,6 +583,58 @@ DB.settings = Object.assign({
     showStartTime: false
 }, DB.settings);
 if (!Array.isArray(DB.settings.hiddenBuiltins)) DB.settings.hiddenBuiltins = [];
+
+// === режим звука ===
+if (DB.settings.soundMode !== 'voice' && DB.settings.soundMode !== 'beep') {
+    DB.settings.soundMode = DB.settings.voice ? 'voice' : 'beep';
+}
+DB.settings.voice = (DB.settings.soundMode === 'voice');
+
+function isVoiceMode() { return DB.settings.soundMode === 'voice'; }
+function isBeepMode() { return DB.settings.soundMode !== 'voice'; }
+function getAutoAdvanceDelay() { return isVoiceMode() ? 1500 : 900; }
+// === /режим звука ===
+
+/* === NEW: защита от случайного выхода === */
+let exitProtectionActive = false;
+
+function enableExitProtection() {
+    if (exitProtectionActive) return;
+    exitProtectionActive = true;
+    // Добавляем «якорное» состояние, чтобы поймать кнопку/свайп «назад»
+    try {
+        history.pushState({ ftProtected: true, ts: Date.now() }, '', location.href);
+    } catch(e) {}
+}
+
+function disableExitProtection() {
+    exitProtectionActive = false;
+}
+
+window.addEventListener('popstate', (e) => {
+    if (!exitProtectionActive) return;
+    if (!runState || runState.phase === 'finish') {
+        disableExitProtection();
+        return;
+    }
+    const exited = confirmExit();
+    if (!exited) {
+        // Пользователь остался — возвращаем защиту
+        try {
+            history.pushState({ ftProtected: true, ts: Date.now() }, '', location.href);
+        } catch(err) {}
+    }
+});
+
+window.addEventListener('beforeunload', (e) => {
+    if (!exitProtectionActive) return;
+    if (!runState || runState.phase === 'finish') return;
+    const msg = 'Тренировка не завершена. Точно выйти?';
+    e.preventDefault();
+    e.returnValue = msg;
+    return msg;
+});
+/* === /защита от случайного выхода === */
 
 const ALARM_SOUNDS = {
     classic: {
@@ -724,16 +776,20 @@ let previewWorkoutId = null;
 let previewTemplateData = null;
 let restAlarmTimeout = null;
 let waterAlarmTimeout = null;
+let restVoiceTimeout = null;
+let waterVoiceTimeout = null;
 let previewCtx = null;
 
 let audioCtx = null;
+
+/* ===================== АУДИО ЯДРО ===================== */
 async function getAudioCtx() {
     try {
         if (!audioCtx || audioCtx.state === 'closed') {
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         }
-        if (audioCtx.state === 'suspended') {
-            await audioCtx.resume();
+        if (audioCtx.state === 'suspended' || audioCtx.state === 'interrupted') {
+            try { await audioCtx.resume(); } catch(e) {}
         }
     } catch(e) {}
     return audioCtx;
@@ -741,17 +797,244 @@ async function getAudioCtx() {
 
 async function unlockAudio() {
     try {
+        if (audioCtx && audioCtx.state === 'closed') audioCtx = null;
         const ctx = await getAudioCtx();
-        if (!ctx) return;
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        gain.gain.setValueAtTime(0.001, ctx.currentTime);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.05);
+        if (ctx && (ctx.state === 'suspended' || ctx.state === 'interrupted')) {
+            try { await ctx.resume(); } catch(e) {}
+        }
     } catch(e) {}
 }
+
+function speak(text) {
+    if (!isVoiceMode()) return;
+    if (!('speechSynthesis' in window)) return;
+    try {
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = 'ru-RU'; u.rate = 1; u.volume = 1;
+        speechSynthesis.cancel();
+        speechSynthesis.speak(u);
+    } catch(e) {}
+}
+
+function speakCritical(text) {
+    if (!isVoiceMode()) return;
+    if (!('speechSynthesis' in window)) return;
+    try {
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = 'ru-RU'; u.rate = 1.3; u.volume = 1;
+        speechSynthesis.speak(u);
+    } catch(e) {}
+}
+
+async function playBeep(freq = 800, duration = 0.3) {
+    if (!isBeepMode()) return;
+    try {
+        const ctx = await getAudioCtx();
+        if (!ctx || ctx.state !== 'running') return;
+        const osc = ctx.createOscillator(); const gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.3, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
+        osc.start(); osc.stop(ctx.currentTime + duration);
+    } catch(e) {}
+}
+
+async function playEndBeep() {
+    if (!isBeepMode()) return;
+    try {
+        const ctx = await getAudioCtx();
+        if (!ctx || ctx.state !== 'running') return;
+        const sound = ALARM_SOUNDS[DB.settings.alarmSound] || ALARM_SOUNDS.alarm;
+        sound.playOnce(ctx);
+    } catch(e) {}
+}
+
+function announcePause() {
+    if (isVoiceMode()) speakCritical('пауза');
+    else playBeep(400, 0.15);
+}
+function announceResume() {
+    if (isVoiceMode()) speakCritical('продолжаем');
+    else playBeep(620, 0.15);
+}
+function announceUndo(name) {
+    if (isVoiceMode()) speakCritical('возврат к ' + (name || 'предыдущему упражнению'));
+    else playBeep(500, 0.2);
+}
+function announceFinalThree() {
+    if (isVoiceMode()) speakCritical('три');
+    else playBeep(600, 0.1);
+}
+
+/* ==== Склонение минут и тексты для минутных меток ==== */
+function numberWord(n) {
+    const words = ['ноль','одна','две','три','четыре','пять','шесть','семь','восемь','девять','десять'];
+    if (n >= 0 && n <= 10) return words[n];
+    return String(n);
+}
+function pluralMinute(n) {
+    const m10 = n % 10, m100 = n % 100;
+    if (m10 === 1 && m100 !== 11) return 'минута';
+    if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return 'минуты';
+    return 'минут';
+}
+function elapsedMinutesText(n) {
+    if (n === 1) return 'минута';
+    return numberWord(n) + ' ' + pluralMinute(n);
+}
+function remainingMinutesText(n) {
+    if (n === 1) return 'одна минута';
+    return numberWord(n) + ' ' + pluralMinute(n);
+}
+/* ==== /Склонение минут ==== */
+
+/* ===================== УВЕДОМЛЕНИЯ ===================== */
+let swRegistration = null;
+
+async function initNotifications() {
+    if (!('serviceWorker' in navigator)) return;
+    if (!('Notification' in window)) return;
+    try {
+        swRegistration = await navigator.serviceWorker.register('./sw.js');
+    } catch (e) {
+        console.warn('SW registration failed', e);
+    }
+}
+
+async function requestNotificationPermission() {
+    if (!('Notification' in window)) return false;
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    if (!isStandalone) return false;
+    if (Notification.permission === 'granted') return true;
+    if (Notification.permission === 'denied') return false;
+    try {
+        const p = await Notification.requestPermission();
+        return p === 'granted';
+    } catch(e) { return false; }
+}
+
+async function showRestFinishedNotification(nextName) {
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    if (!swRegistration) return;
+    try {
+        await swRegistration.showNotification('⏰ Отдых закончен', {
+            body: nextName ? `Следующее: ${nextName}` : 'Продолжайте тренировку',
+            tag: 'rest-finished',
+            renotify: true,
+            silent: false
+        });
+    } catch (e) {}
+}
+/* ===================== /УВЕДОМЛЕНИЯ ===================== */
+
+/* ===================== АВТОСОХРАНЕНИЕ ===================== */
+const RUN_STATE_KEY = 'ft_run_state';
+let saveCounter = 0;
+
+function saveRunState() {
+    if (!runState) return;
+    if (runState.phase === 'finish') return;
+    const snapshot = {
+        workoutId: runState.workout.id,
+        workoutName: runState.workout.name,
+        index: runState.index,
+        phase: runState.phase,
+        startTime: runState.startTime.getTime(),
+        totalWorkTime: runState.totalWorkTime,
+        exerciseTimes: [...runState.exerciseTimes],
+        lastFinishedWorkElapsed: runState.lastFinishedWorkElapsed,
+        workElapsedBeforePause: getCurrentElapsed('work'),
+        restElapsedBeforePause: getCurrentElapsed('rest'),
+        restDuration: runState.restDuration,
+        restFinished: runState.restFinished,
+        waterElapsedBeforePause: getCurrentElapsed('water'),
+        waterDuration: runState.waterDuration,
+        waterFinished: runState.waterFinished,
+        savedAt: Date.now()
+    };
+    try { localStorage.setItem(RUN_STATE_KEY, JSON.stringify(snapshot)); } catch(e) {}
+}
+
+function clearSavedRunState() {
+    try { localStorage.removeItem(RUN_STATE_KEY); } catch(e) {}
+}
+
+function loadSavedRunState() {
+    try {
+        const raw = localStorage.getItem(RUN_STATE_KEY);
+        return raw ? JSON.parse(raw) : null;
+    } catch(e) { return null; }
+}
+
+function offerResumeSavedSession() {
+    const saved = loadSavedRunState();
+    if (!saved || !saved.workoutId || saved.phase === 'finish') return;
+    const workout = DB.workouts.find(w => w.id === saved.workoutId);
+    if (!workout) { clearSavedRunState(); return; }
+
+    const validPhases = ['ready', 'work', 'rest', 'water', 'countdown'];
+    if (!validPhases.includes(saved.phase)) { clearSavedRunState(); return; }
+
+    const ageStr = saved.savedAt
+        ? ` (${formatTime(Math.floor((Date.now() - saved.savedAt)/1000))} назад)`
+        : '';
+    const resume = confirm(
+        `Найдена незавершённая тренировка «${saved.workoutName}»${ageStr}.\n` +
+        `Упражнение ${saved.index + 1}, фаза: ${saved.phase}.\n` +
+        `Продолжить?`
+    );
+    if (resume) restoreRunState(saved);
+    else clearSavedRunState();
+}
+
+function restoreRunState(saved) {
+    const workout = DB.workouts.find(w => w.id === saved.workoutId);
+    if (!workout) { clearSavedRunState(); return; }
+
+    runState = {
+        workout: workout,
+        index: saved.index || 0,
+        phase: (saved.phase === 'countdown') ? 'ready' : saved.phase,
+        countdownInterval: null,
+        minuteBeepIntervalId: null,
+        restOvertimeInterval: null,
+        waterOvertimeInterval: null,
+        tickInterval: null,
+        workStartTime: null,
+        workElapsedBeforePause: saved.workElapsedBeforePause || 0,
+        workPaused: true,
+        restStartTime: null,
+        restElapsedBeforePause: saved.restElapsedBeforePause || 0,
+        restPaused: true,
+        restDuration: saved.restDuration || 0,
+        restBeepPlayed: true,
+        waterStartTime: null,
+        waterElapsedBeforePause: saved.waterElapsedBeforePause || 0,
+        waterPaused: true,
+        waterDuration: saved.waterDuration || 0,
+        waterBeepPlayed: true,
+        restFinished: !!saved.restFinished,
+        waterFinished: !!saved.waterFinished,
+        restOvertime: 0,
+        waterOvertime: 0,
+        startTime: new Date(saved.startTime || Date.now()),
+        totalWorkTime: saved.totalWorkTime || 0,
+        lastFinishedWorkElapsed: saved.lastFinishedWorkElapsed || 0,
+        exerciseTimes: saved.exerciseTimes ? [...saved.exerciseTimes] : [],
+        lastBeepTargetTime: undefined
+    };
+
+    document.getElementById('run-title').innerText = workout.name;
+    acquireWakeLock();
+    enableExitProtection();
+    renderRun();
+    showScreen('screen-run');
+    if (!runState.tickInterval) {
+        runState.tickInterval = setInterval(updateTimersUI, 1000);
+    }
+}
+/* ===================== /АВТОСОХРАНЕНИЕ ===================== */
 
 const REST_PRESETS = [
     { v: 10, t: '10 сек' },
@@ -814,25 +1097,18 @@ function initDragAndDrop(item) {
         item.classList.add('dragging');
         e.dataTransfer.effectAllowed = 'move';
     });
-    item.addEventListener('dragend', () => {
-        cleanupDrag();
-    });
+    item.addEventListener('dragend', () => { cleanupDrag(); });
     item.addEventListener('dragover', (e) => {
         e.preventDefault();
         const afterElement = getDragAfterElement(document.getElementById('workouts-list'), e.clientY);
         updatePlaceholderPosition(afterElement);
     });
-    item.addEventListener('drop', (e) => {
-        e.preventDefault();
-        finalizeDrop();
-    });
+    item.addEventListener('drop', (e) => { e.preventDefault(); finalizeDrop(); });
 
     item.addEventListener('touchstart', (e) => {
         if (e.target.closest('.icon-btn') || e.target.closest('.btn')) return;
         const touch = e.touches[0];
-        longPressTimer = setTimeout(() => {
-            startDragging(item, touch.clientY);
-        }, 200); 
+        longPressTimer = setTimeout(() => { startDragging(item, touch.clientY); }, 200); 
     }, { passive: true });
 
     document.addEventListener('touchmove', handleGlobalTouchMove, { passive: false });
@@ -846,41 +1122,28 @@ function startDragging(item, clientY) {
     dragPlaceholder.className = 'drag-placeholder';
     dragPlaceholder.style.height = item.offsetHeight + 'px';
     item.parentNode.insertBefore(dragPlaceholder, item);
-    
     const rect = item.getBoundingClientRect();
     dragOffsetY = clientY - rect.top;
-    
     item.classList.add('dragging');
     item.style.top = (clientY - dragOffsetY) + 'px';
-    
     document.body.classList.add('no-scroll');
     if (navigator.vibrate) navigator.vibrate(30);
 }
 
 function handleGlobalTouchMove(e) {
-    if (!draggedItem) {
-        clearTimeout(longPressTimer);
-        return;
-    }
+    if (!draggedItem) { clearTimeout(longPressTimer); return; }
     e.preventDefault(); 
-    
     const touch = e.touches[0];
     const newY = touch.clientY - dragOffsetY;
-    
     draggedItem.style.transform = `translate3d(0, ${newY - parseFloat(draggedItem.style.top)}px, 0)`;
-    
     let elemBelow = document.elementFromPoint(touch.clientX, touch.clientY);
     if (!elemBelow) return;
-    
     let targetItem = elemBelow.closest('.workout-item');
-    
     document.querySelectorAll('.drag-placeholder').forEach(p => p.classList.remove('active-drop'));
-
     if (targetItem && targetItem !== draggedItem) {
          const bounding = targetItem.getBoundingClientRect();
          const offset = touch.clientY - bounding.top - (bounding.height / 2);
          const list = document.getElementById('workouts-list');
-         
          if (offset > 0) {
              if(targetItem.nextSibling && targetItem.nextSibling !== dragPlaceholder) {
                  list.insertBefore(dragPlaceholder, targetItem.nextSibling);
@@ -896,12 +1159,7 @@ function handleGlobalTouchMove(e) {
     }
 }
 
-function handleGlobalTouchEnd(e) {
-    clearTimeout(longPressTimer);
-    if (draggedItem) {
-        finalizeDrop();
-    }
-}
+function handleGlobalTouchEnd(e) { clearTimeout(longPressTimer); if (draggedItem) finalizeDrop(); }
 
 function updatePlaceholderPosition(afterElement) {
     const list = document.getElementById('workouts-list');
@@ -910,12 +1168,8 @@ function updatePlaceholderPosition(afterElement) {
         dragPlaceholder.className = 'drag-placeholder';
         dragPlaceholder.style.height = draggedItem.offsetHeight + 'px';
     }
-    
-    if (afterElement == null) {
-        list.appendChild(dragPlaceholder);
-    } else {
-        list.insertBefore(dragPlaceholder, afterElement);
-    }
+    if (afterElement == null) list.appendChild(dragPlaceholder);
+    else list.insertBefore(dragPlaceholder, afterElement);
 }
 
 function finalizeDrop() {
@@ -928,16 +1182,10 @@ function finalizeDrop() {
 function cleanupDrag() {
     if (draggedItem) {
         draggedItem.classList.remove('dragging');
-        draggedItem.style.top = '';
-        draggedItem.style.left = '';
-        draggedItem.style.width = '';
-        draggedItem.style.transform = '';
+        draggedItem.style.top = ''; draggedItem.style.left = ''; draggedItem.style.width = ''; draggedItem.style.transform = '';
         draggedItem = null;
     }
-    if (dragPlaceholder) {
-        dragPlaceholder.remove();
-        dragPlaceholder = null;
-    }
+    if (dragPlaceholder) { dragPlaceholder.remove(); dragPlaceholder = null; }
     document.body.classList.remove('no-scroll');
     document.querySelectorAll('.drag-placeholder').forEach(p => p.classList.remove('active-drop'));
 }
@@ -947,28 +1195,20 @@ function getDragAfterElement(container, y) {
     return draggableElements.reduce((closest, child) => {
         const box = child.getBoundingClientRect();
         const offset = y - box.top - box.height / 2;
-        if (offset < 0 && offset > closest.offset) {
-            return { offset: offset, element: child };
-        } else {
-            return closest;
-        }
+        if (offset < 0 && offset > closest.offset) return { offset: offset, element: child };
+        else return closest;
     }, { offset: Number.NEGATIVE_INFINITY }).element;
 }
 
 function saveNewOrder() {
     const listContainer = document.getElementById('workouts-list');
     const newOrderIds = Array.from(listContainer.children).map(el => parseInt(el.dataset.id));
-    
     const reorderedWorkouts = [];
     newOrderIds.forEach(id => {
         const workout = DB.workouts.find(w => w.id === id);
         if (workout) reorderedWorkouts.push(workout);
     });
-    
-    DB.workouts.forEach(w => {
-        if (!reorderedWorkouts.includes(w)) reorderedWorkouts.push(w);
-    });
-
+    DB.workouts.forEach(w => { if (!reorderedWorkouts.includes(w)) reorderedWorkouts.push(w); });
     DB.workouts = reorderedWorkouts;
     saveDB('workouts');
 }
@@ -995,7 +1235,6 @@ function renderWorkoutsList() {
             <button class="btn accent btn-start-workout" onclick="startWorkout(${w.id})">▶ Начать тренировку</button>
         </div>
     `).join('');
-
     const items = c.querySelectorAll('.workout-item');
     items.forEach(item => initDragAndDrop(item));
 }
@@ -1193,8 +1432,7 @@ function renderDurationRow(i, ex, presets) {
     presets.forEach(p => {
         html += `<option value="${p.v}" ${isPreset && p.v === ex.restSeconds ? 'selected' : ''}>${p.t}</option>`;
     });
-    html += `<option value="custom" ${!isPreset ? 'selected' : ''}>Другое...</option>`;
-    html += `</select>`;
+    html += `<option value="custom" ${!isPreset ? 'selected' : ''}>Другое...</option></select>`;
     if (!isPreset) {
         html += `<input type="number" value="${ex.restSeconds}" min="0" step="5" placeholder="сек"
             onchange="updateExercise(${i}, 'restSeconds', parseInt(this.value)||0); renderEditorExercises();"
@@ -1259,14 +1497,8 @@ function renderEditorExercises() {
     `}).join('');
 }
 
-function addExercise() { 
-    editorExercises.push({ name: '', restSeconds: 60, notes: '', waterBreak: false, customRest: false }); 
-    renderEditorExercises(); 
-}
-function addWaterBreak() { 
-    editorExercises.push({ name: 'Попить воды', restSeconds: 60, notes: '', waterBreak: true, customRest: false }); 
-    renderEditorExercises(); 
-}
+function addExercise() { editorExercises.push({ name: '', restSeconds: 60, notes: '', waterBreak: false, customRest: false }); renderEditorExercises(); }
+function addWaterBreak() { editorExercises.push({ name: 'Попить воды', restSeconds: 60, notes: '', waterBreak: true, customRest: false }); renderEditorExercises(); }
 function updateExercise(i, f, v) { editorExercises[i][f] = v; }
 function removeExercise(i) { editorExercises.splice(i, 1); renderEditorExercises(); }
 function moveExercise(i, d) {
@@ -1309,36 +1541,21 @@ function deleteWorkout() {
 }
 
 function exportCurrentWorkout() {
-    if (editingId === null) {
-        alert('Сначала сохрани тренировку');
-        return;
-    }
+    if (editingId === null) { alert('Сначала сохрани тренировку'); return; }
     const source = editingIsTemplate ? DB.templates : DB.workouts;
     const w = source.find(x => x.id === editingId);
-    if (!w) {
-        alert('Тренировка не найдена');
-        return;
-    }
-    
+    if (!w) { alert('Тренировка не найдена'); return; }
     const exportData = {
-        type: 'fit-trainer-workout',
-        version: 1,
+        type: 'fit-trainer-workout', version: 1,
         exportedAt: new Date().toISOString(),
-        workout: {
-            name: w.name,
-            autoStart: w.autoStart,
-            exercises: w.exercises
-        }
+        workout: { name: w.name, autoStart: w.autoStart, exercises: w.exercises }
     };
-    
     const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = `fit-trainer-${w.name.replace(/[^a-zа-яё0-9]/gi, '_')}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
     URL.revokeObjectURL(url);
 }
 
@@ -1349,39 +1566,23 @@ function importWorkout(event) {
     reader.onload = e => {
         try {
             const data = JSON.parse(e.target.result);
-            
-            if (data.type !== 'fit-trainer-workout' || !data.workout) {
-                alert('Это не файл тренировки Fit Trainer pro');
-                return;
-            }
-            
+            if (data.type !== 'fit-trainer-workout' || !data.workout) { alert('Это не файл тренировки Fit Trainer pro'); return; }
             const w = data.workout;
-            if (!w.name || !w.exercises || !Array.isArray(w.exercises)) {
-                alert('Неверный формат файла тренировки');
-                return;
-            }
-            
+            if (!w.name || !w.exercises || !Array.isArray(w.exercises)) { alert('Неверный формат файла тренировки'); return; }
             const newWorkout = {
                 id: Date.now(),
                 name: w.name + ' (импорт)',
                 autoStart: w.autoStart || false,
                 exercises: w.exercises.map(e => ({
-                    name: e.name || '',
-                    restSeconds: e.restSeconds || 0,
-                    notes: e.notes || '',
-                    waterBreak: e.waterBreak || false,
-                    customRest: e.customRest || false
+                    name: e.name || '', restSeconds: e.restSeconds || 0, notes: e.notes || '',
+                    waterBreak: e.waterBreak || false, customRest: e.customRest || false
                 }))
             };
-            
             DB.workouts.push(newWorkout);
             saveDB('workouts');
-            
             alert(`Тренировка «${newWorkout.name}» импортирована!`);
             showScreen('screen-workouts');
-        } catch(err) {
-            alert('Ошибка импорта: ' + err.message);
-        }
+        } catch(err) { alert('Ошибка импорта: ' + err.message); }
     };
     reader.readAsText(file);
     event.target.value = '';
@@ -1421,26 +1622,6 @@ async function acquireWakeLock() {
 }
 function releaseWakeLock() { if (wakeLockObj) { try { wakeLockObj.release(); } catch(e) {} wakeLockObj = null; } }
 
-function speak(text) {
-    if (!DB.settings.voice) return;
-    if (!('speechSynthesis' in window)) return;
-    try {
-        const u = new SpeechSynthesisUtterance(text);
-        u.lang = 'ru-RU'; u.rate = 1; u.volume = 1;
-        speechSynthesis.cancel();
-        speechSynthesis.speak(u);
-    } catch(e) {}
-}
-
-async function playEndBeep() {
-    try {
-        const ctx = await getAudioCtx();
-        if (!ctx || ctx.state !== 'running') return;
-        const sound = ALARM_SOUNDS[DB.settings.alarmSound] || ALARM_SOUNDS.alarm;
-        sound.playOnce(ctx);
-    } catch(e) {}
-}
-
 function playPatternStep(ctx, step) {
     if (step.type === 'silence') return;
     if (step.type === 'beep') {
@@ -1466,20 +1647,33 @@ function playPatternStep(ctx, step) {
 
 async function startRestAlarm() {
     stopRestAlarm();
-    try {
-        const ctx = await getAudioCtx();
-        if (!ctx || ctx.state !== 'running') return;
-        const sound = ALARM_SOUNDS[DB.settings.alarmSound] || ALARM_SOUNDS.alarm;
-        const pattern = sound.loopPattern;
-        let stepIdx = 0;
-        function playNext() {
-            const step = pattern[stepIdx % pattern.length];
-            playPatternStep(ctx, step);
-            restAlarmTimeout = setTimeout(playNext, step.dur);
-            stepIdx++;
+    if (isBeepMode()) {
+        try {
+            const ctx = await getAudioCtx();
+            if (ctx && ctx.state === 'running') {
+                const sound = ALARM_SOUNDS[DB.settings.alarmSound] || ALARM_SOUNDS.alarm;
+                const pattern = sound.loopPattern;
+                let stepIdx = 0;
+                function playNext() {
+                    const step = pattern[stepIdx % pattern.length];
+                    playPatternStep(ctx, step);
+                    restAlarmTimeout = setTimeout(playNext, step.dur);
+                    stepIdx++;
+                }
+                playNext();
+            }
+        } catch(e) {}
+    } else {
+        speakCritical('отдых закончен');
+        let voiceCount = 0;
+        function voiceNext() {
+            if (voiceCount >= 20) return;
+            speakCritical('время');
+            voiceCount++;
+            restVoiceTimeout = setTimeout(voiceNext, 5000);
         }
-        playNext();
-    } catch(e) {}
+        restVoiceTimeout = setTimeout(voiceNext, 3500);
+    }
     if (navigator.vibrate) {
         const vibPattern = [];
         for (let i = 0; i < 30; i++) vibPattern.push(150, 100, 150, 600);
@@ -1489,25 +1683,39 @@ async function startRestAlarm() {
 
 function stopRestAlarm() {
     if (restAlarmTimeout) { clearTimeout(restAlarmTimeout); restAlarmTimeout = null; }
+    if (restVoiceTimeout) { clearTimeout(restVoiceTimeout); restVoiceTimeout = null; }
     if (navigator.vibrate) navigator.vibrate(0);
 }
 
 async function startWaterAlarm() {
     stopWaterAlarm();
-    try {
-        const ctx = await getAudioCtx();
-        if (!ctx || ctx.state !== 'running') return;
-        const sound = ALARM_SOUNDS[DB.settings.alarmSound] || ALARM_SOUNDS.alarm;
-        const pattern = sound.loopPattern;
-        let stepIdx = 0;
-        function playNext() {
-            const step = pattern[stepIdx % pattern.length];
-            playPatternStep(ctx, step);
-            waterAlarmTimeout = setTimeout(playNext, step.dur);
-            stepIdx++;
+    if (isBeepMode()) {
+        try {
+            const ctx = await getAudioCtx();
+            if (ctx && ctx.state === 'running') {
+                const sound = ALARM_SOUNDS[DB.settings.alarmSound] || ALARM_SOUNDS.alarm;
+                const pattern = sound.loopPattern;
+                let stepIdx = 0;
+                function playNext() {
+                    const step = pattern[stepIdx % pattern.length];
+                    playPatternStep(ctx, step);
+                    waterAlarmTimeout = setTimeout(playNext, step.dur);
+                    stepIdx++;
+                }
+                playNext();
+            }
+        } catch(e) {}
+    } else {
+        speakCritical('перерыв закончен');
+        let voiceCount = 0;
+        function voiceNext() {
+            if (voiceCount >= 20) return;
+            speakCritical('время');
+            voiceCount++;
+            waterVoiceTimeout = setTimeout(voiceNext, 5000);
         }
-        playNext();
-    } catch(e) {}
+        waterVoiceTimeout = setTimeout(voiceNext, 3500);
+    }
     if (navigator.vibrate) {
         const vibPattern = [];
         for (let i = 0; i < 30; i++) vibPattern.push(150, 100, 150, 600);
@@ -1517,6 +1725,7 @@ async function startWaterAlarm() {
 
 function stopWaterAlarm() {
     if (waterAlarmTimeout) { clearTimeout(waterAlarmTimeout); waterAlarmTimeout = null; }
+    if (waterVoiceTimeout) { clearTimeout(waterVoiceTimeout); waterVoiceTimeout = null; }
     if (navigator.vibrate) navigator.vibrate(0);
 }
 
@@ -1529,14 +1738,9 @@ function startWaterOvertime() {
         timerEl.innerText = formatTime(runState.waterOvertime);
     }, 1000);
 }
-
 function stopWaterOvertime() {
-    if (runState && runState.waterOvertimeInterval) {
-        clearInterval(runState.waterOvertimeInterval);
-        runState.waterOvertimeInterval = null;
-    }
+    if (runState && runState.waterOvertimeInterval) { clearInterval(runState.waterOvertimeInterval); runState.waterOvertimeInterval = null; }
 }
-
 function startRestOvertime() {
     stopRestOvertime();
     runState.restOvertime = 0;
@@ -1546,12 +1750,8 @@ function startRestOvertime() {
         timerEl.innerText = formatTime(runState.restOvertime);
     }, 1000);
 }
-
 function stopRestOvertime() {
-    if (runState && runState.restOvertimeInterval) {
-        clearInterval(runState.restOvertimeInterval);
-        runState.restOvertimeInterval = null;
-    }
+    if (runState && runState.restOvertimeInterval) { clearInterval(runState.restOvertimeInterval); runState.restOvertimeInterval = null; }
 }
 
 function previewAlarmSound(key) {
@@ -1594,11 +1794,35 @@ function renderSoundOptions() {
     }).join('');
 }
 
-function selectMinuteBeepInterval(v) {
-    DB.settings.minuteBeepInterval = v;
-    saveDB('settings');
-    renderMinuteBeepOptions();
+function renderSoundModeOptions() {
+    const c = document.getElementById('sound-mode-options');
+    if (!c) return;
+    const modes = [
+        { v: 'voice', name: '🗣 Озвучивать всё', desc: 'Голосом: пауза, время, отдых, упражнения. Без пиков.' },
+        { v: 'beep',  name: '🔔 Пикать',        desc: 'Только короткие звуковые сигналы, без голоса.' }
+    ];
+    c.innerHTML = modes.map(m => {
+        const selected = DB.settings.soundMode === m.v;
+        return `
+            <div class="sound-option ${selected ? 'selected' : ''}" onclick="selectSoundMode('${m.v}')">
+                <div class="radio"></div>
+                <div class="sound-info">
+                    <div class="sound-name">${m.name}</div>
+                    <div class="sound-desc">${m.desc}</div>
+                </div>
+            </div>
+        `;
+    }).join('');
 }
+function selectSoundMode(mode) {
+    if (mode !== 'voice' && mode !== 'beep') return;
+    DB.settings.soundMode = mode;
+    DB.settings.voice = (mode === 'voice');
+    saveDB('settings');
+    renderSoundModeOptions();
+}
+
+function selectMinuteBeepInterval(v) { DB.settings.minuteBeepInterval = v; saveDB('settings'); renderMinuteBeepOptions(); }
 
 function renderMinuteBeepOptions() {
     const container = document.getElementById('minute-beep-options');
@@ -1633,42 +1857,27 @@ function renderCountdownIntervals() {
         `;
     }).join('');
 }
+function selectCountdownInterval(v) { DB.settings.countdownDuration = v; saveDB('settings'); renderCountdownIntervals(); }
 
-function selectCountdownInterval(v) {
-    DB.settings.countdownDuration = v;
-    saveDB('settings');
-    renderCountdownIntervals();
-}
-
-function startMinuteBeep() {
-    // Логика теперь полностью в updateTimersUI
-}
-
-function stopMinuteBeep() {
-    // Оставлено для совместимости
-}
+function startMinuteBeep() { /* логика в updateTimersUI */ }
+function stopMinuteBeep() { /* совместимость */ }
 
 function getCurrentElapsed(type) {
     const state = runState;
-    if (state[`${type}Paused`]) {
-        return state[`${type}ElapsedBeforePause`] || 0;
-    }
+    if (!state) return 0;
+    if (state[`${type}Paused`]) return state[`${type}ElapsedBeforePause`] || 0;
     const startTime = state[`${type}StartTime`];
     const beforePause = state[`${type}ElapsedBeforePause`] || 0;
     if (!startTime) return beforePause;
     return beforePause + Math.floor((Date.now() - startTime) / 1000);
 }
-
 function getRemainingTime(type) {
     const duration = runState[`${type}Duration`] || 0;
-    const elapsed = getCurrentElapsed(type);
-    return Math.max(0, duration - elapsed);
+    return Math.max(0, duration - getCurrentElapsed(type));
 }
-
 function getOvertime(type) {
     const duration = runState[`${type}Duration`] || 0;
-    const elapsed = getCurrentElapsed(type);
-    return Math.max(0, elapsed - duration);
+    return Math.max(0, getCurrentElapsed(type) - duration);
 }
 
 function startTimer(type, duration) {
@@ -1677,86 +1886,61 @@ function startTimer(type, duration) {
     runState[`${type}Paused`] = false;
     runState[`${type}Duration`] = duration;
     runState[`${type}BeepPlayed`] = false;
-    runState.lastBeepTargetTime = undefined; // Сброс для корректного пиканья на круглых минутах
-    if (!runState.tickInterval) {
-        runState.tickInterval = setInterval(updateTimersUI, 1000);
-    }
+    runState.lastBeepTargetTime = undefined;
+    if (!runState.tickInterval) runState.tickInterval = setInterval(updateTimersUI, 1000);
 }
-
 function pauseTimer(type) {
     const elapsed = getCurrentElapsed(type);
     runState[`${type}ElapsedBeforePause`] = elapsed;
     runState[`${type}StartTime`] = null;
     runState[`${type}Paused`] = true;
 }
-
 function resumeTimer(type) {
     runState[`${type}StartTime`] = Date.now();
     runState[`${type}Paused`] = false;
 }
-
 function stopTimer(type) {
     runState[`${type}StartTime`] = null;
     runState[`${type}ElapsedBeforePause`] = 0;
     runState[`${type}Paused`] = false;
     runState[`${type}Duration`] = 0;
     runState[`${type}BeepPlayed`] = false;
-    if (runState.phase !== 'work' && runState.phase !== 'rest' && runState.phase !== 'water') {
-        stopTickInterval();
-    }
+    if (runState.phase !== 'work' && runState.phase !== 'rest' && runState.phase !== 'water') stopTickInterval();
 }
-
 function stopTickInterval() {
-    if (runState.tickInterval) {
-        clearInterval(runState.tickInterval);
-        runState.tickInterval = null;
-    }
+    if (runState.tickInterval) { clearInterval(runState.tickInterval); runState.tickInterval = null; }
 }
 
 function updateTimersUI() {
     if (!runState) return;
     const { phase } = runState;
     
-    // --- ИСПРАВЛЕНИЕ: Пиканье на круглых минутах с учетом динамического изменения времени ---
+    // Минутные метки: голосом (прошло/осталось) или пиком
     if (DB.settings.minuteBeep && phase !== 'ready' && phase !== 'countdown' && phase !== 'finish') {
         const isPaused = runState[`${phase}Paused`];
         if (!isPaused) {
             const interval = DB.settings.minuteBeepInterval || 60;
-            let targetTime = 0;
+            let targetTime = (phase === 'work') ? getCurrentElapsed('work') : getRemainingTime(phase);
             
-            // Для упражнения считаем прошедшее время (оно растет)
-            if (phase === 'work') {
-                targetTime = getCurrentElapsed('work');
-            } 
-            // Для отдыха и воды считаем оставшееся время (оно уменьшается)
-            else {
-                targetTime = getRemainingTime(phase);
-            }
+            if (runState.lastBeepTargetTime === undefined) runState.lastBeepTargetTime = targetTime;
             
-            if (runState.lastBeepTargetTime === undefined) {
-                runState.lastBeepTargetTime = targetTime;
-            }
-            
-            let shouldBeep = false;
+            let shouldTrigger = false;
             if (targetTime > 0 && targetTime % interval === 0) {
                 if (phase === 'work') {
-                    // Для упражнения: пикаем, если время выросло и пересекло границу
-                    if (targetTime > runState.lastBeepTargetTime) {
-                        shouldBeep = true;
-                    }
+                    if (targetTime > runState.lastBeepTargetTime) shouldTrigger = true;
                 } else {
-                    // Для отдыха/воды: пикаем, если время уменьшилось и пересекло границу вниз
-                    if (targetTime < runState.lastBeepTargetTime) {
-                        shouldBeep = true;
-                    }
+                    if (targetTime < runState.lastBeepTargetTime) shouldTrigger = true;
                 }
             }
-            
-            if (shouldBeep) {
-                playBeep(1000, 0.15);
+            if (shouldTrigger) {
+                if (isVoiceMode()) {
+                    const mins = Math.floor(targetTime / 60);
+                    if (phase === 'work') speakCritical(elapsedMinutesText(mins));
+                    else speakCritical(remainingMinutesText(mins));
+                } else {
+                    playBeep(1000, 0.15);
+                }
             }
-            
-            // Всегда обновляем последнее известное время для отслеживания направления
             runState.lastBeepTargetTime = targetTime;
         }
     }
@@ -1769,44 +1953,43 @@ function updateTimersUI() {
         const remaining = getRemainingTime('rest');
         const timerEl = document.getElementById('rest-timer');
         if (timerEl) {
-            if (runState.restFinished) {
-                timerEl.innerText = formatTime(getOvertime('rest'));
-            } else {
-                timerEl.innerText = formatTime(remaining);
-            }
+            if (runState.restFinished) timerEl.innerText = formatTime(getOvertime('rest'));
+            else timerEl.innerText = formatTime(remaining);
         }
         if (remaining === 3 && !runState.restBeepPlayed && !runState.restPaused && !runState.restFinished) {
             runState.restBeepPlayed = true;
-            playBeep(600, 0.1);
+            announceFinalThree();
         }
-        if (remaining === 0 && !runState.restFinished && !runState.restPaused) {
-            onRestFinished();
-        }
+        if (remaining === 0 && !runState.restFinished && !runState.restPaused) onRestFinished();
     } else if (phase === 'water') {
         if (runState.waterDuration === 0) return;
-        
         const remaining = getRemainingTime('water');
         const timerEl = document.getElementById('water-timer');
         if (timerEl) {
-            if (runState.waterFinished) {
-                timerEl.innerText = formatTime(getOvertime('water'));
-            } else {
-                timerEl.innerText = formatTime(remaining);
-            }
+            if (runState.waterFinished) timerEl.innerText = formatTime(getOvertime('water'));
+            else timerEl.innerText = formatTime(remaining);
         }
         if (remaining === 3 && !runState.waterBeepPlayed && !runState.waterPaused && !runState.waterFinished) {
             runState.waterBeepPlayed = true;
-            playBeep(600, 0.1);
+            announceFinalThree();
         }
-        if (remaining === 0 && !runState.waterFinished && !runState.waterPaused) {
-            onWaterFinished();
-        }
+        if (remaining === 0 && !runState.waterFinished && !runState.waterPaused) onWaterFinished();
     }
+    
+    // Автосохранение (раз в ~3 секунды)
+    saveCounter++;
+    if (saveCounter % 3 === 0) saveRunState();
 }
 
-function startWorkout(id) {
+async function startWorkout(id) {
     const w = DB.workouts.find(x => x.id === id);
     if (!w) return;
+    
+    try {
+        await initNotifications();
+        await requestNotificationPermission();
+    } catch(e) {}
+
     runState = {
         workout: w, index: 0, phase: 'ready',
         countdownInterval: null,
@@ -1820,12 +2003,14 @@ function startWorkout(id) {
         startTime: new Date(), totalWorkTime: 0,
         lastFinishedWorkElapsed: 0,
         exerciseTimes: [],
-        lastBeepTargetTime: undefined // Инициализация для корректного пиканья
+        lastBeepTargetTime: undefined
     };
     document.getElementById('run-title').innerText = w.name;
     acquireWakeLock();
+    enableExitProtection();
     renderRun();
     showScreen('screen-run');
+    saveRunState();
     if (w.autoStart) setTimeout(() => beginExerciseFlow(), 400);
 }
 
@@ -1834,13 +2019,10 @@ function updateNextExerciseBlock() {
     const label = document.getElementById('next-exercise-label');
     const name = document.getElementById('next-exercise-name');
     if (!runState || !block) return;
-    
     const exercises = runState.workout.exercises;
     const nextIdx = runState.index + 1;
-    
     block.classList.remove('water');
     name.classList.remove('finish', 'water');
-    
     if (nextIdx >= exercises.length) {
         label.innerText = 'После отдыха';
         name.innerText = '🏁 Финиш!';
@@ -1869,12 +2051,9 @@ function updateWaterNextBlock() {
     const label = document.getElementById('water-next-label');
     const name = document.getElementById('water-next-name');
     if (!runState || !block) return;
-    
     const exercises = runState.workout.exercises;
     const nextIdx = runState.index + 1;
-    
     name.classList.remove('finish');
-    
     if (nextIdx >= exercises.length) {
         label.innerText = 'После перерыва';
         name.innerText = 'Это последнее упражнение';
@@ -1905,16 +2084,13 @@ function renderRun() {
     
     let progressPercent = 0;
     if (activeCount > 0) {
-        if (index >= activeCount) {
-            progressPercent = 100;
-        } else {
-            progressPercent = ((index + 1) / activeCount) * 100;
-        }
+        if (index >= activeCount) progressPercent = 100;
+        else progressPercent = ((index + 1) / activeCount) * 100;
     }
     document.getElementById('progress-fill').style.width = progressPercent + '%';
     
     hideAllPhases();
-	document.getElementById('current-exercise').style.color = '';
+    document.getElementById('current-exercise').style.color = '';
     if (index >= exercises.length) { showFinishScreen(); return; }
     const ex = exercises[index];
     const isLastWater = ex.waterBreak && index === exercises.length - 1;
@@ -1934,13 +2110,8 @@ function renderRun() {
 
     if (phase === 'ready') {
         if (ex.waterBreak) {
-            if (isLastWater) {
-                phaseLabel.style.display = 'none';
-            } else {
-                phaseLabel.innerText = `ОТДЫХ`;
-                phaseLabel.className = 'phase-label';
-                phaseLabel.style.display = 'block';
-            }
+            if (isLastWater) phaseLabel.style.display = 'none';
+            else { phaseLabel.innerText = `ОТДЫХ`; phaseLabel.className = 'phase-label'; phaseLabel.style.display = 'block'; }
         } else {
             const num = getExerciseNumber(exercises, index);
             phaseLabel.innerText = `УПРАЖНЕНИЕ ${num} / ${totalEx}`;
@@ -1992,7 +2163,6 @@ function renderRun() {
         const undoBtn = document.getElementById('rest-undo-btn');
         const adjustDiv = document.querySelector('#phase-rest .rest-adjust');
         const nextBlock = document.getElementById('next-exercise-block');
-
         const oldSub = document.getElementById('finished-subtitle');
         if (oldSub) oldSub.remove();
 
@@ -2001,14 +2171,13 @@ function renderRun() {
             timerEl.className = 'big-timer overtime';
             phaseLabel.innerText = "⏰ ВРЕМЯ ОТДЫХА ВЫШЛО";
             phaseLabel.className = 'phase-label finished';
-			document.getElementById('current-exercise').style.color = 'var(--danger)';
+            document.getElementById('current-exercise').style.color = 'var(--danger)';
             phaseLabel.style.display = 'block';
             const subtitle = document.createElement('p');
             subtitle.id = 'finished-subtitle';
             subtitle.className = 'finished-subtitle';
             subtitle.innerText = 'Нажмите для продолжения';
             timerEl.parentNode.insertBefore(subtitle, timerEl.nextSibling);
-            
             pauseBtn.style.display = 'none';
             undoBtn.style.display = 'none';
             skipBtn.style.display = 'none';
@@ -2017,7 +2186,7 @@ function renderRun() {
             nextBlock.style.display = 'none';
         } else {
             timerEl.className = 'big-timer';
-			document.getElementById('current-exercise').style.color = '';
+            document.getElementById('current-exercise').style.color = '';
             timerEl.innerText = formatTime(getRemainingTime('rest'));
             timerEl.style.color = "";
             if (runState.restPaused) {
@@ -2055,7 +2224,6 @@ function renderRun() {
         const adjustDiv = document.getElementById('water-adjust');
         const nextBlock = document.getElementById('water-next-block');
         const waterIcon = document.getElementById('water-icon');
-
         const oldSub = document.getElementById('water-finished-subtitle');
         if (oldSub) oldSub.remove();
 
@@ -2064,7 +2232,6 @@ function renderRun() {
             phaseLabel.style.display = 'none';
             startTimeLabel.style.color = 'var(--muted)';
             startTimeValue.style.color = 'var(--muted)';
-            
             pauseBtn.style.display = 'none';
             skipBtn.style.display = 'none';
             undoBtn.style.display = 'block';
@@ -2076,20 +2243,17 @@ function renderRun() {
             waterIcon.style.display = 'inline-block';
         } else if (runState.waterFinished) {
             timerEl.style.display = 'block';
-			
             phaseLabel.style.display = 'block';
             timerEl.innerText = formatTime(getOvertime('water'));
             timerEl.className = 'big-timer water overtime';
             phaseLabel.innerText = "⏰ ВРЕМЯ ВЫШЛО";
             phaseLabel.className = 'phase-label finished';
-			document.getElementById('current-exercise').style.color = 'var(--danger)';
-            
+            document.getElementById('current-exercise').style.color = 'var(--danger)';
             const subtitle = document.createElement('p');
             subtitle.id = 'water-finished-subtitle';
             subtitle.className = 'finished-subtitle';
             subtitle.innerText = 'Нажмите для продолжения';
             timerEl.parentNode.insertBefore(subtitle, timerEl.nextSibling);
-            
             pauseBtn.style.display = 'none';
             undoBtn.style.display = 'none';
             skipBtn.style.display = 'none';
@@ -2100,7 +2264,7 @@ function renderRun() {
             waterIcon.style.display = 'none';
         } else {
             timerEl.style.display = 'block';
-			document.getElementById('current-exercise').style.color = '';
+            document.getElementById('current-exercise').style.color = '';
             phaseLabel.style.display = 'block';
             timerEl.className = 'big-timer water';
             timerEl.innerText = formatTime(getRemainingTime('water'));
@@ -2144,21 +2308,17 @@ function hideAllPhases() {
 
 function beginExerciseFlow() {
     unlockAudio();
+    saveRunState();
     const ex = runState.workout.exercises[runState.index];
-    if (ex.waterBreak) {
-        startWaterBreak();
-    } else if (DB.settings.countdown) {
-        startCountdown();
-    } else {
-        startExercise();
-    }
+    if (ex.waterBreak) startWaterBreak();
+    else if (DB.settings.countdown) startCountdown();
+    else startExercise();
 }
 
 function startWaterBreak() {
     runState.phase = 'water';
     const ex = runState.workout.exercises[runState.index];
     const isLastWater = runState.index === runState.workout.exercises.length - 1;
-    
     if (isLastWater) {
         runState.waterFinished = false;
         runState.waterDuration = 0;
@@ -2172,7 +2332,6 @@ function startWaterBreak() {
         runState.waterBeepPlayed = false;
         startTimer('water', ex.restSeconds);
     }
-    
     let speechText = 'Необходимо попить воды';
     if (!isLastWater) {
         const exercises = runState.workout.exercises;
@@ -2188,10 +2347,8 @@ function startWaterBreak() {
         }
     }
     speak(speechText);
-    
-    if (!isLastWater) {
-        startMinuteBeep();
-    }
+    if (!isLastWater) startMinuteBeep();
+    saveRunState();
     renderRun();
 }
 
@@ -2202,29 +2359,34 @@ function onWaterFinished() {
         runState.waterOvertime = 0;
         startWaterAlarm();
         startWaterOvertime();
+        const nextExForNotif = runState.workout.exercises[runState.index + 1];
+        showRestFinishedNotification(nextExForNotif ? (nextExForNotif.name || 'Упражнение') : 'Завершение тренировки');
+        saveRunState();
         renderRun();
     } else {
         playEndBeep();
+        if (isVoiceMode()) speakCritical('перерыв закончен');
         if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+        const nextExForNotif = runState.workout.exercises[runState.index + 1];
+        showRestFinishedNotification(nextExForNotif ? (nextExForNotif.name || 'Упражнение') : 'Завершение тренировки');
         runState.index++;
         runState.phase = 'ready';
         stopTickInterval();
         if (runState.workout.autoStart && runState.index < runState.workout.exercises.length) {
+            saveRunState();
             renderRun();
-            setTimeout(() => beginExerciseFlow(), 500);
+            setTimeout(() => beginExerciseFlow(), getAutoAdvanceDelay());
         } else {
+            saveRunState();
             renderRun();
         }
     }
 }
 
 function toggleWaterPause() {
-    if (runState.waterPaused) {
-        unlockAudio();
-        resumeTimer('water');
-    } else {
-        pauseTimer('water');
-    }
+    if (runState.waterPaused) { unlockAudio(); resumeTimer('water'); announceResume(); }
+    else { pauseTimer('water'); announcePause(); }
+    saveRunState();
     renderRun();
 }
 
@@ -2234,15 +2396,13 @@ function adjustWater(delta) {
         document.getElementById('water-timer').innerText = formatTime(runState.waterOvertime);
     } else {
         runState.waterDuration = Math.max(0, runState.waterDuration + delta);
-        if (runState.waterDuration <= 0 && !runState.waterPaused) {
-            onWaterFinished();
-        }
+        if (runState.waterDuration <= 0 && !runState.waterPaused) onWaterFinished();
     }
+    saveRunState();
 }
 
 function undoWaterFinish() {
     const isLastWater = runState.index === runState.workout.exercises.length - 1;
-    
     if (isLastWater) {
         stopTickInterval();
         stopMinuteBeep();
@@ -2251,32 +2411,30 @@ function undoWaterFinish() {
         runState.workPaused = false;
         runState.workElapsedBeforePause = runState.lastFinishedWorkElapsed;
         runState.workStartTime = Date.now();
-        if (!runState.tickInterval) {
-            runState.tickInterval = setInterval(updateTimersUI, 1000);
-        }
+        if (!runState.tickInterval) runState.tickInterval = setInterval(updateTimersUI, 1000);
         startMinuteBeep();
+        const ex = runState.workout.exercises[runState.index];
+        announceUndo(ex ? ex.name : null);
+        saveRunState();
         renderRun();
         return;
     }
-    
     stopTimer('water');
     stopWaterAlarm();
     stopWaterOvertime();
     stopMinuteBeep();
-    
     runState.index--;
     runState.phase = 'work';
     runState.workPaused = false;
-    
     runState.totalWorkTime -= runState.lastFinishedWorkElapsed;
     runState.exerciseTimes.pop();
-    
     runState.workElapsedBeforePause = runState.lastFinishedWorkElapsed;
     runState.workStartTime = Date.now();
-    if (!runState.tickInterval) {
-        runState.tickInterval = setInterval(updateTimersUI, 1000);
-    }
+    if (!runState.tickInterval) runState.tickInterval = setInterval(updateTimersUI, 1000);
     startMinuteBeep();
+    const ex = runState.workout.exercises[runState.index];
+    announceUndo(ex ? ex.name : null);
+    saveRunState();
     renderRun();
 }
 
@@ -2288,32 +2446,32 @@ function skipWater() {
     runState.index++;
     runState.phase = 'ready';
     if (runState.workout.autoStart && runState.index < runState.workout.exercises.length) {
+        saveRunState();
         renderRun();
-        setTimeout(() => beginExerciseFlow(), 500);
+        setTimeout(() => beginExerciseFlow(), getAutoAdvanceDelay());
     } else {
+        saveRunState();
         renderRun();
     }
 }
 
 function confirmWaterFinished() {
     const isLastWater = runState.index === runState.workout.exercises.length - 1;
-    
     stopTimer('water');
     stopWaterAlarm();
     stopWaterOvertime();
     stopMinuteBeep();
     stopTickInterval();
-    
-    if (isLastWater) {
-        runState.index++;
-        showFinishScreen();
-    } else {
+    if (isLastWater) { runState.index++; showFinishScreen(); }
+    else {
         runState.index++;
         runState.phase = 'ready';
         if (runState.workout.autoStart && runState.index < runState.workout.exercises.length) {
+            saveRunState();
             renderRun();
-            setTimeout(() => beginExerciseFlow(), 500);
+            setTimeout(() => beginExerciseFlow(), getAutoAdvanceDelay());
         } else {
+            saveRunState();
             renderRun();
         }
     }
@@ -2322,13 +2480,31 @@ function confirmWaterFinished() {
 function startCountdown() {
     runState.phase = 'countdown';
     runState.countdownValue = DB.settings.countdownDuration || 3;
+    saveRunState();
     renderRun();
-    speak('Готовьтесь');
+    if (isVoiceMode()) {
+        speakCritical(runState.countdownValue <= 3 ? String(runState.countdownValue) : 'внимание');
+    }
     clearInterval(runState.countdownInterval);
     runState.countdownInterval = setInterval(() => {
         runState.countdownValue--;
-        if (runState.countdownValue > 0) { playBeep(600, 0.1); renderRun(); }
-        else { clearInterval(runState.countdownInterval); playBeep(900, 0.3); startExercise(); }
+        if (runState.countdownValue > 0) {
+            if (isVoiceMode()) {
+                if (runState.countdownValue <= 3) speakCritical(String(runState.countdownValue));
+            } else {
+                playBeep(600, 0.1);
+            }
+            renderRun();
+        } else {
+            clearInterval(runState.countdownInterval);
+            if (isVoiceMode()) {
+                speakCritical('старт');
+                setTimeout(() => startExercise(), 700);
+            } else {
+                playBeep(900, 0.3);
+                setTimeout(() => startExercise(), 300);
+            }
+        }
     }, 1000);
 }
 
@@ -2344,16 +2520,14 @@ function startExercise() {
     }
     startTimer('work', 0);
     startMinuteBeep();
+    saveRunState();
     renderRun();
 }
 
 function toggleWorkPause() {
-    if (runState.workPaused) {
-        unlockAudio();
-        resumeTimer('work');
-    } else {
-        pauseTimer('work');
-    }
+    if (runState.workPaused) { unlockAudio(); resumeTimer('work'); announceResume(); }
+    else { pauseTimer('work'); announcePause(); }
+    saveRunState();
     renderRun();
 }
 
@@ -2365,21 +2539,21 @@ function finishExercise() {
     runState.lastFinishedWorkElapsed = elapsed;
     runState.totalWorkTime += elapsed;
     runState.exerciseTimes.push(elapsed);
-    
     const isLastElement = runState.index === runState.workout.exercises.length - 1;
     if (isLastElement) {
         runState.index++;
         showFinishScreen();
     } else {
         const nextEx = runState.workout.exercises[runState.index + 1];
-        
         if (nextEx && nextEx.waterBreak) {
             runState.index++;
             runState.phase = 'ready';
             if (runState.workout.autoStart) {
+                saveRunState();
                 renderRun();
-                setTimeout(() => beginExerciseFlow(), 500);
+                setTimeout(() => beginExerciseFlow(), getAutoAdvanceDelay());
             } else {
+                saveRunState();
                 renderRun();
             }
         } else {
@@ -2388,6 +2562,7 @@ function finishExercise() {
             runState.restBeepPlayed = false;
             const ex = runState.workout.exercises[runState.index];
             startTimer('rest', ex.restSeconds);
+            saveRunState();
             renderRun();
             if (nextEx) {
                 const num = getExerciseNumber(runState.workout.exercises, runState.index + 1);
@@ -2404,12 +2579,9 @@ function finishExercise() {
 }
 
 function toggleRestPause() { 
-    if (runState.restPaused) {
-        unlockAudio();
-        resumeTimer('rest');
-    } else {
-        pauseTimer('rest');
-    }
+    if (runState.restPaused) { unlockAudio(); resumeTimer('rest'); announceResume(); }
+    else { pauseTimer('rest'); announcePause(); }
+    saveRunState();
     renderRun(); 
 }
 
@@ -2420,22 +2592,24 @@ function adjustRest(delta) {
     } else {
         runState.restDuration = Math.max(0, runState.restDuration + delta);
     }
+    saveRunState();
 }
 
 function undoFinishExercise() {
     stopTimer('rest');
     stopRestOvertime();
+    stopRestAlarm();
     runState.totalWorkTime -= runState.lastFinishedWorkElapsed;
     runState.exerciseTimes.pop();
     runState.phase = 'work';
     runState.workPaused = false;
-    
     runState.workElapsedBeforePause = runState.lastFinishedWorkElapsed;
     runState.workStartTime = Date.now();
-    if (!runState.tickInterval) {
-        runState.tickInterval = setInterval(updateTimersUI, 1000);
-    }
+    if (!runState.tickInterval) runState.tickInterval = setInterval(updateTimersUI, 1000);
     startMinuteBeep();
+    const ex = runState.workout.exercises[runState.index];
+    announceUndo(ex ? ex.name : null);
+    saveRunState();
     renderRun();
 }
 
@@ -2447,9 +2621,11 @@ function skipRest() {
     runState.index++;
     runState.phase = 'ready';
     if (runState.workout.autoStart && runState.index < runState.workout.exercises.length) {
+        saveRunState();
         renderRun();
-        setTimeout(() => beginExerciseFlow(), 500);
+        setTimeout(() => beginExerciseFlow(), getAutoAdvanceDelay());
     } else {
+        saveRunState();
         renderRun();
     }
 }
@@ -2461,17 +2637,25 @@ function onRestFinished() {
         runState.restOvertime = 0;
         startRestAlarm();
         startRestOvertime();
+        const nextExForNotif = runState.workout.exercises[runState.index + 1];
+        showRestFinishedNotification(nextExForNotif ? (nextExForNotif.name || 'Упражнение') : 'Завершение тренировки');
+        saveRunState();
         renderRun();
     } else {
         playEndBeep();
+        if (isVoiceMode()) speakCritical('отдых закончен');
         if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+        const nextExForNotif = runState.workout.exercises[runState.index + 1];
+        showRestFinishedNotification(nextExForNotif ? (nextExForNotif.name || 'Упражнение') : 'Завершение тренировки');
         runState.index++;
         runState.phase = 'ready';
         stopTickInterval();
         if (runState.workout.autoStart && runState.index < runState.workout.exercises.length) {
+            saveRunState();
             renderRun();
-            setTimeout(() => beginExerciseFlow(), 500);
+            setTimeout(() => beginExerciseFlow(), getAutoAdvanceDelay());
         } else {
+            saveRunState();
             renderRun();
         }
     }
@@ -2485,9 +2669,11 @@ function confirmRestFinished() {
     runState.index++;
     runState.phase = 'ready';
     if (runState.workout.autoStart && runState.index < runState.workout.exercises.length) {
+        saveRunState();
         renderRun();
-        setTimeout(() => beginExerciseFlow(), 500);
+        setTimeout(() => beginExerciseFlow(), getAutoAdvanceDelay());
     } else {
+        saveRunState();
         renderRun();
     }
 }
@@ -2497,6 +2683,8 @@ function showFinishScreen() {
     stopRestOvertime();
     stopWaterOvertime();
     stopTickInterval();
+    clearSavedRunState();
+    disableExitProtection();
     const endTime = new Date();
     const totalDuration = Math.floor((endTime - runState.startTime) / 1000);
     document.getElementById('phase-label').style.display = 'none';
@@ -2551,19 +2739,58 @@ function showFinishScreen() {
     releaseWakeLock();
 }
 
+/* === NEW: усиленная защита от случайного выхода === */
 function confirmExit() {
-    if (confirm('Выйти из тренировки?')) {
-        stopTickInterval();
-        clearInterval(runState.countdownInterval);
-        stopMinuteBeep();
-        stopRestAlarm();
-        stopWaterAlarm();
-        stopRestOvertime();
-        stopWaterOvertime();
-        releaseWakeLock();
+    // Если тренировки нет — просто переходим
+    if (!runState || runState.phase === 'finish') {
         showScreen('screen-workouts');
+        return true;
     }
+
+    const phase = runState.phase;
+    const idx = runState.index;
+    const totalEx = getTotalExerciseCount(runState.workout.exercises);
+    const elapsed = Math.floor((Date.now() - runState.startTime.getTime()) / 1000);
+    const workDone = runState.totalWorkTime;
+
+    let info = `Тренировка «${runState.workout.name}» идёт ${formatTime(elapsed)}.\n`;
+    info += `Выполнено упражнений: ${runState.exerciseTimes.length} из ${totalEx}.\n\n`;
+
+    if (phase === 'work') info += `⚠️ Сейчас идёт упражнение ${Math.min(idx + 1, totalEx)}.\n`;
+    else if (phase === 'rest') info += `Сейчас идёт отдых.\n`;
+    else if (phase === 'water') info += `Сейчас перерыв на воду.\n`;
+    else if (phase === 'countdown') info += `Идёт обратный отсчёт.\n`;
+    else if (phase === 'ready') info += `Сейчас экран готовности к упражнению ${Math.min(idx + 1, totalEx)}.\n`;
+
+    info += `\nПрогресс сохранится — можно будет продолжить позже.\n\nТочно выйти?`;
+
+    if (!confirm(info)) return false;
+
+    // Дополнительное подтверждение, если в фазе упражнения или тренировка идёт долго
+    if (phase === 'work' || elapsed > 180) {
+        if (!confirm('Точно-точно выйти? Текущий таймер упражнения остановится.')) return false;
+    }
+
+    // Останавливаем всё
+    stopTickInterval();
+    if (runState.countdownInterval) clearInterval(runState.countdownInterval);
+    stopMinuteBeep();
+    stopRestAlarm();
+    stopWaterAlarm();
+    stopRestOvertime();
+    stopWaterOvertime();
+    releaseWakeLock();
+
+    // Сохраняем прогресс для возможного продолжения
+    saveRunState();
+
+    // Снимаем защиту и выходим
+    disableExitProtection();
+    runState = null;
+    showScreen('screen-workouts');
+    return true;
 }
+/* === /усиленная защита от случайного выхода === */
 
 function renderHistory() { renderHistoryList(); renderHistoryStats(); renderHistoryRecords(); }
 function switchHistoryTab(tab, el) {
@@ -2659,9 +2886,8 @@ function buildShareText(record) {
 
 function shareResult(id) {
     const text = buildShareText(id);
-    if (navigator.share) {
-        navigator.share({ title: 'Моя тренировка', text }).catch(() => {});
-    } else {
+    if (navigator.share) navigator.share({ title: 'Моя тренировка', text }).catch(() => {});
+    else {
         try { navigator.clipboard.writeText(text).then(() => alert('Скопировано в буфер!')).catch(() => prompt('Скопируй текст:', text)); }
         catch(e) { prompt('Скопируй текст:', text); }
     }
@@ -2677,7 +2903,6 @@ function clearHistory() {
 
 function renderSettings() {
     document.getElementById('set-wakelock').checked = DB.settings.wakeLock;
-    document.getElementById('set-voice').checked = DB.settings.voice;
     document.getElementById('set-countdown').checked = DB.settings.countdown;
     document.getElementById('set-default-auto').checked = DB.settings.defaultAutoStart;
     document.getElementById('set-continuous-beep').checked = DB.settings.continuousBeep;
@@ -2685,18 +2910,23 @@ function renderSettings() {
     document.getElementById('set-announce-numbers').checked = DB.settings.announceNumbers;
     document.getElementById('set-show-start-time').checked = DB.settings.showStartTime;
     
+    renderSoundModeOptions();
     renderSoundOptions();
     renderMinuteBeepOptions();
     renderCountdownIntervals();
     
     const checkboxMap = {
-        'set-wakelock': 'wakeLock', 'set-voice': 'voice', 'set-countdown': 'countdown',
-        'set-default-auto': 'defaultAutoStart', 'set-continuous-beep': 'continuousBeep',
-        'set-minute-beep': 'minuteBeep', 'set-announce-numbers': 'announceNumbers',
+        'set-wakelock': 'wakeLock',
+        'set-countdown': 'countdown',
+        'set-default-auto': 'defaultAutoStart',
+        'set-continuous-beep': 'continuousBeep',
+        'set-minute-beep': 'minuteBeep',
+        'set-announce-numbers': 'announceNumbers',
         'set-show-start-time': 'showStartTime'
     };
     Object.keys(checkboxMap).forEach(id => {
         const el = document.getElementById(id);
+        if (!el) return;
         el.onchange = () => {
             DB.settings[checkboxMap[id]] = el.checked;
             saveDB('settings');
@@ -2734,6 +2964,10 @@ function importData(event) {
             if (DB.settings.announceNumbers === undefined) DB.settings.announceNumbers = true;
             if (DB.settings.countdownDuration === undefined) DB.settings.countdownDuration = 3;
             if (DB.settings.showStartTime === undefined) DB.settings.showStartTime = false;
+            if (DB.settings.soundMode !== 'voice' && DB.settings.soundMode !== 'beep') {
+                DB.settings.soundMode = DB.settings.voice ? 'voice' : 'beep';
+            }
+            DB.settings.voice = (DB.settings.soundMode === 'voice');
             saveDB('workouts'); saveDB('templates'); saveDB('history'); saveDB('settings');
             alert('Импорт успешен!');
             showScreen('screen-home');
@@ -2756,28 +2990,21 @@ function formatDate(d) {
     return `${d.getDate()} ${months[d.getMonth()]}, ${formatClock(d)}`;
 }
 
-async function playBeep(freq = 800, duration = 0.3) {
-    try {
-        const ctx = await getAudioCtx();
-        if (!ctx || ctx.state !== 'running') return;
-        const osc = ctx.createOscillator(); const gain = ctx.createGain();
-        osc.connect(gain); gain.connect(ctx.destination);
-        osc.frequency.value = freq;
-        gain.gain.setValueAtTime(0.3, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
-        osc.start(); osc.stop(ctx.currentTime + duration);
-    } catch(e) {}
-}
-
 document.addEventListener('click', unlockAudio, { capture: true });
 document.addEventListener('touchstart', unlockAudio, { capture: true, passive: true });
 
 document.addEventListener('visibilitychange', () => {
+    if (runState && document.visibilityState === 'hidden') {
+        saveRunState();
+    }
     if (DB.settings.wakeLock && runState && document.visibilityState === 'visible') {
         acquireWakeLock();
         if (runState.tickInterval) updateTimersUI();
     }
 });
+
+window.addEventListener('load', () => {
+    initNotifications();
+    setTimeout(() => offerResumeSavedSession(), 400);
+});
 </script>
-</body>
-</html>
