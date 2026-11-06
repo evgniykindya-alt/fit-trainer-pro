@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Fit Trainer Pro v1.5">
+<meta name="apple-mobile-web-app-title" content="Fit Trainer Pro v1.5.2">
 <meta name="theme-color" content="#0f0f12">
-<title>Fit Trainer Pro v1.5</title>
-<link rel="manifest" href='data:application/manifest+json,{"name":"Fit Trainer Pro v1.5","short_name":"FitTrainer","start_url":".","display":"standalone","background_color":"%230f0f12","theme_color":"%230f0f12","icons":[{"src":"data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%230f0f12%22/%3E%3Ctext x=%2250%22 y=%2268%22 font-size=%2260%22 text-anchor=%22middle%22%3E💪%3C/text%3E%3C/svg%3E","sizes":"192x192","type":"image/svg+xml"}]}'>
+<title>Fit Trainer Pro v1.5.2</title>
+<link rel="manifest" href='data:application/manifest+json,{"name":"Fit Trainer Pro v1.5.2","short_name":"FitTrainer","start_url":".","display":"standalone","background_color":"%230f0f12","theme_color":"%230f0f12","icons":[{"src":"data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%230f0f12%22/%3E%3Ctext x=%2250%22 y=%2268%22 font-size=%2260%22 text-anchor=%22middle%22%3E💪%3C/text%3E%3C/svg%3E","sizes":"192x192","type":"image/svg+xml"}]}'>
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%230f0f12'/%3E%3Ctext x='50' y='68' font-size='60' text-anchor='middle'%3E💪%3C/text%3E%3C/svg%3E">
 <style>
 :root {
@@ -84,6 +84,9 @@ h2 { color: var(--primary); margin: 24px 0 12px; font-size: 1.15rem; font-weight
 .menu-btn:active { transform: scale(0.98); }
 .menu-btn .icon { font-size: 1.8rem; }
 .menu-btn .sub { font-size: 0.8rem; color: var(--muted); margin-top: 2px; font-weight: 400; }
+
+.app-footer { text-align: center; color: var(--muted); font-size: 0.72rem; opacity: 0.65; margin: 24px 0 12px; user-select: text; letter-spacing: 0.2px; transition: opacity 0.2s, color 0.2s; }
+.app-footer.error { color: var(--danger); opacity: 0.9; }
 
 .workout-item { background: var(--card); border-radius: 16px; padding: 16px; margin-bottom: 12px; position: relative; z-index: 1; content-visibility: auto; contain-intrinsic-size: auto 200px; }
 .workout-item.dragging { opacity: 0.9; z-index: 9999; box-shadow: 0 20px 40px rgba(0,0,0,0.7); background: var(--card-2); border: 1px solid var(--primary); pointer-events: none; position: fixed !important; width: calc(100% - 40px) !important; left: 20px !important; top: 0 !important; margin: 0 !important; content-visibility: visible !important; contain-intrinsic-size: auto auto; }
@@ -361,7 +364,7 @@ details[open] summary::after { transform: rotate(180deg); }
 <div class="app-container">
 
 <div id="screen-home" class="screen active">
-    <h1>💪 Fit Trainer Pro v1.5</h1>
+    <h1>💪 Fit Trainer Pro v1.5.2</h1>
     <div id="streak-banner-home"></div>
     <div id="home-today-banner" style="display:none;"></div>
     <button class="menu-btn" id="menu-btn-workouts" onclick="showScreen('screen-workouts')">
@@ -388,6 +391,7 @@ details[open] summary::after { transform: rotate(180deg); }
         <span class="icon">⚙️</span>
         <div><div>Настройки</div><div class="sub">Тема, голос, звук</div></div>
     </button>
+    <div id="app-footer" class="app-footer"></div>
 </div>
 
 <div id="screen-workouts" class="screen">
@@ -720,7 +724,7 @@ details[open] summary::after { transform: rotate(180deg); }
         <summary>ℹ️ О приложении</summary>
         <div class="group-body">
             <div class="card" style="color:var(--muted); font-size:0.85rem; line-height:1.6;">
-                <strong style="color:var(--text);">Fit Trainer Pro v1.5</strong><br>
+                <strong style="color:var(--text);">Fit Trainer Pro v1.5.2</strong><br>
                 Данные хранятся локально.
             </div>
         </div>
@@ -732,6 +736,55 @@ details[open] summary::after { transform: rotate(180deg); }
 <script>
 window.addEventListener('error', (e) => console.error('[FT error]', e.error || e.message));
 window.addEventListener('unhandledrejection', (e) => console.error('[FT unhandled]', e.reason));
+
+/* ===================== APP VERSION + FOOTER ===================== */
+const APP_VERSION = '1.5.2';
+let swRegistrationGlobal = null;
+let swError = false;
+
+function updateFooter() {
+    const el = document.getElementById('app-footer');
+    if (!el) return;
+    let modeText, isError = false;
+    if (!navigator.onLine) {
+        modeText = 'офлайн режим';
+    } else if (swError) {
+        modeText = 'ошибка кэша';
+        isError = true;
+    } else {
+        modeText = 'онлайн режим';
+    }
+    el.textContent = `v${APP_VERSION} · ${modeText}`;
+    el.classList.toggle('error', isError);
+}
+
+async function initServiceWorker() {
+    if (!('serviceWorker' in navigator)) return;
+    if (location.protocol === 'file:') return;
+    try {
+        swRegistrationGlobal = await navigator.serviceWorker.register('./sw.js');
+        swRegistrationGlobal.addEventListener('updatefound', () => {
+            const nw = swRegistrationGlobal.installing;
+            if (!nw) return;
+            nw.addEventListener('statechange', () => {
+                if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+                    showToast('🔄 Доступно обновление — обновите страницу', 6000);
+                }
+            });
+        });
+        updateFooter();
+    } catch (e) {
+        console.warn('[SW] registration failed', e);
+        swError = true;
+        updateFooter();
+    }
+}
+
+window.addEventListener('online', updateFooter);
+window.addEventListener('offline', updateFooter);
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') updateFooter();
+});
 
 /* ===================== SCHEMA VERSION ===================== */
 const SCHEMA_VERSION = 2;
@@ -838,7 +891,6 @@ if (![0.8, 1, 1.3].includes(DB.settings.voiceRate)) DB.settings.voiceRate = 1;
 if (DB.settings.soundMode !== 'voice' && DB.settings.soundMode !== 'beep') {
     DB.settings.soundMode = 'beep';
 }
-// Cleanup obsolete `voice` field
 if ('voice' in DB.settings) delete DB.settings.voice;
 if (typeof DB.settings.autoBackupReminder !== 'boolean') DB.settings.autoBackupReminder = true;
 if (typeof DB.settings.lastBackupAt !== 'number') DB.settings.lastBackupAt = 0;
@@ -846,7 +898,6 @@ if (typeof DB.settings.lastBackupRecordCount !== 'number') DB.settings.lastBacku
 if (typeof DB.settings.askReps !== 'boolean') DB.settings.askReps = true;
 if (typeof DB.settings.showActivityCalendar !== 'boolean') DB.settings.showActivityCalendar = true;
 if (!DB.settings.accordions || typeof DB.settings.accordions !== 'object') DB.settings.accordions = {};
-// Hidden menu items: only these keys are allowed
 const HIDEABLE_MENU_KEYS = ['templates','programs','activity','history'];
 if (!Array.isArray(DB.settings.hiddenMenuItems)) DB.settings.hiddenMenuItems = [];
 DB.settings.hiddenMenuItems = DB.settings.hiddenMenuItems.filter(k => HIDEABLE_MENU_KEYS.includes(k));
@@ -1832,7 +1883,7 @@ function showScreen(id) {
         try { previewCtx.close(); } catch(e) {}
         previewCtx = null;
     }
-    if (id === 'screen-home') { renderHomeTodayBanner(); renderStreakBanner(); applyHomeMenuVisibility(); }
+    if (id === 'screen-home') { renderHomeTodayBanner(); renderStreakBanner(); applyHomeMenuVisibility(); updateFooter(); }
     if (id === 'screen-workouts') renderWorkoutsList();
     if (id === 'screen-history') renderHistory();
     if (id === 'screen-settings') renderSettings();
@@ -2603,7 +2654,6 @@ function renderTemplates() {
     const emptyEl = document.getElementById('templates-empty');
     if (!userList || !builtinList) return;
 
-    // --- User templates ---
     if (DB.templates.length > 0) {
         userTitle.style.display = 'block';
         userList.style.display = 'block';
@@ -2632,7 +2682,6 @@ function renderTemplates() {
         userList.innerHTML = '';
     }
 
-    // --- Builtin templates ---
     const visible = BUILTIN_TEMPLATES.filter(t => !DB.settings.hiddenBuiltins.includes(t.id));
     if (visible.length > 0) {
         builtinTitle.style.display = 'block';
@@ -4510,7 +4559,6 @@ function renderSettings() {
     const vib = document.getElementById('vibration-warning');
     if (vib) vib.style.display = (typeof navigator.vibrate === 'function') ? 'none' : 'flex';
 
-    // Home screen visibility checkboxes
     const hideMapInit = {
         'set-hide-templates': 'templates',
         'set-hide-programs': 'programs',
@@ -4852,6 +4900,7 @@ document.addEventListener('visibilitychange', () => {
             if (runState.tickInterval) updateTimersUI();
         }
         if (runState && runState.phase !== 'finish') saveRunState();
+        updateFooter();
     } else {
         hiddenAt = Date.now();
         if (runState && runState.phase !== 'finish') saveRunState();
@@ -4872,6 +4921,8 @@ try {
 window.addEventListener('load', () => {
     setTimeout(async () => {
         try { renderStreakBanner(); renderHomeTodayBanner(); applyHomeMenuVisibility(); } catch(e) {}
+        try { updateFooter(); } catch(e) {}
+        try { await initServiceWorker(); } catch(e) { console.error('[SW]', e); }
         try { await offerResumeSavedSession(); } catch(e) { console.error(e); }
         setTimeout(() => {
             try { checkScheduledNotifications(); } catch(e) { console.error('[notif]', e); }
