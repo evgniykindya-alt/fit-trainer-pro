@@ -1297,6 +1297,26 @@ function findNextElement(exercises, fromIndex) {
     return null;
 }
 
+/* ИСПРАВЛЕНИЕ БАГА:
+   setResults и exerciseNotes ключуются по ОРИГИНАЛЬНОМУ индексу в workout.exercises
+   (включая warmup/rest). А exerciseNames/exerciseTimes — по позиции среди упражнений (0..N-1).
+   Эта функция строит массив: origIdxs[k] = оригинальный индекс k-го упражнения.
+   Нужна для правильного отображения подходов и заметок в истории. */
+function getExerciseOriginalIndices(r) {
+    const names = Array.isArray(r && r.exerciseNames) ? r.exerciseNames : [];
+    if (Array.isArray(r && r.exerciseOriginalIndices) && r.exerciseOriginalIndices.length === names.length) {
+        return r.exerciseOriginalIndices;
+    }
+    // Фолбэк для старых записей: пытаемся восстановить из ключей setResults
+    const sr = (r && r.setResults && typeof r.setResults === 'object') ? r.setResults : {};
+    const keys = Object.keys(sr).filter(k => /^\d+$/.test(k)).map(k => parseInt(k, 10)).sort((a, b) => a - b);
+    if (keys.length === names.length) {
+        return keys;
+    }
+    // Не смогли восстановить — возвращаем позиции 1-в-1
+    return names.map((_, i) => i);
+}
+
 function estimateWorkoutDuration(w) {
     if (!w || !Array.isArray(w.exercises)) return 0;
     let total = 0;
@@ -1508,16 +1528,7 @@ function speakCritical(text) {
     } catch(e) {}
 }
 function speakAtElementStart(text) {
-    if (!runState) { speak(text); return; }
-    if (runState.workoutNameAnnounced) { speak(text); return; }
-    runState.workoutNameAnnounced = true;
-    const announceName = getEffectiveSetting('announceWorkoutName');
-    const wName = (runState.workout && runState.workout.name) ? String(runState.workout.name).trim() : '';
-    if (announceName && wName) {
-        speak(wName + '. ' + text);
-    } else {
-        speak(text);
-    }
+    speak(text);
 }
 function cleanButtonText(text) {
     if (!text) return '';
@@ -1732,7 +1743,8 @@ function restoreRunState(saved) {
         lastFinishedWorkElapsed: saved.lastFinishedWorkElapsed || 0,
         exerciseTimes: saved.exerciseTimes ? [...saved.exerciseTimes] : [],
         lastBeepTargetTime: undefined, setFinishing: false, countdownValue: 3,
-        workoutNameAnnounced: true
+        workoutNameAnnounced: true,
+        _flowStarting: false
     };
     document.getElementById('run-title').innerText = workout.name;
     acquireWakeLock(); enableExitProtection();
@@ -2301,6 +2313,8 @@ function showDayActivityDetail(key) {
         const startT = new Date(r.startTime);
         const endT = r.endTime ? new Date(r.endTime) : new Date(startT.getTime() + (r.totalDuration || 0) * 1000);
         const hasWarmup = (r.warmupSeconds || 0) > 0;
+        /* ИСПРАВЛЕНИЕ БАГА: карта позиция→оригинальный индекс */
+        const origIdxs = getExerciseOriginalIndices(r);
 
         html += `<div class="history-card" style="margin:0;">
             <div class="history-top">
@@ -2319,8 +2333,9 @@ function showDayActivityDetail(key) {
                 <div style="padding:0 12px 12px; display:flex; flex-direction:column; gap:6px;">
                     ${hasWarmup ? `<div style="padding:6px 0; border-bottom:1px solid var(--card-2);"><div style="display:flex; justify-content:space-between; font-size:0.85rem; gap:8px;"><span style="flex:1; min-width:0; color:var(--warn);">🔥 Разминка</span><span style="color:var(--warn); font-weight:600; flex-shrink:0;">${formatTime(r.warmupSeconds)}</span></div></div>` : ''}
                     ${(r.exerciseNames || []).map((name, i) => {
-                        const note = (r.exerciseNotes || {})[i];
-                        const sets = (r.setResults || {})[i];
+                        const origIdx = origIdxs[i] !== undefined ? origIdxs[i] : i;
+                        const note = (r.exerciseNotes || {})[origIdx];
+                        const sets = (r.setResults || {})[origIdx];
                         const t = (r.exerciseTimes || [])[i];
                         const isSkipped = t !== undefined && t !== null && t < 0;
                         return `<div style="padding:6px 0; border-bottom:1px solid var(--card-2);">
@@ -3351,12 +3366,17 @@ async function startWorkout(id) {
             restBannerMode: false,
             startTime: new Date(), totalWorkTime: 0, lastFinishedWorkElapsed: 0,
             exerciseTimes: [], lastBeepTargetTime: undefined, setFinishing: false, countdownValue: 3,
-            workoutNameAnnounced: false
+            workoutNameAnnounced: false,
+            _flowStarting: false
         };
         document.getElementById('run-title').innerText = w.name;
         acquireWakeLock(); enableExitProtection();
         renderRun(); showScreen('screen-run'); saveRunState();
-        if (w.autoStart) setTimeout(() => beginCurrentElementFlow(true), 400);
+        if (w.autoStart) setTimeout(() => {
+            if (runState && runState.phase === 'ready' && !runState.workoutNameAnnounced && !runState._flowStarting) {
+                beginCurrentElementFlow(true);
+            }
+        }, 400);
     } finally {
         startWorkoutInProgress = false;
     }
@@ -3365,8 +3385,44 @@ async function startWorkout(id) {
 function beginCurrentElementFlow(fromAuto = false) {
     if (!runState) return;
     if (runState.phase !== 'ready') return;
+    if (runState._flowStarting) return;
     unlockAudio();
     saveRunState();
+
+    if (!runState.workoutNameAnnounced) {
+        runState.workoutNameAnnounced = true;
+        const announceName = getEffectiveSetting('announceWorkoutName');
+        const wName = String(runState.workout.name || '').trim();
+        if (announceName && wName && isVoiceMode() && ('speechSynthesis' in window)) {
+            runState._flowStarting = true;
+            try {
+                speechSynthesis.cancel();
+                const u = new SpeechSynthesisUtterance(wName);
+                applyVoiceToUtterance(u);
+                let proceeded = false;
+                const proceed = () => {
+                    if (proceeded) return;
+                    proceeded = true;
+                    if (!runState) return;
+                    runState._flowStarting = false;
+                    proceedWithElement(fromAuto);
+                };
+                u.onend = proceed;
+                u.onerror = proceed;
+                setTimeout(proceed, 4000);
+                speechSynthesis.speak(u);
+                return;
+            } catch(e) {
+                runState._flowStarting = false;
+            }
+        }
+    }
+    proceedWithElement(fromAuto);
+}
+
+function proceedWithElement(fromAuto) {
+    if (!runState) return;
+    if (runState.phase !== 'ready') return;
     const el = runState.workout.exercises[runState.index];
     if (!el) { showFinishScreen(); return; }
     if (el.kind === 'warmup') {
@@ -4087,7 +4143,6 @@ function renderRun() {
         pauseBtn.style.display = 'block';
         if (skipBtn) skipBtn.style.display = 'block';
         repsInfo.style.display = showReps ? 'block' : 'none';
-        /* ИЗМЕНЕНО: правильное склонение слова «повторение» под число */
         if (showReps) {
             const nReps = parseInt(targetText, 10) || 0;
             repsTarget.innerText = targetText + ' ' + pluralReps(nReps);
@@ -4246,6 +4301,14 @@ function showFinishScreen() {
     if (navigator.vibrate) navigator.vibrate([300, 100, 300, 100, 300]);
     speak('Тренировка завершена. Отличная работа!');
 
+    /* ИСПРАВЛЕНИЕ БАГА: сохраняем карту «позиция среди упражнений → оригинальный индекс».
+       setResults и exerciseNotes ключуются по оригинальному индексу, а display — по позиции.
+       Без этой карты в истории отображались бы не те подходы у не тех упражнений. */
+    const exerciseOriginalIndices = [];
+    runState.workout.exercises.forEach((el, i) => {
+        if (el.kind === 'exercise') exerciseOriginalIndices.push(i);
+    });
+
     const record = {
         id: Date.now(),
         workoutId: runState.workout.id,
@@ -4258,6 +4321,7 @@ function showFinishScreen() {
         exercisesCount: getTotalExerciseCount(runState.workout.exercises),
         exerciseTimes: [...runState.exerciseTimes],
         exerciseNames: runState.workout.exercises.filter(e => e.kind === 'exercise').map(e => e.name || ''),
+        exerciseOriginalIndices,
         exerciseNotes: JSON.parse(JSON.stringify(runState.exerciseNotes || {})),
         workoutNote: runState.workoutNoteDraft || '',
         setResults: JSON.parse(JSON.stringify(runState.setResults || {}))
@@ -4405,6 +4469,8 @@ function renderHistoryList() {
         const notes = r.exerciseNotes || {};
         const hasNotes = Object.values(notes).some(n => n) || r.workoutNote;
         const hasWarmup = (r.warmupSeconds || 0) > 0;
+        /* ИСПРАВЛЕНИЕ БАГА: карта позиция→оригинальный индекс */
+        const origIdxs = getExerciseOriginalIndices(r);
         return `<div class="swipe-container" data-history-id="${r.id}">
             <button class="swipe-delete-btn" data-delete-id="${r.id}">🗑 Удалить</button>
             <div class="history-card">
@@ -4425,8 +4491,9 @@ function renderHistoryList() {
                     <div style="padding:0 12px 12px; display:flex; flex-direction:column; gap:6px;">
                         ${hasWarmup ? `<div style="padding:6px 0; border-bottom:1px solid var(--card-2);"><div style="display:flex; justify-content:space-between; font-size:0.85rem; gap:8px;"><span style="flex:1; min-width:0; color:var(--warn);">🔥 Разминка</span><span style="color:var(--warn); font-weight:600; flex-shrink:0;">${formatTime(r.warmupSeconds)}</span></div></div>` : ''}
                         ${(r.exerciseNames || []).map((name, i) => {
-                            const note = (r.exerciseNotes || {})[i];
-                            const sets = (r.setResults || {})[i];
+                            const origIdx = origIdxs[i] !== undefined ? origIdxs[i] : i;
+                            const note = (r.exerciseNotes || {})[origIdx];
+                            const sets = (r.setResults || {})[origIdx];
                             const t = (r.exerciseTimes || [])[i];
                             const isSkipped = t !== undefined && t !== null && t < 0;
                             return `<div style="padding:6px 0; border-bottom:1px solid var(--card-2);">
