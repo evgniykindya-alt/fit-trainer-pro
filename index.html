@@ -14,7 +14,7 @@
 :root {
     --bg: #0f0f12; --card: #1c1c22; --card-2: #26262e;
     --primary: #bb86fc; --accent: #03dac6; --danger: #ff5c6c;
-    --text: #fff; --muted: #8a8a95; --warn: #ff9800;
+    --text: #fff; --muted: #a8a8b3; --warn: #ff9800;
     --blue: #42a5f5; --water: #4fc3f7; --fire: #ff6b35;
     --rest: #6a6a7a;
     --border: #333;
@@ -29,7 +29,7 @@
 body.light {
     --bg: #f4f4f7; --card: #ffffff; --card-2: #ecedf1;
     --primary: #7c4dff; --accent: #00bfa5; --danger: #e91e63;
-    --text: #1c1c22; --muted: #6a6a7a; --warn: #e67e00;
+    --text: #1c1c22; --muted: #5a5a6a; --warn: #e67e00;
     --blue: #1976d2; --water: #0288d1; --fire: #e64a19;
     --rest: #8a8a95;
     --border: #d8d8e0;
@@ -48,6 +48,11 @@ body {
     -webkit-font-smoothing: antialiased;
     overscroll-behavior: none; user-select: none;
     transition: background-color 0.2s, color 0.2s;
+}
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, .menu-btn:focus-visible, summary:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 8px;
 }
 .app-container { width: 100%; height: 100vh; height: 100dvh; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: var(--sat) 0 var(--sab) 0; }
 .screen { display: none; padding: 15px 15px 10px; min-height: 100%; }
@@ -81,7 +86,7 @@ h2 { color: var(--primary); margin: 24px 0 12px; font-size: 1.15rem; font-weight
 .menu-btn .sub { font-size: 0.8rem; color: var(--muted); margin-top: 2px; font-weight: 400; }
 
 .workout-item { background: var(--card); border-radius: 16px; padding: 16px; margin-bottom: 12px; position: relative; z-index: 1; content-visibility: auto; contain-intrinsic-size: auto 200px; }
-.workout-item.dragging { opacity: 0.9; z-index: 9999; box-shadow: 0 20px 40px rgba(0,0,0,0.7); background: var(--card-2); border: 1px solid var(--primary); pointer-events: none; position: fixed !important; width: calc(100% - 40px) !important; left: 20px !important; top: 0 !important; margin: 0 !important; }
+.workout-item.dragging { opacity: 0.9; z-index: 9999; box-shadow: 0 20px 40px rgba(0,0,0,0.7); background: var(--card-2); border: 1px solid var(--primary); pointer-events: none; position: fixed !important; width: calc(100% - 40px) !important; left: 20px !important; top: 0 !important; margin: 0 !important; content-visibility: visible !important; contain-intrinsic-size: auto auto; }
 .drag-placeholder { background: transparent; border: 2px dashed var(--muted); border-radius: 16px; height: 100px; margin-bottom: 12px; opacity: 0.5; }
 body.no-scroll { overflow: hidden !important; position: fixed !important; width: 100%; height: 100%; touch-action: none !important; }
 .drag-placeholder.active-drop { border-color: var(--accent); background: var(--accent-soft); }
@@ -95,7 +100,7 @@ body.no-scroll { overflow: hidden !important; position: fixed !important; width:
 .btn-start-workout { width: 100%; margin: 0; padding: 16px; font-size: 1.1rem; }
 
 .input, .select { background: var(--card-2); border: 1px solid var(--border); color: var(--text); padding: 12px; border-radius: 10px; font-size: 1rem; width: 100%; margin-bottom: 8px; -webkit-appearance: none; appearance: none; }
-select.select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%238a8a95' d='M6 8L0 0h12z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+select.select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23a8a8b3' d='M6 8L0 0h12z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
 .input:focus, .select:focus { outline: none; border-color: var(--primary); }
 textarea.input { min-height: 60px; resize: vertical; font-family: inherit; }
 
@@ -254,6 +259,7 @@ details[open] summary::after { transform: rotate(180deg); }
 .tab.active { background: var(--primary); color: #000; font-weight: 600; }
 
 .template-card { background: var(--card-2); border-radius: 12px; padding: 14px; margin-bottom: 10px; content-visibility: auto; contain-intrinsic-size: auto 100px; }
+.template-card.dragging { opacity: 0.9; z-index: 9999; box-shadow: 0 20px 40px rgba(0,0,0,0.7); background: var(--card-2); border: 1px solid var(--primary); pointer-events: none; position: fixed !important; width: calc(100% - 40px) !important; left: 20px !important; top: 0 !important; margin: 0 !important; content-visibility: visible !important; contain-intrinsic-size: auto auto; }
 .template-card-name { font-weight: 600; margin-bottom: 6px; word-break: break-word; cursor: pointer; font-size: 1rem; }
 .template-card-meta-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .template-card-meta { flex: 1; min-width: 0; color: var(--muted); font-size: 0.85rem; line-height: 1.35; word-break: break-word; }
@@ -386,7 +392,7 @@ details[open] summary::after { transform: rotate(180deg); }
 
 <div id="screen-workouts" class="screen">
     <div class="top-bar">
-        <button class="back-btn" onclick="showScreen('screen-home')">←</button>
+        <button class="back-btn" onclick="showScreen('screen-home')" aria-label="Назад">←</button>
         <h1>Мои тренировки</h1>
         <div class="spacer"></div>
     </div>
@@ -407,17 +413,21 @@ details[open] summary::after { transform: rotate(180deg); }
 
 <div id="screen-templates" class="screen">
     <div class="top-bar">
-        <button class="back-btn" onclick="showScreen('screen-home')">←</button>
+        <button class="back-btn" onclick="showScreen('screen-home')" aria-label="Назад">←</button>
         <h1>Шаблоны</h1>
         <div class="spacer"></div>
     </div>
     <button class="btn accent" onclick="openEditor(null, true)">+ Создать шаблон</button>
-    <div id="templates-list"></div>
+    <div class="template-section-title" id="user-templates-title" style="display:none;">Мои шаблоны</div>
+    <div id="user-templates-list"></div>
+    <div class="template-section-title" id="builtin-templates-title" style="display:none;">Готовые</div>
+    <div id="builtin-templates-list"></div>
+    <div id="templates-empty" class="empty-state" style="display:none;">Шаблоны скрыты</div>
 </div>
 
 <div id="screen-programs" class="screen">
     <div class="top-bar">
-        <button class="back-btn" onclick="showScreen('screen-home')">←</button>
+        <button class="back-btn" onclick="showScreen('screen-home')" aria-label="Назад">←</button>
         <h1>Программы</h1>
         <div class="spacer"></div>
     </div>
@@ -427,7 +437,7 @@ details[open] summary::after { transform: rotate(180deg); }
 
 <div id="screen-program-editor" class="screen">
     <div class="top-bar">
-        <button class="back-btn" onclick="cancelProgramEditor()">←</button>
+        <button class="back-btn" onclick="cancelProgramEditor()" aria-label="Назад">←</button>
         <h1 id="program-editor-title" style="margin:0;">Программа</h1>
         <div class="spacer"></div>
     </div>
@@ -444,7 +454,7 @@ details[open] summary::after { transform: rotate(180deg); }
 
 <div id="screen-editor" class="screen">
     <div class="top-bar">
-        <button class="back-btn" onclick="cancelEditor()">←</button>
+        <button class="back-btn" onclick="cancelEditor()" aria-label="Назад">←</button>
         <h1 id="editor-title" style="margin:0;">Новая тренировка</h1>
         <div class="spacer"></div>
     </div>
@@ -522,7 +532,7 @@ details[open] summary::after { transform: rotate(180deg); }
 
 <div id="screen-preview" class="screen">
     <div class="top-bar">
-        <button class="back-btn" id="preview-back-btn" onclick="showScreen('screen-workouts')">←</button>
+        <button class="back-btn" id="preview-back-btn" onclick="showScreen('screen-workouts')" aria-label="Назад">←</button>
         <h1 id="preview-title" style="margin:0;">Предпросмотр</h1>
         <div class="spacer"></div>
     </div>
@@ -536,7 +546,7 @@ details[open] summary::after { transform: rotate(180deg); }
         <span id="start-time-value">--:--</span>
     </div>
     <div class="top-bar">
-        <button class="back-btn" onclick="confirmExit()">←</button>
+        <button class="back-btn" onclick="confirmExit()" aria-label="Назад">←</button>
         <h1 id="run-title" style="margin:0;">Тренировка</h1>
         <div class="spacer"></div>
     </div>
@@ -593,7 +603,7 @@ details[open] summary::after { transform: rotate(180deg); }
 
 <div id="screen-activity" class="screen">
     <div class="top-bar">
-        <button class="back-btn" onclick="showScreen('screen-home')">←</button>
+        <button class="back-btn" onclick="showScreen('screen-home')" aria-label="Назад">←</button>
         <h1>Активность</h1>
         <div class="spacer"></div>
     </div>
@@ -602,7 +612,7 @@ details[open] summary::after { transform: rotate(180deg); }
 
 <div id="screen-history" class="screen">
     <div class="top-bar">
-        <button class="back-btn" onclick="showScreen('screen-home')">←</button>
+        <button class="back-btn" onclick="showScreen('screen-home')" aria-label="Назад">←</button>
         <h1>История</h1>
         <div class="spacer"></div>
     </div>
@@ -627,7 +637,7 @@ details[open] summary::after { transform: rotate(180deg); }
 
 <div id="screen-settings" class="screen">
     <div class="top-bar">
-        <button class="back-btn" onclick="showScreen('screen-home')">←</button>
+        <button class="back-btn" onclick="showScreen('screen-home')" aria-label="Назад">←</button>
         <h1>Настройки</h1>
         <div class="spacer"></div>
     </div>
@@ -700,7 +710,6 @@ details[open] summary::after { transform: rotate(180deg); }
         <div class="group-body">
             <div class="card" style="color:var(--muted); font-size:0.85rem; line-height:1.6;">
                 <strong style="color:var(--text);">Fit Trainer Pro v1.5</strong><br>
-                Работает офлайн через Service Worker.<br>
                 Данные хранятся локально.
             </div>
         </div>
@@ -713,6 +722,30 @@ details[open] summary::after { transform: rotate(180deg); }
 window.addEventListener('error', (e) => console.error('[FT error]', e.error || e.message));
 window.addEventListener('unhandledrejection', (e) => console.error('[FT unhandled]', e.reason));
 
+/* ===================== SCHEMA VERSION ===================== */
+const SCHEMA_VERSION = 2;
+(function initSchema() {
+    try {
+        const v = parseInt(localStorage.getItem('ft_schema_version') || '0', 10);
+        if (v < SCHEMA_VERSION) {
+            localStorage.setItem('ft_schema_version', String(SCHEMA_VERSION));
+        }
+    } catch(e) {}
+})();
+
+/* ===================== STORAGE AVAILABILITY ===================== */
+function checkStorageAvailable() {
+    try {
+        const testKey = '__ft_test_storage__';
+        localStorage.setItem(testKey, '1');
+        localStorage.removeItem(testKey);
+        return true;
+    } catch(e) { return false; }
+}
+if (!checkStorageAvailable()) {
+    setTimeout(() => showToast('⚠️ Хранилище недоступно — данные не сохраняются. Возможно, вы в приватном режиме.', 12000), 1500);
+}
+
 function showToast(text, duration = 2500) {
     try {
         const t = document.createElement('div');
@@ -723,7 +756,7 @@ function showToast(text, duration = 2500) {
     } catch(e) {}
 }
 
-function showUndoToast(text, onUndo, duration = 5000) {
+function showUndoToast(text, onUndo, duration = 8000) {
     try {
         const t = document.createElement('div');
         t.className = 'ft-toast';
@@ -791,15 +824,16 @@ if (!Array.isArray(DB.settings.hiddenBuiltins)) DB.settings.hiddenBuiltins = [];
 if (!['auto','light','dark'].includes(DB.settings.themeMode)) DB.settings.themeMode = 'auto';
 if (![0.8, 1, 1.3].includes(DB.settings.voiceRate)) DB.settings.voiceRate = 1;
 if (DB.settings.soundMode !== 'voice' && DB.settings.soundMode !== 'beep') {
-    DB.settings.soundMode = DB.settings.voice ? 'voice' : 'beep';
+    DB.settings.soundMode = 'beep';
 }
+// Cleanup obsolete `voice` field
+if ('voice' in DB.settings) delete DB.settings.voice;
 if (typeof DB.settings.autoBackupReminder !== 'boolean') DB.settings.autoBackupReminder = true;
 if (typeof DB.settings.lastBackupAt !== 'number') DB.settings.lastBackupAt = 0;
 if (typeof DB.settings.lastBackupRecordCount !== 'number') DB.settings.lastBackupRecordCount = 0;
 if (typeof DB.settings.askReps !== 'boolean') DB.settings.askReps = true;
 if (typeof DB.settings.showActivityCalendar !== 'boolean') DB.settings.showActivityCalendar = true;
 if (!DB.settings.accordions || typeof DB.settings.accordions !== 'object') DB.settings.accordions = {};
-DB.settings.voice = (DB.settings.soundMode === 'voice');
 
 function isVoiceMode() { return DB.settings.soundMode === 'voice'; }
 function isBeepMode() { return DB.settings.soundMode !== 'voice'; }
@@ -1127,7 +1161,16 @@ const DAY_NAMES_FULL = { mon:'Понедельник', tue:'Вторник', wed
 
 function getTodayKey() { const d = new Date().getDay(); return ['sun','mon','tue','wed','thu','fri','sat'][d]; }
 function formatDateKey(d) { const y = d.getFullYear(); const m = String(d.getMonth() + 1).padStart(2, '0'); const dd = String(d.getDate()).padStart(2, '0'); return `${y}-${m}-${dd}`; }
-function parseDateKey(key) { const [y, m, d] = key.split('-').map(Number); return new Date(y, m - 1, d); }
+function parseDateKey(key) {
+    if (typeof key !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(key)) {
+        console.warn('[parseDateKey] invalid input:', key);
+        return new Date();
+    }
+    const [y, m, d] = key.split('-').map(Number);
+    const date = new Date(y, m - 1, d);
+    if (isNaN(date.getTime())) return new Date();
+    return date;
+}
 function addDays(date, n) { const d = new Date(date); d.setDate(d.getDate() + n); return d; }
 function startOfWeekMonday(date) { const d = new Date(date); d.setHours(0,0,0,0); const day = d.getDay(); const diff = (day === 0 ? -6 : 1 - day); d.setDate(d.getDate() + diff); return d; }
 function formatWeekRange(startKey) {
@@ -1180,7 +1223,7 @@ function estimateWorkoutDuration(w) {
         if (el.kind === 'rest') {
             if (el.duration) total += el.duration;
         } else if (el.kind === 'exercise') {
-            if (el.type === 'time') total += 60;
+            if (el.type === 'time') total += (el.estimatedDuration || 60);
             else if (el.type === 'reps') total += (el.targetReps || 10) * 3;
             else if (el.type === 'sets') {
                 const sets = el.setsCount || 3;
@@ -1287,7 +1330,7 @@ function renderVoiceOptions() {
         html += `<div class="sound-option ${sel ? 'selected' : ''}" onclick="selectVoice('${safe}')">
             <div class="radio"></div>
             <div class="sound-info"><div class="sound-name">${escapeHtml(v.name || 'Голос')}</div><div class="sound-desc">${v.lang}</div></div>
-            <button class="preview-btn" onclick="event.stopPropagation(); previewVoice('${safe}')">▶</button>
+            <button class="preview-btn" onclick="event.stopPropagation(); previewVoice('${safe}')" aria-label="Прослушать">▶</button>
         </div>`;
     });
     c.innerHTML = html;
@@ -1403,9 +1446,9 @@ document.addEventListener('click', (e) => {
         if (!btn) return;
         if (!btn.closest('#screen-run')) return;
         if (btn.classList.contains('sheet-btn-cancel')) return;
-        if (btn.classList.contains('icon-btn')) { const t = btn.getAttribute('title') || ''; if (t) speakButton(t); return; }
+        if (btn.classList.contains('icon-btn')) { const t = btn.getAttribute('title') || btn.getAttribute('aria-label') || ''; if (t) speakButton(t); return; }
         let txt = (btn.innerText || btn.textContent || '').trim();
-        if (!txt) { const t = btn.getAttribute('title') || ''; if (t) txt = t; }
+        if (!txt) { const t = btn.getAttribute('title') || btn.getAttribute('aria-label') || ''; if (t) txt = t; }
         if (txt) speakButton(txt);
     } catch(err) {}
 }, true);
@@ -1479,40 +1522,7 @@ const ALARM_SOUNDS = {
 const MINUTE_BEEP_INTERVALS = [{ v: 60, t: 'Каждую минуту' }, { v: 120, t: 'Каждые 2 мин' }, { v: 300, t: 'Каждые 5 мин' }, { v: 600, t: 'Каждые 10 мин' }];
 const COUNTDOWN_INTERVALS = [{ v: 3, t: '3 сек' }, { v: 5, t: '5 сек' }, { v: 15, t: '15 сек' }, { v: 20, t: '20 сек' }];
 
-/* ===================== SERVICE WORKER ===================== */
-let swRegistration = null;
-async function initServiceWorker() {
-    if (!('serviceWorker' in navigator)) return;
-    try {
-        swRegistration = await navigator.serviceWorker.register('./sw.js');
-        swRegistration.addEventListener('updatefound', () => {
-            const nw = swRegistration.installing;
-            if (!nw) return;
-            nw.addEventListener('statechange', () => {
-                if (nw.state === 'installed' && navigator.serviceWorker.controller) showUpdateToast();
-            });
-        });
-    } catch (e) {}
-}
-function showUpdateToast() {
-    if (document.getElementById('update-toast')) return;
-    try {
-        const toast = document.createElement('div');
-        toast.id = 'update-toast';
-        toast.style.cssText = 'position:fixed;bottom:20px;left:20px;right:20px;background:var(--card);border:1px solid var(--primary);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px;z-index:9998;box-shadow:0 8px 24px rgba(0,0,0,0.4);color:var(--text);font-size:0.9rem;';
-        toast.innerHTML = `<div style="flex:1;">🔄 Доступно обновление</div>
-            <button id="update-now-btn" style="background:var(--primary);color:#000;border:none;padding:8px 14px;border-radius:10px;font-weight:600;font-size:0.85rem;">Обновить</button>
-            <button id="update-later-btn" style="background:transparent;color:var(--muted);border:none;padding:8px 10px;font-size:0.85rem;">Позже</button>`;
-        document.body.appendChild(toast);
-        document.getElementById('update-now-btn').onclick = () => {
-            if (swRegistration && swRegistration.waiting) {
-                swRegistration.waiting.postMessage({ type: 'SKIP_WAITING' });
-                setTimeout(() => location.reload(), 300);
-            } else location.reload();
-        };
-        document.getElementById('update-later-btn').onclick = () => toast.remove();
-    } catch(e) {}
-}
+/* ===================== NOTIFICATION PERMISSION ===================== */
 async function requestNotificationPermission() {
     if (!('Notification' in window)) return false;
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
@@ -1525,9 +1535,13 @@ async function requestNotificationPermission() {
 /* ===================== RUN STATE SAVE ===================== */
 const RUN_STATE_KEY = 'ft_run_state';
 let saveCounter = 0;
+let hiddenAt = 0;
 
 function saveRunState() {
     if (!runState || runState.phase === 'finish') return;
+    // Determine the "real" savedAt: when the app first went to background (if currently hidden)
+    let savedAtTs = Date.now();
+    if (document.visibilityState === 'hidden' && hiddenAt > 0) savedAtTs = hiddenAt;
     const snapshot = {
         workoutId: runState.workout.id, workoutName: runState.workout.name,
         index: runState.index, phase: runState.phase,
@@ -1552,7 +1566,7 @@ function saveRunState() {
         restElapsedBeforePause: getCurrentElapsed('rest'),
         restDuration: runState.restDuration, restFinished: runState.restFinished,
         restBannerMode: !!runState.restBannerMode,
-        savedAt: Date.now()
+        savedAt: savedAtTs
     };
     try { localStorage.setItem(RUN_STATE_KEY, JSON.stringify(snapshot)); } catch(e) {}
 }
@@ -1677,13 +1691,27 @@ const REST_PRESETS = [
 
 let editingId = null, editingIsTemplate = false, editorExercises = [];
 let editingProgramId = null, editorProgram = null;
-let previewWorkoutId = null, previewTemplateData = null;
+let previewWorkoutId = null;
 let restAlarmTimeout = null, restVoiceTimeout = null;
 let previewCtx = null;
 let collapsedWeeks = {};
 
-function acquireWakeLock() { if (!DB.settings.wakeLock) return; if ('wakeLock' in navigator) { try { navigator.wakeLock.request('screen').catch(() => {}); } catch(e) {} } }
-function releaseWakeLock() {}
+/* ===================== WAKE LOCK ===================== */
+let wakeLockSentinel = null;
+async function acquireWakeLock() {
+    if (!DB.settings.wakeLock) return;
+    if (!('wakeLock' in navigator)) return;
+    try {
+        wakeLockSentinel = await navigator.wakeLock.request('screen');
+        wakeLockSentinel.addEventListener('release', () => { wakeLockSentinel = null; });
+    } catch(e) {}
+}
+function releaseWakeLock() {
+    if (wakeLockSentinel) {
+        try { wakeLockSentinel.release(); } catch(e) {}
+        wakeLockSentinel = null;
+    }
+}
 
 function playPatternStep(ctx, step) {
     if (step.type === 'silence') return;
@@ -1749,7 +1777,24 @@ function previewAlarmSound(key) {
 }
 
 /* ===================== SHOW SCREEN ===================== */
+function resetWorkoutFilters() {
+    const s = document.getElementById('workout-search');
+    const o = document.getElementById('workout-sort');
+    if (s) s.value = '';
+    if (o) o.value = 'custom';
+}
+function resetHistoryFilters() {
+    const s = document.getElementById('history-search');
+    const o = document.getElementById('history-period');
+    if (s) s.value = '';
+    if (o) o.value = 'all';
+}
 function showScreen(id) {
+    const prevActive = document.querySelector('.screen.active');
+    const prevId = prevActive ? prevActive.id : null;
+    if (prevId === 'screen-workouts' && id !== 'screen-workouts') resetWorkoutFilters();
+    if (prevId === 'screen-history' && id !== 'screen-history') resetHistoryFilters();
+
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById(id).classList.add('active');
     document.querySelector('.app-container').scrollTop = 0;
@@ -1828,32 +1873,56 @@ function initSwipeDelete(container, onDelete) {
     }
 }
 
-/* ===================== DRAG ===================== */
+/* ===================== DRAG (generalized) ===================== */
 let draggedItem = null, dragPlaceholder = null, dragOffsetY = 0, longPressTimer = null;
-function initDragAndDrop(item) {
+let dragContext = null;
+
+function initDragAndDrop(item, opts) {
+    opts = opts || {};
+    const containerSelector = opts.containerSelector || '#workouts-list';
+    const itemSelector = opts.itemSelector || '.workout-item';
+    const dbKey = opts.dbKey || 'workouts';
+    item._dragOpts = { containerSelector, itemSelector, dbKey };
     item.setAttribute('draggable', 'true');
-    item.addEventListener('dragstart', (e) => { draggedItem = item; item.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
+
+    item.addEventListener('dragstart', (e) => {
+        draggedItem = item;
+        dragContext = item._dragOpts;
+        item.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+    });
     item.addEventListener('dragend', () => { cleanupDrag(); });
-    item.addEventListener('dragover', (e) => { e.preventDefault(); updatePlaceholderPosition(getDragAfterElement(document.getElementById('workouts-list'), e.clientY)); });
+    item.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        const c = document.querySelector(dragContext ? dragContext.containerSelector : containerSelector);
+        if (c) updatePlaceholderPosition(getDragAfterElement(c, e.clientY));
+    });
     item.addEventListener('drop', (e) => { e.preventDefault(); finalizeDrop(); });
     item.addEventListener('touchstart', (e) => {
-        if (e.target.closest('.icon-btn') || e.target.closest('.btn')) return;
+        if (e.target.closest('.icon-btn') || e.target.closest('.btn') || e.target.closest('button')) return;
         const t = e.touches[0];
-        longPressTimer = setTimeout(() => { startDragging(item, t.clientY); }, 350);
+        longPressTimer = setTimeout(() => {
+            dragContext = item._dragOpts;
+            startDragging(item, t.clientY);
+        }, 350);
     }, { passive: true });
 }
 document.addEventListener('touchmove', handleGlobalTouchMove, { passive: false });
 document.addEventListener('touchend', handleGlobalTouchEnd);
 document.addEventListener('touchcancel', handleGlobalTouchEnd);
+
 function startDragging(item, cy) {
+    if (!item._dragOpts) return;
     draggedItem = item;
+    dragContext = item._dragOpts;
     dragPlaceholder = document.createElement('div');
     dragPlaceholder.className = 'drag-placeholder';
+    // Add dragging class FIRST so content-visibility: auto is disabled, and offsetHeight is accurate
+    item.classList.add('dragging');
     dragPlaceholder.style.height = item.offsetHeight + 'px';
     item.parentNode.insertBefore(dragPlaceholder, item);
     const r = item.getBoundingClientRect();
     dragOffsetY = cy - r.top;
-    item.classList.add('dragging');
     item.style.top = (cy - dragOffsetY) + 'px';
     document.body.classList.add('no-scroll');
 }
@@ -1865,12 +1934,15 @@ function handleGlobalTouchMove(e) {
     draggedItem.style.transform = `translate3d(0, ${ny - parseFloat(draggedItem.style.top)}px, 0)`;
     const eb = document.elementFromPoint(t.clientX, t.clientY);
     if (!eb) return;
-    const ti = eb.closest('.workout-item');
+    const sel = (dragContext && dragContext.itemSelector) || '.workout-item';
+    const contSel = (dragContext && dragContext.containerSelector) || '#workouts-list';
+    const ti = eb.closest(sel);
     document.querySelectorAll('.drag-placeholder').forEach(p => p.classList.remove('active-drop'));
     if (ti && ti !== draggedItem) {
+        const l = document.querySelector(contSel);
+        if (!l || !l.contains(ti)) return;
         const b = ti.getBoundingClientRect();
         const o = t.clientY - b.top - (b.height / 2);
-        const l = document.getElementById('workouts-list');
         if (o > 0) {
             if (ti.nextSibling && ti.nextSibling !== dragPlaceholder) l.insertBefore(dragPlaceholder, ti.nextSibling);
             else if (ti.nextSibling !== dragPlaceholder) l.appendChild(dragPlaceholder);
@@ -1880,23 +1952,39 @@ function handleGlobalTouchMove(e) {
 }
 function handleGlobalTouchEnd() { clearTimeout(longPressTimer); if (draggedItem) finalizeDrop(); }
 function updatePlaceholderPosition(a) {
-    const l = document.getElementById('workouts-list');
+    if (!draggedItem) return;
+    const l = document.querySelector(dragContext ? dragContext.containerSelector : '#workouts-list');
+    if (!l) return;
     if (!dragPlaceholder) {
         dragPlaceholder = document.createElement('div');
         dragPlaceholder.className = 'drag-placeholder';
         dragPlaceholder.style.height = draggedItem.offsetHeight + 'px';
     }
-    if (a == null) l.appendChild(dragPlaceholder); else l.insertBefore(dragPlaceholder, a);
+    if (a == null) l.appendChild(dragPlaceholder);
+    else l.insertBefore(dragPlaceholder, a);
 }
-function finalizeDrop() { if (!draggedItem || !dragPlaceholder) return; dragPlaceholder.parentNode.insertBefore(draggedItem, dragPlaceholder); cleanupDrag(); saveNewOrder(); }
+function finalizeDrop() {
+    if (!draggedItem || !dragPlaceholder) return;
+    if (dragPlaceholder.parentNode) dragPlaceholder.parentNode.insertBefore(draggedItem, dragPlaceholder);
+    saveNewOrder();
+    cleanupDrag();
+}
 function cleanupDrag() {
-    if (draggedItem) { draggedItem.classList.remove('dragging'); draggedItem.style.top = ''; draggedItem.style.transform = ''; draggedItem = null; }
+    if (draggedItem) {
+        draggedItem.classList.remove('dragging');
+        draggedItem.style.top = '';
+        draggedItem.style.transform = '';
+        draggedItem = null;
+    }
     if (dragPlaceholder) { dragPlaceholder.remove(); dragPlaceholder = null; }
+    dragContext = null;
     document.body.classList.remove('no-scroll');
     document.querySelectorAll('.drag-placeholder').forEach(p => p.classList.remove('active-drop'));
 }
 function getDragAfterElement(c, y) {
-    const els = [...c.querySelectorAll('.workout-item:not(.dragging)')];
+    if (!c) return null;
+    const sel = (dragContext && dragContext.itemSelector) || '.workout-item';
+    const els = [...c.querySelectorAll(`${sel}:not(.dragging)`)];
     return els.reduce((cl, ch) => {
         const b = ch.getBoundingClientRect();
         const o = y - b.top - b.height / 2;
@@ -1904,13 +1992,20 @@ function getDragAfterElement(c, y) {
     }, { offset: Number.NEGATIVE_INFINITY }).element;
 }
 function saveNewOrder() {
-    const l = document.getElementById('workouts-list');
-    const ids = Array.from(l.children).map(el => parseInt(el.dataset.id));
+    if (!dragContext) return;
+    const container = document.querySelector(dragContext.containerSelector);
+    if (!container) return;
+    const sel = dragContext.itemSelector;
+    const dbKey = dragContext.dbKey;
+    const els = Array.from(container.querySelectorAll(sel));
+    const ids = els.map(el => parseInt(el.dataset.id)).filter(n => !isNaN(n));
+    const db = DB[dbKey];
+    if (!Array.isArray(db)) return;
     const ro = [];
-    ids.forEach(id => { const w = DB.workouts.find(x => x.id === id); if (w) ro.push(w); });
-    DB.workouts.forEach(w => { if (!ro.includes(w)) ro.push(w); });
-    DB.workouts = ro;
-    saveDB('workouts');
+    ids.forEach(id => { const w = db.find(x => x.id === id); if (w) ro.push(w); });
+    db.forEach(w => { if (!ro.includes(w)) ro.push(w); });
+    DB[dbKey] = ro;
+    saveDB(dbKey);
 }
 
 /* ===================== HOME ===================== */
@@ -2009,7 +2104,7 @@ function buildHeatmap30() {
         const lv = dayLevel(k);
         const isToday = k === todayKey;
         const cls = `heatmap-cell${lv ? ' lv' + lv : ''}${isToday ? ' today' : ''}`;
-        html += `<div class="${cls}" onclick="showDayActivityDetail('${k}')"></div>`;
+        html += `<div class="${cls}" onclick="showDayActivityDetail('${k}')" role="button" aria-label="${k}"></div>`;
     }
     return html;
 }
@@ -2106,8 +2201,8 @@ function showDayActivityDetail(key) {
                     <div class="stats">🕐 ${formatClock(startT)} → ${formatClock(endT)} · ⏱ ${formatTime(r.totalDuration)} · 💪 ${formatTime(r.workTime)}</div>
                 </div>
                 <div class="history-actions">
-                    ${wExists ? `<button class="icon-btn" onclick="closeTopSheet(); repeatLastWorkout(${r.workoutId})" title="Повторить">▶</button>` : ''}
-                    <button class="icon-btn" onclick="shareResult(${r.id})" title="Поделиться">📤</button>
+                    ${wExists ? `<button class="icon-btn" onclick="closeTopSheet(); repeatLastWorkout(${r.workoutId})" title="Повторить" aria-label="Повторить">▶</button>` : ''}
+                    <button class="icon-btn" onclick="shareResult(${r.id})" title="Поделиться" aria-label="Поделиться">📤</button>
                 </div>
             </div>
             ${r.workoutNote ? `<div style="background:var(--primary-soft); border-left:3px solid var(--primary); border-radius:10px; padding:10px 12px; font-size:0.85rem;">📝 ${escapeHtml(r.workoutNote)}</div>` : ''}
@@ -2176,10 +2271,10 @@ function renderWorkoutsList() {
             <div class="workout-meta-row">
                 <div class="workout-meta">${exCount} упр. · ~${totalMin} мин всего</div>
                 <div class="workout-actions">
-                    <button class="icon-btn" onclick="showPreview(${w.id})" title="Просмотр">👁</button>
-                    <button class="icon-btn" onclick="duplicateWorkout(${w.id})" title="Копия">📋</button>
-                    <button class="icon-btn" onclick="openEditor(${w.id}, false)" title="Редактировать">✏️</button>
-                    <button class="icon-btn delete" onclick="deleteWorkoutById(${w.id})" title="Удалить">🗑</button>
+                    <button class="icon-btn" onclick="showPreview(${w.id})" title="Просмотр" aria-label="Просмотр">👁</button>
+                    <button class="icon-btn" onclick="duplicateWorkout(${w.id})" title="Копия" aria-label="Дублировать">📋</button>
+                    <button class="icon-btn" onclick="openEditor(${w.id}, false)" title="Редактировать" aria-label="Редактировать">✏️</button>
+                    <button class="icon-btn delete" onclick="deleteWorkoutById(${w.id})" title="Удалить" aria-label="Удалить">🗑</button>
                 </div>
             </div>
             <button class="btn accent btn-start-workout" onclick="startWorkout(${w.id})">▶ Начать тренировку</button>
@@ -2247,7 +2342,7 @@ function renderPrograms() {
                     <div style="color:var(--muted); font-size:0.85rem; margin-top:4px;">${(p.weeks||[]).length} ${pluralWeeks((p.weeks||[]).length)}</div>
                     <div style="color:var(--accent); font-size:0.9rem; margin-top:8px;">${escapeHtml(todayInfo)}</div>
                 </div>
-                <button class="icon-btn delete" onclick="event.stopPropagation(); deleteProgramById(${p.id})" style="background:var(--card-2); border:none; color:var(--danger); width:38px; height:38px; border-radius:10px; font-size:1rem; cursor:pointer;">🗑</button>
+                <button class="icon-btn delete" onclick="event.stopPropagation(); deleteProgramById(${p.id})" aria-label="Удалить" style="background:var(--card-2); border:none; color:var(--danger); width:38px; height:38px; border-radius:10px; font-size:1rem; cursor:pointer;">🗑</button>
             </div>
         </div>`;
     }).join('');
@@ -2285,7 +2380,7 @@ function renderProgramWeeksList() {
     if (!c) return;
     const todayKey = formatDateKey(new Date());
     c.innerHTML = editorProgram.weeks.map((w, idx) => {
-        const isCollapsed = collapsedWeeks[idx];
+        const isCollapsed = collapsedWeeks[w.startDate];
         const s = parseDateKey(w.startDate), e = addDays(s, 6);
         const t = parseDateKey(todayKey);
         const isCurrent = t >= s && t <= e;
@@ -2297,12 +2392,12 @@ function renderProgramWeeksList() {
             const names = ids.map(id => (DB.workouts.find(x => x.id === id) || {}).name || '(удалено)');
             daysHtml += `<div class="week-day-row ${isToday ? 'today' : ''}" onclick="openDayEditor(${idx}, '${dk}')">
                 <span class="day-name">${DAY_NAMES_SHORT[dk]}</span>
-                <span class="day-workouts">${names.length ? escapeHtml(names.join(', ')) : '—'}</span>
+                <span class="day-workouts">${names.length ? escapeHtml(names.join(' → ')) : '—'}</span>
                 ${ids.length ? `<span class="day-count">${ids.length}</span>` : ''}
             </div>`;
         });
         return `<div class="week-block">
-            <div class="week-header" onclick="toggleWeekCollapse(${idx})">
+            <div class="week-header" onclick="toggleWeekCollapse('${w.startDate}')">
                 <div>
                     <div class="week-title">${isCurrent ? '📅 ' : ''}Неделя ${idx + 1}${isCurrent ? ' (текущая)' : ''}</div>
                     <div class="week-subtitle">${formatWeekRange(w.startDate)}</div>
@@ -2312,12 +2407,12 @@ function renderProgramWeeksList() {
             ${isCollapsed ? '' : `<div class="week-days">${daysHtml}</div>
             <div class="week-actions">
                 <button class="btn ghost small" onclick="copyWeek(${idx})" style="flex:1;">📋 Скопировать на след.</button>
-                <button class="btn ghost small" onclick="deleteWeek(${idx})" style="color:var(--danger);">🗑</button>
+                <button class="btn ghost small" onclick="deleteWeek(${idx})" style="color:var(--danger);" aria-label="Удалить неделю">🗑</button>
             </div>`}
         </div>`;
     }).join('');
 }
-function toggleWeekCollapse(i) { collapsedWeeks[i] = !collapsedWeeks[i]; renderProgramWeeksList(); }
+function toggleWeekCollapse(key) { collapsedWeeks[key] = !collapsedWeeks[key]; renderProgramWeeksList(); }
 function addWeekToEditor() {
     const last = editorProgram.weeks[editorProgram.weeks.length - 1];
     const start = last ? formatDateKey(addDays(parseDateKey(last.startDate), 7)) : formatDateKey(startOfWeekMonday(new Date()));
@@ -2328,7 +2423,6 @@ async function deleteWeek(idx) {
     if (editorProgram.weeks.length <= 1) { showToast('Должна остаться хотя бы одна неделя'); return; }
     if (!await customConfirm('Удалить неделю?', { danger: true, okText: '🗑 Удалить' })) return;
     editorProgram.weeks.splice(idx, 1);
-    collapsedWeeks = {};
     renderProgramWeeksList();
 }
 function copyWeek(idx) {
@@ -2338,9 +2432,48 @@ function copyWeek(idx) {
     const newWeek = { startDate: newStart, days: {} };
     DAY_KEYS.forEach(k => { newWeek.days[k] = [...(src.days[k] || [])]; });
     editorProgram.weeks.splice(idx + 1, 0, newWeek);
-    collapsedWeeks = {};
     renderProgramWeeksList();
     showToast(`Скопировано на ${formatWeekRange(newStart)}`);
+}
+
+/* --- Program day editor with ordering --- */
+function renderDaySelected(weekIdx, dayKey) {
+    const w = editorProgram.weeks[weekIdx];
+    const ids = (w && w.days[dayKey]) || [];
+    if (ids.length === 0) return '<div style="color:var(--muted); font-size:0.85rem; padding:12px; text-align:center;">Ничего не выбрано</div>';
+    return ids.map((wid, idx) => {
+        const wo = DB.workouts.find(x => x.id === wid);
+        const name = wo ? wo.name : '(удалено)';
+        const btnStyle = 'width:32px;height:32px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;';
+        return `<div class="sound-option selected" style="cursor:default; padding:8px 10px; gap:6px;">
+            <div class="sound-info"><div class="sound-name" style="font-size:0.9rem;">${idx + 1}. ${escapeHtml(name)}</div></div>
+            <button class="icon-btn" onclick="event.stopPropagation(); moveDayWorkout(${weekIdx}, '${dayKey}', ${idx}, -1)" ${idx === 0 ? 'disabled' : ''} aria-label="Выше" style="${btnStyle}${idx === 0 ? 'opacity:0.4;' : ''}">↑</button>
+            <button class="icon-btn" onclick="event.stopPropagation(); moveDayWorkout(${weekIdx}, '${dayKey}', ${idx}, 1)" ${idx === ids.length - 1 ? 'disabled' : ''} aria-label="Ниже" style="${btnStyle}${idx === ids.length - 1 ? 'opacity:0.4;' : ''}">↓</button>
+            <button class="icon-btn" onclick="event.stopPropagation(); removeDayWorkout(${weekIdx}, '${dayKey}', ${idx})" aria-label="Убрать" style="${btnStyle}color:var(--danger);">✕</button>
+        </div>`;
+    }).join('');
+}
+function renderDayAvailable(weekIdx, dayKey) {
+    const w = editorProgram.weeks[weekIdx];
+    const ids = (w && w.days[dayKey]) || [];
+    const avail = DB.workouts.filter(x => !ids.includes(x.id));
+    if (avail.length === 0) return '<div style="color:var(--muted); font-size:0.85rem; padding:12px; text-align:center;">Все добавлены</div>';
+    return avail.map(wo => `<div class="sound-option" onclick="addDayWorkout(${weekIdx}, '${dayKey}', ${wo.id})" style="cursor:pointer;">
+        <div class="radio"></div><div class="sound-info"><div class="sound-name" style="font-size:0.9rem;">${escapeHtml(wo.name)}</div></div>
+        <span style="color:var(--accent); font-size:1.3rem; font-weight:700; flex-shrink:0;">+</span>
+    </div>`).join('');
+}
+function refreshDayEditor(weekIdx, dayKey) {
+    const ov = document.getElementById('day-editor-overlay');
+    if (!ov) return;
+    const selectedEl = ov.querySelector('#day-selected-list');
+    const availableEl = ov.querySelector('#day-available-list');
+    const countEl = ov.querySelector('#day-count-label');
+    const w = editorProgram.weeks[weekIdx];
+    const cur = (w && w.days[dayKey]) || [];
+    if (selectedEl) selectedEl.innerHTML = renderDaySelected(weekIdx, dayKey);
+    if (availableEl) availableEl.innerHTML = renderDayAvailable(weekIdx, dayKey);
+    if (countEl) countEl.textContent = `${cur.length} выбрано`;
 }
 function openDayEditor(weekIdx, dayKey) {
     const week = editorProgram.weeks[weekIdx];
@@ -2349,42 +2482,43 @@ function openDayEditor(weekIdx, dayKey) {
     const d = addDays(parseDateKey(week.startDate), DAY_KEYS.indexOf(dayKey));
     const months = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
     const title = `${DAY_NAMES_FULL[dayKey]}, ${d.getDate()} ${months[d.getMonth()]}`;
-    const buildList = () => DB.workouts.length === 0 ? '<div class="empty-state">Сначала создайте тренировки</div>' : DB.workouts.map(w => {
-        const ch = currentIds.includes(w.id);
-        return `<div class="sound-option ${ch ? 'selected' : ''}" onclick="toggleDayWorkout(${weekIdx}, '${dayKey}', ${w.id})">
-            <div class="radio"></div><div class="sound-info"><div class="sound-name">${escapeHtml(w.name)}</div></div>
-        </div>`;
-    }).join('');
     const ov = document.createElement('div');
     ov.className = 'bottom-sheet-overlay';
     ov.id = 'day-editor-overlay';
-    ov.innerHTML = `<div class="bottom-sheet">
+    ov.innerHTML = `<div class="bottom-sheet" style="max-height:88vh;">
         <div class="sheet-grip"></div>
         <h2 class="sheet-title">${title}</h2>
         <div style="color:var(--muted); font-size:0.85rem; text-align:center;" id="day-count-label">${currentIds.length} выбрано</div>
-        <div id="day-editor-list" style="display:flex; flex-direction:column; gap:6px; max-height:50vh; overflow-y:auto;">${buildList()}</div>
+        <div style="font-size:0.8rem; color:var(--muted); text-transform:uppercase; letter-spacing:1px;">Выбрано (в порядке выполнения)</div>
+        <div style="display:flex; flex-direction:column; gap:6px; max-height:32vh; overflow-y:auto;" id="day-selected-list">${renderDaySelected(weekIdx, dayKey)}</div>
+        <div style="font-size:0.8rem; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-top:6px;">Доступные</div>
+        <div style="display:flex; flex-direction:column; gap:6px; max-height:24vh; overflow-y:auto;" id="day-available-list">${renderDayAvailable(weekIdx, dayKey)}</div>
         <button class="btn accent" onclick="closeDayEditor()">Готово</button>
     </div>`;
     document.body.appendChild(ov);
     ov.addEventListener('click', (e) => { if (e.target === ov) closeDayEditor(); });
 }
-function toggleDayWorkout(weekIdx, dayKey, workoutId) {
+function addDayWorkout(weekIdx, dayKey, workoutId) {
     const w = editorProgram.weeks[weekIdx];
     if (!w) return;
     if (!w.days[dayKey]) w.days[dayKey] = [];
-    const i = w.days[dayKey].indexOf(workoutId);
-    if (i >= 0) w.days[dayKey].splice(i, 1); else w.days[dayKey].push(workoutId);
-    const ov = document.getElementById('day-editor-overlay');
-    if (ov) {
-        const cur = w.days[dayKey] || [];
-        ov.querySelector('#day-editor-list').innerHTML = DB.workouts.map(wo => {
-            const ch = cur.includes(wo.id);
-            return `<div class="sound-option ${ch ? 'selected' : ''}" onclick="toggleDayWorkout(${weekIdx}, '${dayKey}', ${wo.id})">
-                <div class="radio"></div><div class="sound-info"><div class="sound-name">${escapeHtml(wo.name)}</div></div>
-            </div>`;
-        }).join('');
-        ov.querySelector('#day-count-label').textContent = `${cur.length} выбрано`;
-    }
+    if (!w.days[dayKey].includes(workoutId)) w.days[dayKey].push(workoutId);
+    refreshDayEditor(weekIdx, dayKey);
+}
+function removeDayWorkout(weekIdx, dayKey, idx) {
+    const w = editorProgram.weeks[weekIdx];
+    if (!w || !w.days[dayKey]) return;
+    w.days[dayKey].splice(idx, 1);
+    refreshDayEditor(weekIdx, dayKey);
+}
+function moveDayWorkout(weekIdx, dayKey, idx, dir) {
+    const w = editorProgram.weeks[weekIdx];
+    if (!w || !w.days[dayKey]) return;
+    const arr = w.days[dayKey];
+    const j = idx + dir;
+    if (j < 0 || j >= arr.length) return;
+    [arr[idx], arr[j]] = [arr[j], arr[idx]];
+    refreshDayEditor(weekIdx, dayKey);
 }
 function closeDayEditor() {
     const o = document.getElementById('day-editor-overlay');
@@ -2431,43 +2565,68 @@ async function deleteProgramById(id) {
     });
 }
 
-/* ===================== TEMPLATES ===================== */
+/* ===================== TEMPLATES (split + drag) ===================== */
 function renderTemplates() {
-    const c = document.getElementById('templates-list');
-    let html = '';
+    const userList = document.getElementById('user-templates-list');
+    const builtinList = document.getElementById('builtin-templates-list');
+    const userTitle = document.getElementById('user-templates-title');
+    const builtinTitle = document.getElementById('builtin-templates-title');
+    const emptyEl = document.getElementById('templates-empty');
+    if (!userList || !builtinList) return;
+
+    // --- User templates ---
     if (DB.templates.length > 0) {
-        html += '<div class="template-section-title">Мои шаблоны</div>';
-        html += DB.templates.map(t => `<div class="template-card">
+        userTitle.style.display = 'block';
+        userList.style.display = 'block';
+        userList.innerHTML = DB.templates.map(t => `<div class="template-card" data-id="${t.id}">
             <div class="template-card-name" onclick="showTemplatePreview(${t.id}, false)">${escapeHtml(t.name)}</div>
             <div class="template-card-meta-row">
                 <div class="template-card-meta">${getTotalExerciseCount(t.exercises)} упр. · ${t.autoStart ? 'автозапуск' : 'ручной'}</div>
                 <div class="template-card-actions">
-                    <button class="icon-btn add" onclick="createFromTemplate(${t.id}, false)" title="Добавить">+</button>
-                    <button class="icon-btn" onclick="showTemplatePreview(${t.id}, false)" title="Просмотр">👁</button>
-                    <button class="icon-btn" onclick="openEditor(${t.id}, true)" title="Редактировать">✏️</button>
-                    <button class="icon-btn delete" onclick="deleteTemplate(${t.id})" title="Удалить">🗑</button>
+                    <button class="icon-btn add" onclick="createFromTemplate(${t.id}, false)" title="Добавить" aria-label="Добавить в тренировки">+</button>
+                    <button class="icon-btn" onclick="showTemplatePreview(${t.id}, false)" title="Просмотр" aria-label="Просмотр">👁</button>
+                    <button class="icon-btn" onclick="openEditor(${t.id}, true)" title="Редактировать" aria-label="Редактировать">✏️</button>
+                    <button class="icon-btn delete" onclick="deleteTemplate(${t.id})" title="Удалить" aria-label="Удалить">🗑</button>
                 </div>
             </div>
         </div>`).join('');
+        userList.querySelectorAll('.template-card').forEach(el => {
+            initDragAndDrop(el, {
+                containerSelector: '#user-templates-list',
+                itemSelector: '.template-card',
+                dbKey: 'templates'
+            });
+        });
+    } else {
+        userTitle.style.display = 'none';
+        userList.style.display = 'none';
+        userList.innerHTML = '';
     }
+
+    // --- Builtin templates ---
     const visible = BUILTIN_TEMPLATES.filter(t => !DB.settings.hiddenBuiltins.includes(t.id));
     if (visible.length > 0) {
-        html += '<div class="template-section-title">Готовые</div>';
-        html += visible.map(t => `<div class="template-card">
+        builtinTitle.style.display = 'block';
+        builtinList.style.display = 'block';
+        builtinList.innerHTML = visible.map(t => `<div class="template-card">
             <div class="template-card-name" onclick="showTemplatePreview('${t.id}', true)">${escapeHtml(t.name)}</div>
             <div class="template-card-meta-row">
                 <div class="template-card-meta">${getTotalExerciseCount(t.exercises)} упр.</div>
                 <div class="template-card-actions">
-                    <button class="icon-btn add" onclick="createFromTemplate('${t.id}', true)" title="Добавить">+</button>
-                    <button class="icon-btn" onclick="showTemplatePreview('${t.id}', true)" title="Просмотр">👁</button>
-                    <button class="icon-btn" onclick="editBuiltinTemplate('${t.id}')" title="Редактировать">✏️</button>
-                    <button class="icon-btn delete" onclick="hideBuiltinTemplate('${t.id}')" title="Удалить">🗑</button>
+                    <button class="icon-btn add" onclick="createFromTemplate('${t.id}', true)" title="Добавить" aria-label="Добавить в тренировки">+</button>
+                    <button class="icon-btn" onclick="showTemplatePreview('${t.id}', true)" title="Просмотр" aria-label="Просмотр">👁</button>
+                    <button class="icon-btn" onclick="editBuiltinTemplate('${t.id}')" title="Редактировать" aria-label="Редактировать">✏️</button>
+                    <button class="icon-btn delete" onclick="hideBuiltinTemplate('${t.id}')" title="Удалить" aria-label="Удалить">🗑</button>
                 </div>
             </div>
         </div>`).join('');
+    } else {
+        builtinTitle.style.display = 'none';
+        builtinList.style.display = 'none';
+        builtinList.innerHTML = '';
     }
-    if (DB.templates.length === 0 && visible.length === 0) html += '<div class="empty-state">Шаблоны скрыты</div>';
-    c.innerHTML = html;
+
+    emptyEl.style.display = (DB.templates.length === 0 && visible.length === 0) ? 'block' : 'none';
 }
 function createFromTemplate(id, isBuiltin) {
     const t = isBuiltin ? BUILTIN_TEMPLATES.find(x => x.id === id) : DB.templates.find(x => x.id === id);
@@ -2529,7 +2688,6 @@ async function restoreBuiltins() {
 function showTemplatePreview(id, isBuiltin) {
     const t = isBuiltin ? BUILTIN_TEMPLATES.find(x => x.id === id) : DB.templates.find(x => x.id === id);
     if (!t) return;
-    previewTemplateData = { template: t, isBuiltin };
     previewWorkoutId = null;
     document.getElementById('preview-title').innerText = t.name;
     document.getElementById('preview-back-btn').onclick = () => showScreen('screen-templates');
@@ -2546,7 +2704,7 @@ function renderPreviewElements(exercises) {
         if (e.kind === 'warmup') {
             const mode = e.mode === 'free' ? 'free' : 'timer';
             const durText = mode === 'timer' ? formatTime(e.duration || 180) : 'свободно';
-            return `<div class="preview-exercise warmup"><div class="num">🔥</div><div class="info"><div class="name">Разминка${mode === 'free' ? ' (свободно)' : ''}</div><div class="rest-info">${durText}</div></div></div>`;
+            return `<div class="preview-exercise warmup"><div class="num">🔥</div><div class="info"><div class="name">Разминка${mode === 'free' ? ' (свободно)' : ''}</div><div class="rest-info">${durText} · <span style="color:var(--warn); font-weight:600;">можно пропустить</span></div></div></div>`;
         }
         if (e.kind === 'rest') {
             const isWater = e.restType === 'water';
@@ -2557,8 +2715,12 @@ function renderPreviewElements(exercises) {
         }
         const exNum = getExerciseNumber(exercises, i);
         let info = '';
-        if (e.type === 'sets') info = `${e.setsCount || 3}×${e.setMode === 'reps' ? (e.targetReps||10) + ' повт' : formatTime(e.setDuration||45)}`;
-        else if (e.type === 'reps') info = `${e.targetReps || 10} ${pluralReps(e.targetReps || 10)}`;
+        if (e.type === 'sets') {
+            const sets = e.setsCount || 3;
+            const perSet = e.setMode === 'reps' ? (e.targetReps || 10) + ' повт' : formatTime(e.setDuration || 45);
+            info = `${sets}×${perSet}`;
+            if (e.restBetweenSets) info += ` · отдых ${formatTime(e.restBetweenSets)}`;
+        } else if (e.type === 'reps') info = `${e.targetReps || 10} ${pluralReps(e.targetReps || 10)}`;
         else info = 'по времени';
         const icon = e.type === 'sets' ? ' 🔁' : e.type === 'reps' ? ' 🔢' : '';
         return `<div class="preview-exercise"><div class="num">${exNum}</div><div class="info"><div class="name">${escapeHtml(e.name || 'Упражнение')}${icon}</div><div class="rest-info">${info}${e.notes ? ' · ' + escapeHtml(e.notes) : ''}</div></div></div>`;
@@ -2943,7 +3105,6 @@ function showPreview(id) {
     const w = DB.workouts.find(x => x.id === id);
     if (!w) return;
     previewWorkoutId = id;
-    previewTemplateData = null;
     document.getElementById('preview-title').innerText = w.name;
     document.getElementById('preview-back-btn').onclick = () => showScreen('screen-workouts');
     document.getElementById('preview-content').innerHTML = `<div class="card"><div style="color:var(--muted); font-size:0.9rem;">
@@ -3047,7 +3208,10 @@ function calcProgress() {
 let startWorkoutInProgress = false;
 async function startWorkout(id) {
     if (startWorkoutInProgress) return;
-    if (runState && runState.phase !== 'finish') return;
+    if (runState && runState.phase !== 'finish') {
+        showToast('⚠️ Тренировка уже запущена');
+        return;
+    }
     const w = DB.workouts.find(x => x.id === id);
     if (!w) return;
     startWorkoutInProgress = true;
@@ -3234,9 +3398,11 @@ function startExerciseNow() {
     let info = '';
     if (el.type === 'reps') info = `, ${el.targetReps || 10} ${pluralReps(el.targetReps || 10)}`;
     else if (el.type === 'sets') info = `, ${el.setsCount || 3} ${pluralApproaches(el.setsCount || 3)}`;
-    if (getEffectiveSetting('announceNumbers')) speak(n + '. ' + (el.name || 'Упражнение') + info);
-    else speak((el.name || 'Упражнение') + info);
-    if (el.type === 'sets' && runState.currentSet > 1) speak(`Подход ${runState.currentSet}`);
+    let speech = '';
+    if (getEffectiveSetting('announceNumbers')) speech = n + '. ' + (el.name || 'Упражнение') + info;
+    else speech = (el.name || 'Упражнение') + info;
+    if (el.type === 'sets' && runState.currentSet > 1) speech = `Подход ${runState.currentSet}. ` + speech;
+    speak(speech);
     startTimer('work', 0);
     saveRunState(); renderRun();
 }
@@ -3290,12 +3456,14 @@ async function finishExercise() {
     try {
         const needAsk = ((el.type === 'sets' && el.setMode === 'reps') || el.type === 'reps') && getEffectiveSetting('askReps');
         let askedCount = null;
+        const wasPausedBefore = runState.workPaused;
         if (needAsk) {
-            pauseTimer('work');
+            if (!wasPausedBefore) pauseTimer('work');
             renderRun();
             askedCount = await askRepsCount(el.targetReps || 0);
             if (askedCount === null) {
-                if (!runState.workPaused) resumeTimer('work');
+                // User cancelled — restore previous timer state
+                if (!wasPausedBefore) resumeTimer('work');
                 renderRun();
                 return;
             }
@@ -3426,18 +3594,19 @@ function toggleRestPause() {
 function adjustRest(d) {
     if (runState.restBannerMode) return;
     if (runState.restFinished) {
-        runState.restDuration = Math.max(0, runState.restDuration - d);
+        // In overtime: only allow extending; ignore negative deltas
+        if (d < 0) return;
         const elapsed = getCurrentElapsed('rest');
-        if (runState.restDuration > elapsed) {
-            runState.restFinished = false;
-            runState.restOvertime = 0;
-            runState.restBeepPlayed = false;
-            stopRestAlarm();
-        }
+        let newDur = runState.restDuration + d;
+        if (newDur <= elapsed) newDur = elapsed + d;
+        runState.restDuration = newDur;
+        runState.restFinished = false;
+        runState.restOvertime = 0;
+        runState.restBeepPlayed = false;
+        stopRestAlarm();
     } else {
         runState.restDuration = Math.max(0, runState.restDuration + d);
         if (runState.restDuration <= getCurrentElapsed('rest')) {
-            // ИСПРАВЛЕНО: сбрасываем elapsed, чтобы овертайм начинался с 0:00
             runState.restElapsedBeforePause = 0;
             runState.restStartTime = Date.now();
             runState.restDuration = 0;
@@ -3651,6 +3820,8 @@ function updateTimersUI() {
         if (rem === 0 && !runState.restFinished && !runState.restPaused) onRestFinished();
     }
 
+    // Don't save state while in background (would inflate elapsed time with throttled timer ticks)
+    if (document.visibilityState === 'hidden') return;
     saveCounter++;
     if (saveCounter % 20 === 0) saveRunState();
 }
@@ -4124,9 +4295,9 @@ function renderHistoryList() {
                         <div class="stats">${formatDate(new Date(r.startTime))} · ${formatTime(r.totalDuration)} · 💪 ${formatTime(r.workTime)}${hasWarmup ? ' · 🔥 ' + formatTime(r.warmupSeconds) : ''}</div>
                     </div>
                     <div class="history-actions">
-                        ${wExists ? `<button class="icon-btn" onclick="repeatLastWorkout(${r.workoutId})" title="Повторить">▶</button>` : ''}
-                        <button class="icon-btn" onclick="shareResult(${r.id})" title="Поделиться">📤</button>
-                        <button class="icon-btn delete" onclick="deleteHistoryRecord(${r.id})" title="Удалить">🗑</button>
+                        ${wExists ? `<button class="icon-btn" onclick="repeatLastWorkout(${r.workoutId})" title="Повторить" aria-label="Повторить">▶</button>` : ''}
+                        <button class="icon-btn" onclick="shareResult(${r.id})" title="Поделиться" aria-label="Поделиться">📤</button>
+                        <button class="icon-btn delete" onclick="deleteHistoryRecord(${r.id})" title="Удалить" aria-label="Удалить">🗑</button>
                     </div>
                 </div>
                 ${r.workoutNote ? `<div style="background:var(--primary-soft); border-left:3px solid var(--primary); border-radius:10px; padding:10px 12px; font-size:0.85rem;">📝 ${escapeHtml(r.workoutNote)}</div>` : ''}
@@ -4357,6 +4528,10 @@ function renderSettings() {
             if (id === 'set-minute-beep') renderMinuteBeepOptions();
             if (id === 'set-countdown') renderCountdownIntervals();
             if (id === 'set-show-activity') renderStreakBanner();
+            if (id === 'set-wakelock') {
+                if (DB.settings.wakeLock) { if (runState && runState.phase !== 'finish') acquireWakeLock(); }
+                else releaseWakeLock();
+            }
         };
     });
 }
@@ -4383,7 +4558,7 @@ function renderSoundModeOptions() {
 }
 function selectSoundMode(mode) {
     if (!['voice','beep'].includes(mode)) return;
-    DB.settings.soundMode = mode; DB.settings.voice = (mode === 'voice');
+    DB.settings.soundMode = mode;
     saveDB('settings'); renderSoundModeOptions();
 }
 function renderSoundOptions() {
@@ -4391,7 +4566,7 @@ function renderSoundOptions() {
     c.innerHTML = Object.keys(ALARM_SOUNDS).map(k => {
         const s = ALARM_SOUNDS[k];
         const sel = DB.settings.alarmSound === k;
-        return `<div class="sound-option ${sel ? 'selected' : ''}" onclick="selectAlarmSound('${k}')"><div class="radio"></div><div class="sound-info"><div class="sound-name">${s.name}</div><div class="sound-desc">${s.desc}</div></div><button class="preview-btn" onclick="event.stopPropagation(); previewAlarmSound('${k}')">▶</button></div>`;
+        return `<div class="sound-option ${sel ? 'selected' : ''}" onclick="selectAlarmSound('${k}')"><div class="radio"></div><div class="sound-info"><div class="sound-name">${s.name}</div><div class="sound-desc">${s.desc}</div></div><button class="preview-btn" onclick="event.stopPropagation(); previewAlarmSound('${k}')" aria-label="Прослушать">▶</button></div>`;
     }).join('');
 }
 function selectAlarmSound(k) { DB.settings.alarmSound = k; saveDB('settings'); renderSoundOptions(); }
@@ -4447,7 +4622,8 @@ function importData(event) {
                 if ('announceConfirm' in DB.settings) delete DB.settings.announceConfirm;
             }
             if (!Array.isArray(DB.settings.hiddenBuiltins)) DB.settings.hiddenBuiltins = [];
-            if (DB.settings.soundMode !== 'voice' && DB.settings.soundMode !== 'beep') DB.settings.soundMode = DB.settings.voice ? 'voice' : 'beep';
+            if (DB.settings.soundMode !== 'voice' && DB.settings.soundMode !== 'beep') DB.settings.soundMode = 'beep';
+            if ('voice' in DB.settings) delete DB.settings.voice;
             if (!['auto','light','dark'].includes(DB.settings.themeMode)) DB.settings.themeMode = 'auto';
             if (![0.8,1,1.3].includes(DB.settings.voiceRate)) DB.settings.voiceRate = 1;
             if (typeof DB.settings.autoBackupReminder !== 'boolean') DB.settings.autoBackupReminder = true;
@@ -4456,7 +4632,6 @@ function importData(event) {
             if (typeof DB.settings.askReps !== 'boolean') DB.settings.askReps = true;
             if (typeof DB.settings.showActivityCalendar !== 'boolean') DB.settings.showActivityCalendar = true;
             if (!DB.settings.accordions || typeof DB.settings.accordions !== 'object') DB.settings.accordions = {};
-            DB.settings.voice = (DB.settings.soundMode === 'voice');
             saveDB('workouts'); saveDB('templates'); saveDB('programs'); saveDB('history'); saveDB('settings');
             validateAndMigrateDB();
             applyTheme();
@@ -4586,7 +4761,7 @@ function showScheduledNotificationModal(items, completedIds, pending, todayKey) 
         if (done && !showCompleted) return;
         const histRec = done ? DB.history.find(r => r.workoutId === t.workout.id && formatDateKey(new Date(r.startTime)) === todayKey) : null;
         const sub = done ? `✅ Выполнено ${histRec ? formatClock(new Date(histRec.startTime)) : ''}` : `📅 ${escapeHtml(t.program.name)}`;
-        itemsHtml += `<div class="notif-item ${done ? 'done' : ''}"><div class="notif-status">${done ? '✅' : '⏳'}</div><div class="notif-body"><div class="notif-name">${escapeHtml(t.workout.name)}</div><div class="notif-sub">${sub}</div></div>${!done ? `<button class="icon-btn" onclick="notifStart(${t.workout.id}, this)" style="background:var(--accent); color:#000; width:38px; height:38px; border-radius:10px; font-weight:700;">▶</button>` : ''}</div>`;
+        itemsHtml += `<div class="notif-item ${done ? 'done' : ''}"><div class="notif-status">${done ? '✅' : '⏳'}</div><div class="notif-body"><div class="notif-name">${escapeHtml(t.workout.name)}</div><div class="notif-sub">${sub}</div></div>${!done ? `<button class="icon-btn" onclick="notifStart(${t.workout.id}, this)" aria-label="Начать" style="background:var(--accent); color:#000; width:38px; height:38px; border-radius:10px; font-weight:700;">▶</button>` : ''}</div>`;
     });
     if (!itemsHtml) { ov.remove(); return; }
     ov.innerHTML = `<div class="bottom-sheet">
@@ -4617,9 +4792,19 @@ function notifStart(id, btn) {
 document.addEventListener('click', unlockAudio, { capture: true });
 document.addEventListener('touchstart', unlockAudio, { capture: true, passive: true });
 document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' && (DB.settings.themeMode || 'auto') === 'auto') applyTheme();
-    if (document.visibilityState === 'hidden') { if (runState && runState.phase !== 'finish') saveRunState(); }
-    if (DB.settings.wakeLock && runState && document.visibilityState === 'visible') { acquireWakeLock(); if (runState.tickInterval) updateTimersUI(); }
+    if (document.visibilityState === 'visible') {
+        hiddenAt = 0;
+        if ((DB.settings.themeMode || 'auto') === 'auto') applyTheme();
+        if (DB.settings.wakeLock && runState && runState.phase !== 'finish') {
+            acquireWakeLock();
+            if (runState.tickInterval) updateTimersUI();
+        }
+        // Save fresh state on return (includes any time spent in background — timer semantics preserved)
+        if (runState && runState.phase !== 'finish') saveRunState();
+    } else {
+        hiddenAt = Date.now();
+        if (runState && runState.phase !== 'finish') saveRunState();
+    }
 });
 
 if ('speechSynthesis' in window) {
@@ -4634,7 +4819,6 @@ try {
 } catch(e) {}
 
 window.addEventListener('load', () => {
-    try { initServiceWorker(); } catch(e) {}
     setTimeout(async () => {
         try { renderStreakBanner(); renderHomeTodayBanner(); } catch(e) {}
         try { await offerResumeSavedSession(); } catch(e) { console.error(e); }
