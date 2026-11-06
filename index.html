@@ -782,9 +782,6 @@ async function initServiceWorker() {
 
 window.addEventListener('online', updateFooter);
 window.addEventListener('offline', updateFooter);
-document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') updateFooter();
-});
 
 /* ===================== SCHEMA VERSION ===================== */
 const SCHEMA_VERSION = 2;
@@ -3467,6 +3464,7 @@ function startCountdown() {
     }, 1000);
 }
 
+/* ИЗМЕНЕНО: озвучка начала упражнения — теперь с целью */
 function startExerciseNow() {
     runState.phase = 'work';
     runState.workPaused = false;
@@ -3474,8 +3472,19 @@ function startExerciseNow() {
     const el = runState.workout.exercises[runState.index];
     const n = getExerciseNumber(runState.workout.exercises, runState.index);
     let info = '';
-    if (el.type === 'reps') info = `, ${el.targetReps || 10} ${pluralReps(el.targetReps || 10)}`;
-    else if (el.type === 'sets') info = `, ${el.setsCount || 3} ${pluralApproaches(el.setsCount || 3)}`;
+    if (el.type === 'reps') {
+        const reps = el.targetReps || 10;
+        info = `, цель ${reps} ${pluralReps(reps)}`;
+    } else if (el.type === 'sets') {
+        const sets = el.setsCount || 3;
+        if (el.setMode === 'time') {
+            const dur = el.setDuration || 45;
+            info = `, ${sets} ${pluralApproaches(sets)} по ${dur} секунд`;
+        } else {
+            const reps = el.targetReps || 10;
+            info = `, ${sets} ${pluralApproaches(sets)} по ${reps} ${pluralReps(reps)}`;
+        }
+    }
     let speech = '';
     if (getEffectiveSetting('announceNumbers')) speech = n + '. ' + (el.name || 'Упражнение') + info;
     else speech = (el.name || 'Упражнение') + info;
@@ -3566,8 +3575,8 @@ async function finishExercise() {
                 runState.restBannerMode = false;
                 startTimer('rest', el.restBetweenSets || 60);
                 saveRunState(); renderRun();
-                if (getEffectiveSetting('announceNumbers')) speak(`Подход ${runState.currentSet - 1} готов. Отдых. Следующий ${runState.currentSet}`);
-                else speak(`Отдых. Следующий подход ${runState.currentSet}`);
+                /* ИЗМЕНЕНО: убрана фраза «Подход X готов…», только «Отдых» */
+                speak('Отдых');
                 return;
             }
             runState.exerciseTimes.push(runState.currentExerciseWorkTime);
