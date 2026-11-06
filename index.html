@@ -900,6 +900,8 @@ if (typeof DB.settings.lastBackupRecordCount !== 'number') DB.settings.lastBacku
 if (typeof DB.settings.askReps !== 'boolean') DB.settings.askReps = true;
 if (typeof DB.settings.announceWorkoutName !== 'boolean') DB.settings.announceWorkoutName = true;
 if (typeof DB.settings.showActivityCalendar !== 'boolean') DB.settings.showActivityCalendar = true;
+if (typeof DB.settings.notifyScheduledWorkouts !== 'boolean') DB.settings.notifyScheduledWorkouts = true;
+if (typeof DB.settings.notifyShowCompleted !== 'boolean') DB.settings.notifyShowCompleted = true;
 if (!DB.settings.accordions || typeof DB.settings.accordions !== 'object') DB.settings.accordions = {};
 const HIDEABLE_MENU_KEYS = ['templates','programs','activity','history'];
 if (!Array.isArray(DB.settings.hiddenMenuItems)) DB.settings.hiddenMenuItems = [];
@@ -1505,7 +1507,6 @@ function speakCritical(text) {
         speechSynthesis.speak(u);
     } catch(e) {}
 }
-/* Озвучка начала элемента: если включено announceWorkoutName и это первый элемент — сначала название тренировки */
 function speakAtElementStart(text) {
     if (!runState) { speak(text); return; }
     if (runState.workoutNameAnnounced) { speak(text); return; }
@@ -4663,6 +4664,11 @@ function renderSettings() {
         el.onchange = () => {
             DB.settings[map[id]] = el.checked;
             saveDB('settings');
+            /* ИЗМЕНЕНО: при повторном включении напоминаний — сбрасываем старый флаг «сегодня не напоминать»,
+               чтобы при следующем открытии PWA напоминания снова появились */
+            if (id === 'set-notify-scheduled' && el.checked) {
+                try { localStorage.removeItem(NOTIF_DISMISSED_KEY); } catch(e) {}
+            }
             if (id === 'set-continuous-beep') renderSoundOptions();
             if (id === 'set-minute-beep') renderMinuteBeepOptions();
             if (id === 'set-countdown') renderCountdownIntervals();
@@ -4771,6 +4777,8 @@ function importData(event) {
             if (typeof DB.settings.askReps !== 'boolean') DB.settings.askReps = true;
             if (typeof DB.settings.announceWorkoutName !== 'boolean') DB.settings.announceWorkoutName = true;
             if (typeof DB.settings.showActivityCalendar !== 'boolean') DB.settings.showActivityCalendar = true;
+            if (typeof DB.settings.notifyScheduledWorkouts !== 'boolean') DB.settings.notifyScheduledWorkouts = true;
+            if (typeof DB.settings.notifyShowCompleted !== 'boolean') DB.settings.notifyShowCompleted = true;
             if (!DB.settings.accordions || typeof DB.settings.accordions !== 'object') DB.settings.accordions = {};
             if (!Array.isArray(DB.settings.hiddenMenuItems)) DB.settings.hiddenMenuItems = [];
             DB.settings.hiddenMenuItems = DB.settings.hiddenMenuItems.filter(k => HIDEABLE_MENU_KEYS.includes(k));
@@ -4856,8 +4864,9 @@ function checkScheduledNotifications() {
     if (runState) return;
     if (loadSavedRunState()) return;
     if (hasOpenOverlay()) return;
+    /* ИЗМЕНЕНО: убрана проверка NOTIF_DISMISSED_KEY — теперь «не напоминать больше»
+       выключает саму настройку notifyScheduledWorkouts, а не ставит флаг на сегодня */
     const todayDate = new Date(), todayKey = formatDateKey(todayDate);
-    try { if (localStorage.getItem(NOTIF_DISMISSED_KEY) === todayKey) return; } catch(e) {}
     const dayKey = getTodayKey();
     const todays = [];
     DB.programs.forEach(p => {
@@ -4928,13 +4937,20 @@ function showScheduledNotificationModal(items, completedCounts, pending, todayKe
         <div style="display:flex; flex-direction:column; gap:8px;">${itemsHtml}</div>
         ${pending.length > 0 ? `<button class="btn accent" onclick="notifStart(${pending[0].workout.id}, this)" style="margin-top:8px;">▶ Начать «${escapeHtml(pending[0].workout.name)}»</button>` : ''}
         <button class="btn ghost notif-later">Позже</button>
-        <button class="btn notif-dismiss" style="background:transparent; color:var(--muted); font-size:0.85rem;">Не напоминать сегодня</button>
+        <button class="btn notif-dismiss" style="background:transparent; color:var(--muted); font-size:0.85rem;">🔕 Больше не напоминать</button>
     </div>`;
     document.body.appendChild(ov);
     ov.querySelector('.notif-later').onclick = () => ov.remove();
+    /* ИЗМЕНЕНО: «Больше не напоминать» — выключаем настройку notifyScheduledWorkouts в БД.
+       После этого в Настройках галочка «Напоминать о тренировках» будет снята.
+       Также чистим старый флаг NOTIF_DISMISSED_KEY, чтобы после повторного включения всё заработало. */
     ov.querySelector('.notif-dismiss').onclick = () => {
-        try { localStorage.setItem(NOTIF_DISMISSED_KEY, todayKey); } catch(e) {}
+        DB.settings.notifyScheduledWorkouts = false;
+        saveDB('settings');
+        try { localStorage.removeItem(NOTIF_DISMISSED_KEY); } catch(e) {}
         ov.remove();
+        try { renderSettings(); } catch(e) {}
+        showToast('🔕 Напоминания отключены');
     };
     ov.addEventListener('click', (e) => { if (e.target === ov) ov.remove(); });
 }
