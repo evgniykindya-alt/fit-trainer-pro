@@ -1,97 +1,4886 @@
-// sw.js — Service Worker с кэшированием (офлайн-режим) + уведомления
-const CACHE_VERSION = 'ft-v1.5.5';
-const CACHE_NAME = 'fit-trainer-' + CACHE_VERSION;
-const PRECACHE_URLS = ['./', './index.html'];
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Fit Trainer Pro v1.5">
+<meta name="theme-color" content="#0f0f12">
+<title>Fit Trainer Pro v1.5</title>
+<link rel="manifest" href='data:application/manifest+json,{"name":"Fit Trainer Pro v1.5","short_name":"FitTrainer","start_url":".","display":"standalone","background_color":"%230f0f12","theme_color":"%230f0f12","icons":[{"src":"data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%230f0f12%22/%3E%3Ctext x=%2250%22 y=%2268%22 font-size=%2260%22 text-anchor=%22middle%22%3E💪%3C/text%3E%3C/svg%3E","sizes":"192x192","type":"image/svg+xml"}]}'>
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%230f0f12'/%3E%3Ctext x='50' y='68' font-size='60' text-anchor='middle'%3E💪%3C/text%3E%3C/svg%3E">
+<style>
+:root {
+    --bg: #0f0f12; --card: #1c1c22; --card-2: #26262e;
+    --primary: #bb86fc; --accent: #03dac6; --danger: #ff5c6c;
+    --text: #fff; --muted: #a8a8b3; --warn: #ff9800;
+    --blue: #42a5f5; --water: #4fc3f7; --fire: #ff6b35;
+    --rest: #6a6a7a;
+    --border: #333;
+    --surface-2: rgba(255, 255, 255, 0.03);
+    --primary-soft: rgba(187, 134, 252, 0.1);
+    --accent-soft: rgba(3, 218, 198, 0.1);
+    --water-soft: rgba(79, 195, 247, 0.1);
+    --warn-soft: rgba(255, 152, 0, 0.1);
+    --sat: env(safe-area-inset-top, 20px);
+    --sab: env(safe-area-inset-bottom, 0px);
+}
+body.light {
+    --bg: #f4f4f7; --card: #ffffff; --card-2: #ecedf1;
+    --primary: #7c4dff; --accent: #00bfa5; --danger: #e91e63;
+    --text: #1c1c22; --muted: #5a5a6a; --warn: #e67e00;
+    --blue: #1976d2; --water: #0288d1; --fire: #e64a19;
+    --rest: #8a8a95;
+    --border: #d8d8e0;
+    --surface-2: rgba(0, 0, 0, 0.03);
+    --primary-soft: rgba(124, 77, 255, 0.1);
+    --accent-soft: rgba(0, 191, 165, 0.1);
+    --water-soft: rgba(2, 136, 209, 0.1);
+    --warn-soft: rgba(230, 126, 0, 0.1);
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; }
+html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, sans-serif;
+    background: var(--bg); color: var(--text);
+    min-height: 100vh; min-height: 100dvh;
+    -webkit-font-smoothing: antialiased;
+    overscroll-behavior: none; user-select: none;
+    transition: background-color 0.2s, color 0.2s;
+}
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, .menu-btn:focus-visible, summary:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 8px;
+}
+.app-container { width: 100%; height: 100vh; height: 100dvh; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: var(--sat) 0 var(--sab) 0; }
+.screen { display: none; padding: 15px 15px 10px; min-height: 100%; }
+.screen.active { display: block; }
+h1 { font-size: 1.9rem; font-weight: 700; margin: 10px 0 20px; letter-spacing: -0.5px; }
+h2 { color: var(--primary); margin: 24px 0 12px; font-size: 1.15rem; font-weight: 700; letter-spacing: 0.2px; }
 
-self.addEventListener('install', (event) => {
-    self.skipWaiting();
-    event.waitUntil(
-        caches.open(CACHE_NAME).then((cache) => {
-            // ИСПРАВЛЕНО: individual add вместо addAll.
-            // Если один URL упадёт — остальные всё равно закэшируются,
-            // и SW не останется с пустым кэшем.
-            return Promise.all(
-                PRECACHE_URLS.map((url) =>
-                    cache.add(url).catch((e) => console.warn('[SW] precache skip', url, e))
-                )
-            );
-        }).catch((e) => console.warn('[SW] precache failed', e))
-    );
+.top-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.top-bar .spacer { width: 44px; flex-shrink: 0; }
+.top-bar h1 { flex: 1; text-align: center; margin: 0; font-size: 1.3rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#run-title { color: var(--text) !important; }
+
+.back-btn { background: var(--card); border: none; color: var(--text); width: 44px; height: 44px; border-radius: 50%; font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.back-btn:active { background: var(--card-2); }
+
+.card { background: var(--card); border-radius: 18px; padding: 16px; margin-bottom: 12px; }
+.btn { background: var(--primary); color: #000; border: none; padding: 15px 20px; border-radius: 14px; font-size: 1rem; font-weight: 600; cursor: pointer; width: 100%; margin-top: 10px; min-height: 52px; transition: transform 0.1s; }
+.btn:active { transform: scale(0.98); }
+.btn.accent { background: var(--accent); }
+.btn.danger { background: var(--danger); color: #fff; }
+.btn.ghost { background: var(--card-2); color: var(--text); }
+.btn.warn { background: var(--warn); color: #000; }
+.btn.water { background: var(--water); color: #000; }
+.btn.small { padding: 10px 14px; font-size: 0.9rem; min-height: 40px; width: auto; margin: 4px; }
+.btn:disabled { opacity: 0.4; pointer-events: none; }
+#phase-work .btn, #phase-rest .rest-buttons .btn, #phase-warmup .btn { font-size: 1.3rem; padding: 20px 22px; min-height: 64px; letter-spacing: 0.3px; }
+
+.menu-btn { background: var(--card); border: 2px solid var(--primary); color: var(--text); padding: 22px 18px; width: 100%; margin: 10px 0; border-radius: 18px; font-size: 1.15rem; font-weight: 600; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 14px; min-height: 76px; }
+.menu-btn:active { transform: scale(0.98); }
+.menu-btn .icon { font-size: 1.8rem; }
+.menu-btn .sub { font-size: 0.8rem; color: var(--muted); margin-top: 2px; font-weight: 400; }
+
+.workout-item { background: var(--card); border-radius: 16px; padding: 16px; margin-bottom: 12px; position: relative; z-index: 1; content-visibility: auto; contain-intrinsic-size: auto 200px; }
+.workout-item.dragging { opacity: 0.9; z-index: 9999; box-shadow: 0 20px 40px rgba(0,0,0,0.7); background: var(--card-2); border: 1px solid var(--primary); pointer-events: none; position: fixed !important; width: calc(100% - 40px) !important; left: 20px !important; top: 0 !important; margin: 0 !important; content-visibility: visible !important; contain-intrinsic-size: auto auto; }
+.drag-placeholder { background: transparent; border: 2px dashed var(--muted); border-radius: 16px; height: 100px; margin-bottom: 12px; opacity: 0.5; }
+body.no-scroll { overflow: hidden !important; position: fixed !important; width: 100%; height: 100%; touch-action: none !important; }
+.drag-placeholder.active-drop { border-color: var(--accent); background: var(--accent-soft); }
+.workout-name { font-size: 1.15rem; font-weight: 600; word-break: break-word; line-height: 1.3; margin-bottom: 6px; }
+.workout-meta-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+.workout-meta { flex: 1; min-width: 0; color: var(--muted); font-size: 0.85rem; line-height: 1.35; word-break: break-word; }
+.workout-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.workout-actions .icon-btn { background: var(--card-2); border: none; color: var(--text); width: 40px; height: 40px; border-radius: 10px; cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; }
+.workout-actions .icon-btn:active { background: var(--border); }
+.workout-actions .icon-btn.delete { color: var(--danger); }
+.btn-start-workout { width: 100%; margin: 0; padding: 16px; font-size: 1.1rem; }
+
+.input, .select { background: var(--card-2); border: 1px solid var(--border); color: var(--text); padding: 12px; border-radius: 10px; font-size: 1rem; width: 100%; margin-bottom: 8px; -webkit-appearance: none; appearance: none; }
+select.select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23a8a8b3' d='M6 8L0 0h12z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+.input:focus, .select:focus { outline: none; border-color: var(--primary); }
+textarea.input { min-height: 60px; resize: vertical; font-family: inherit; }
+
+.exercise-block { background: var(--card-2); border-radius: 14px; padding: 12px; margin-bottom: 10px; border-left: 3px solid var(--primary); }
+.exercise-block.rest-block { border-left-color: var(--rest); background: rgba(138,138,149,0.05); }
+.exercise-block.rest-block.water-type { border-left-color: var(--water); background: var(--water-soft); }
+.exercise-block.warmup-block { border-left-color: var(--warn); background: var(--warn-soft); }
+.exercise-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.exercise-number { background: var(--primary); color: #000; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; flex-shrink: 0; }
+.exercise-block.rest-block .exercise-number { background: var(--rest); font-size: 1rem; }
+.exercise-block.rest-block.water-type .exercise-number { background: var(--water); }
+.exercise-block.warmup-block .exercise-number { background: var(--warn); }
+.exercise-name-input { margin: 0; flex: 1; padding: 8px; background: var(--card); border: 1px solid var(--border); color: var(--text); border-radius: 8px; font-size: 0.95rem; min-width: 0; }
+.exercise-name-input:disabled { background: var(--card-2); color: var(--muted); }
+.exercise-controls { display: flex; gap: 6px; margin-left: auto; flex-shrink: 0; }
+.exercise-controls .icon-btn { width: 36px; height: 36px; background: var(--card); border: 1px solid var(--border); border-radius: 10px; color: var(--text); display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+.exercise-controls .icon-btn:active { background: var(--primary); color: #000; transform: scale(0.95); }
+.exercise-controls .icon-btn:disabled { opacity: 0.3; pointer-events: none; }
+.exercise-controls .icon-btn svg { width: 18px; height: 18px; stroke: currentColor; }
+.exercise-controls .icon-btn.delete-btn { color: var(--danger); }
+
+.type-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); flex-wrap: wrap; }
+.type-row label { color: var(--muted); font-size: 0.85rem; flex-shrink: 0; }
+.type-row .select { flex: 1; margin: 0; padding: 8px 32px 8px 10px; font-size: 0.9rem; min-width: 100px; }
+.type-row input[type=number] { width: 70px; margin: 0; padding: 8px; }
+.type-row input[type=checkbox] { width: 20px; height: 20px; margin: 0; accent-color: var(--primary); }
+
+.rest-row, .notes-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); }
+.rest-row label, .notes-row label { color: var(--muted); font-size: 0.85rem; flex-shrink: 0; }
+.rest-row .select { flex: 1; margin: 0; padding: 8px 32px 8px 10px; font-size: 0.9rem; }
+
+.checkbox-row { display: flex; align-items: center; gap: 12px; background: var(--card-2); padding: 14px; border-radius: 12px; margin-bottom: 10px; }
+.checkbox-row input[type="checkbox"] { width: 22px; height: 22px; cursor: pointer; accent-color: var(--primary); flex-shrink: 0; }
+.checkbox-row label { cursor: pointer; flex: 1; font-size: 0.95rem; }
+.checkbox-row .hint { color: var(--muted); font-size: 0.78rem; display: block; margin-top: 3px; font-weight: 400; }
+.checkbox-row.disabled { opacity: 0.45; pointer-events: none; }
+
+.editor-settings-card { background: var(--card); border-radius: 16px; margin-bottom: 12px; overflow: hidden; }
+.editor-settings-card .checkbox-row { background: transparent; margin: 0; border-radius: 0; }
+.editor-settings-card .checkbox-row + .checkbox-row { border-top: 1px solid var(--border); }
+.editor-subrow { display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: var(--card-2); border-top: 1px solid var(--border); }
+.editor-subrow label { color: var(--muted); font-size: 0.85rem; flex-shrink: 0; }
+.editor-subrow .select { flex: 1; margin: 0; padding: 8px 32px 8px 10px; font-size: 0.9rem; }
+
+.sound-section { background: var(--card); border-radius: 16px; padding: 14px; margin-bottom: 12px; }
+.sound-section-title { color: var(--text); font-size: 0.95rem; font-weight: 600; margin-bottom: 10px; }
+.sound-options { display: flex; flex-direction: column; gap: 8px; }
+.sound-option { display: flex; align-items: center; gap: 10px; background: var(--card-2); border: 2px solid transparent; padding: 10px 12px; border-radius: 12px; cursor: pointer; }
+.sound-option.selected { border-color: var(--primary); background: var(--primary-soft); }
+.sound-option .radio { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--muted); flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+.sound-option.selected .radio { border-color: var(--primary); }
+.sound-option.selected .radio::after { content: ''; width: 10px; height: 10px; border-radius: 50%; background: var(--primary); }
+.sound-option .sound-info { flex: 1; min-width: 0; }
+.sound-option .sound-name { font-weight: 600; font-size: 0.95rem; }
+.sound-option .sound-desc { color: var(--muted); font-size: 0.8rem; margin-top: 2px; }
+.sound-option .preview-btn { background: var(--card); border: 1px solid var(--border); color: var(--accent); width: 38px; height: 38px; border-radius: 50%; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+
+.settings-group { background: var(--card); border-radius: 16px; margin-bottom: 12px; overflow: hidden; }
+.settings-group summary { padding: 16px 18px; font-weight: 700; font-size: 1.05rem; cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; color: var(--primary); }
+.settings-group summary::-webkit-details-marker { display: none; }
+.settings-group summary::after { content: '▾'; font-size: 0.9rem; color: var(--muted); transition: transform 0.2s; }
+.settings-group[open] summary::after { transform: rotate(180deg); }
+.settings-group .group-body { padding: 0 14px 14px; }
+.settings-group .group-body .checkbox-row { margin-bottom: 8px; }
+.settings-group .group-body .checkbox-row:last-child { margin-bottom: 0; }
+.settings-group .group-body .sound-section { background: var(--card-2); margin-bottom: 8px; }
+.settings-group .group-body .btn { margin-top: 8px; }
+
+.big-timer { font-size: 4.5rem; font-weight: 700; text-align: center; margin: 0; font-variant-numeric: tabular-nums; letter-spacing: -2px; height: 6rem; display: flex; align-items: center; justify-content: center; }
+.big-timer.paused { color: var(--muted); }
+.big-timer.countdown { color: var(--warn); font-size: 7rem; height: 8rem; }
+.big-timer.overtime { color: var(--danger); font-size: 4.5rem; }
+.big-timer.water { color: var(--water); }
+.big-timer.warmup { color: var(--warn); }
+.big-timer.warmup.done { color: var(--accent); }
+
+.rest-icon-display { display: flex; justify-content: center; align-items: center; height: 5rem; font-size: 4.5rem; margin: 10px 0; animation: waterPulse 2s ease-in-out infinite; }
+@keyframes waterPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+
+.phase-header { width: 100%; min-height: 1rem; margin: 4px 0; display: flex; align-items: center; justify-content: center; }
+.phase-label { text-align: center; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 2px; color: var(--muted); font-weight: 600; width: 100%; display: block; margin: 0; }
+.phase-label.work { color: var(--accent); }
+.phase-label.finished { color: var(--danger); font-size: 1.3rem; letter-spacing: 1.5px; font-weight: 700; }
+
+.set-badge { text-align: center; font-size: 1.15rem; font-weight: 700; color: var(--primary); letter-spacing: 1px; margin: 8px 0; text-transform: uppercase; }
+.set-badge .set-num { color: var(--accent); }
+
+.start-time-display { position: relative; right: 10px; text-align: right; font-size: 0.85rem; font-weight: 600; white-space: nowrap; color: var(--muted) !important; }
+
+.current-exercise { text-align: center; font-size: 3rem; font-weight: 700; margin: 6px 0; letter-spacing: -0.5px; word-break: break-word; line-height: 1.2; min-height: 3.6rem; display: flex; align-items: center; justify-content: center; }
+
+.next-exercise-block { text-align: center; margin: 8px 0 16px; padding: 12px 16px; background: var(--card-2); border-radius: 14px; border: 1px solid var(--border); }
+.next-exercise-block.water { background: var(--water-soft); border-color: var(--water); }
+.next-exercise-label { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); font-weight: 600; margin-bottom: 6px; }
+.next-exercise-name { font-size: 1.4rem; font-weight: 700; color: var(--accent); line-height: 1.25; word-break: break-word; }
+
+.progress-bar { height: 6px; background: var(--card-2); border-radius: 3px; overflow: hidden; margin: 10px 0; }
+.progress-fill { height: 100%; background: var(--primary); transition: width 0.3s; }
+.rest-buttons { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
+.rest-adjust { display: flex; justify-content: center; gap: 6px; flex-wrap: wrap; margin: 10px 0; }
+.empty-state { text-align: center; color: var(--muted); padding: 40px 20px; font-size: 0.95rem; }
+
+.finish-card { background: linear-gradient(135deg, var(--card) 0%, var(--card-2) 100%); border-radius: 22px; padding: 22px 18px; margin: 16px 0; border: 1px solid var(--border); }
+.finish-title { text-align: center; font-size: 1.96rem; font-weight: 800; margin-bottom: 16px; }
+.stats-grid { display: flex; flex-direction: column; gap: 10px; }
+.stat-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: var(--surface-2); border-radius: 10px; }
+.stat-label { color: var(--muted); font-size: 1.05rem; display: flex; align-items: center; gap: 6px; font-weight: 700; }
+.stat-value { font-size: 1rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.stat-value.highlight { color: var(--accent); font-size: 1.2rem; }
+
+details summary { cursor: pointer; outline: none; list-style: none; display: flex; justify-content: space-between; align-items: center; }
+details summary::-webkit-details-marker { display: none; }
+details summary::after { content: '▼'; font-size: 0.8rem; color: var(--muted); }
+details[open] summary::after { transform: rotate(180deg); }
+.settings-group summary::after { content: '▾'; }
+
+.swipe-container { position: relative; overflow: hidden; margin-bottom: 10px; border-radius: 14px; }
+.swipe-delete-btn { position: absolute; right: 0; top: 0; bottom: 0; width: 100px; background: var(--danger); color: #fff; border: none; font-weight: 600; font-size: 0.85rem; z-index: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.swipe-container .history-card { position: relative; z-index: 1; transition: transform 0.2s; margin-bottom: 0 !important; will-change: transform; }
+
+.history-card { background: var(--card); border-radius: 14px; padding: 14px; margin-bottom: 10px; display: flex; flex-direction: column; gap: 10px; content-visibility: auto; contain-intrinsic-size: auto 200px; }
+.history-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.history-info { flex: 1; min-width: 0; }
+.history-info .name { font-weight: 600; font-size: 1rem; word-break: break-word; }
+.history-info .stats { font-size: 0.85rem; color: var(--muted); margin-top: 4px; }
+.history-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.history-actions .icon-btn { background: var(--card-2); border: none; color: var(--text); width: 38px; height: 38px; border-radius: 10px; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; }
+.history-actions .icon-btn.delete { color: var(--danger); }
+
+.history-summary-card { background: linear-gradient(135deg, var(--primary-soft), var(--accent-soft)); border: 1px solid var(--primary); border-radius: 16px; padding: 18px 16px; margin-bottom: 14px; text-align: center; }
+.history-summary-title { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); font-weight: 600; margin-bottom: 8px; }
+.history-summary-big { font-size: 2.2rem; font-weight: 800; color: var(--primary); line-height: 1; }
+.history-summary-big-sub { color: var(--muted); font-size: 0.8rem; margin-top: 4px; }
+.history-summary-row { display: flex; justify-content: space-around; margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(187,134,252,0.3); }
+.history-summary-item { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.history-summary-item .val { font-size: 1.15rem; font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; }
+.history-summary-item .lbl { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+
+.preview-exercise { background: var(--card-2); border-radius: 10px; padding: 12px; margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
+.preview-exercise.rest { background: rgba(138,138,149,0.1); border-left: 3px solid var(--rest); }
+.preview-exercise.water { background: var(--water-soft); border-left: 3px solid var(--water); }
+.preview-exercise.warmup { background: var(--warn-soft); border-left: 3px solid var(--warn); }
+.preview-exercise .num { background: var(--primary); color: #000; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; flex-shrink: 0; }
+.preview-exercise.rest .num { background: var(--rest); }
+.preview-exercise.water .num { background: var(--water); }
+.preview-exercise.warmup .num { background: var(--warn); }
+.preview-exercise .info { flex: 1; min-width: 0; }
+.preview-exercise .name { font-weight: 500; word-break: break-word; }
+.preview-exercise .rest-info { color: var(--muted); font-size: 0.8rem; }
+
+.record-item { background: var(--card-2); border-radius: 12px; padding: 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+.record-item .label { color: var(--muted); font-size: 0.9rem; }
+.record-item .value { color: var(--accent); font-weight: 700; font-size: 1.1rem; }
+.tabs { display: flex; gap: 6px; margin-bottom: 16px; }
+.tab { flex: 1; padding: 10px; text-align: center; background: var(--card-2); border-radius: 10px; font-size: 0.9rem; cursor: pointer; }
+.tab.active { background: var(--primary); color: #000; font-weight: 600; }
+
+.template-card { background: var(--card-2); border-radius: 12px; padding: 14px; margin-bottom: 10px; content-visibility: auto; contain-intrinsic-size: auto 100px; }
+.template-card.dragging { opacity: 0.9; z-index: 9999; box-shadow: 0 20px 40px rgba(0,0,0,0.7); background: var(--card-2); border: 1px solid var(--primary); pointer-events: none; position: fixed !important; width: calc(100% - 40px) !important; left: 20px !important; top: 0 !important; margin: 0 !important; content-visibility: visible !important; contain-intrinsic-size: auto auto; }
+.template-card-name { font-weight: 600; margin-bottom: 6px; word-break: break-word; cursor: pointer; font-size: 1rem; }
+.template-card-meta-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.template-card-meta { flex: 1; min-width: 0; color: var(--muted); font-size: 0.85rem; line-height: 1.35; word-break: break-word; }
+.template-card-actions { display: flex; gap: 6px; flex-shrink: 0; justify-content: flex-end; }
+.template-card-actions .icon-btn { background: var(--card); border: none; color: var(--text); width: 36px; height: 36px; border-radius: 10px; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; }
+.template-card-actions .icon-btn.add { background: var(--accent); color: #000; font-weight: 700; font-size: 1.3rem; }
+.template-card-actions .icon-btn.delete { color: var(--danger); }
+.template-section-title { color: var(--muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; margin: 16px 0 8px; font-weight: 600; }
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+@keyframes toastIn { from { opacity: 0; transform: translate(-50%, 20px); } to { opacity: 1; transform: translate(-50%, 0); } }
+
+.ft-toast { position: fixed; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); background: var(--card); color: var(--text); padding: 12px 20px; border-radius: 12px; font-size: 0.9rem; z-index: 10001; box-shadow: 0 4px 20px rgba(0,0,0,0.4); animation: toastIn 0.25s ease; max-width: 90%; text-align: center; border: 1px solid var(--border); }
+
+.bottom-sheet-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 10000; display: flex; align-items: flex-end; justify-content: center; animation: fadeIn 0.2s ease; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+.bottom-sheet { width: 100%; max-width: 500px; background: var(--card); border-radius: 24px 24px 0 0; padding: 12px 20px calc(20px + env(safe-area-inset-bottom, 0px)); animation: slideUp 0.3s cubic-bezier(0.2, 0.9, 0.3, 1); display: flex; flex-direction: column; gap: 12px; box-shadow: 0 -12px 40px rgba(0,0,0,0.5); max-height: 85vh; overflow-y: auto; }
+.bottom-sheet.closing { animation: fadeOut 0.15s ease forwards; }
+.sheet-grip { width: 40px; height: 4px; background: var(--muted); border-radius: 2px; margin: 4px auto 8px; opacity: 0.5; flex-shrink: 0; }
+.sheet-title { margin: 0; text-align: center; font-size: 1.25rem; font-weight: 700; }
+.sheet-icon { text-align: center; font-size: 2.8rem; line-height: 1; }
+.sheet-info { background: var(--card-2); border-radius: 14px; padding: 14px 16px; text-align: center; }
+.sheet-info-name { font-size: 1.05rem; font-weight: 600; word-break: break-word; }
+.sheet-info-details { color: var(--muted); font-size: 0.85rem; margin-top: 6px; }
+.bottom-sheet .btn { margin: 0; }
+.sheet-btn-cancel { background: transparent; color: var(--muted); min-height: 44px; padding: 10px; font-size: 0.9rem; }
+
+.week-block { background: var(--card-2); border-radius: 14px; padding: 14px; margin-bottom: 12px; }
+.week-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; cursor: pointer; }
+.week-title { font-weight: 700; }
+.week-subtitle { color: var(--muted); font-size: 0.8rem; margin-top: 2px; }
+.week-days { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.week-day-row { display: flex; justify-content: space-between; align-items: center; background: var(--card); border-radius: 10px; padding: 10px 12px; font-size: 0.9rem; cursor: pointer; }
+.week-day-row.today { border: 1px solid var(--accent); }
+.week-day-row.today .day-name { color: var(--accent); font-weight: 700; }
+.week-day-row .day-name { color: var(--muted); flex-shrink: 0; width: 32px; }
+.week-day-row .day-workouts { flex: 1; text-align: right; word-break: break-word; padding-left: 8px; }
+.week-day-row .day-count { background: var(--primary); color: #000; font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 10px; margin-left: 6px; flex-shrink: 0; }
+.week-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+
+.streak-banner { background: linear-gradient(135deg, var(--primary-soft), var(--accent-soft)); border: 1px solid var(--primary); border-radius: 16px; padding: 16px; margin: 10px 0 16px; cursor: pointer; }
+.streak-banner-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.streak-banner-title { font-size: 1.2rem; font-weight: 700; }
+.streak-banner-title .fire { color: var(--fire); }
+.streak-banner-record { font-size: 0.85rem; color: var(--muted); }
+.streak-banner-grid { display: grid; grid-template-columns: repeat(15, 1fr); gap: 4px; margin-top: 10px; }
+.streak-cell { aspect-ratio: 1; border-radius: 2px; background: var(--card-2); }
+.streak-cell.lv1 { background: rgba(187,134,252,0.25); }
+.streak-cell.lv2 { background: rgba(187,134,252,0.5); }
+.streak-cell.lv3 { background: var(--primary); }
+.streak-cell.today { outline: 1px solid var(--accent); }
+
+.heatmap-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 5px; margin-top: 10px; }
+.heatmap-cell { aspect-ratio: 1; border-radius: 3px; background: var(--card-2); cursor: pointer; }
+.heatmap-cell.lv1 { background: rgba(187,134,252,0.25); }
+.heatmap-cell.lv2 { background: rgba(187,134,252,0.5); }
+.heatmap-cell.lv3 { background: var(--primary); }
+.heatmap-cell.today { outline: 2px solid var(--accent); }
+.heatmap-legend { display: flex; gap: 8px; align-items: center; justify-content: flex-end; font-size: 0.75rem; color: var(--muted); margin-top: 8px; }
+.heatmap-legend-box { width: 12px; height: 12px; border-radius: 2px; }
+
+.week-graph { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-top: 12px; }
+.week-graph-day { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.week-graph-bar { width: 100%; min-height: 40px; max-height: 80px; background: var(--card-2); border-radius: 6px; position: relative; overflow: hidden; display: flex; align-items: flex-end; }
+.week-graph-fill { width: 100%; background: var(--primary); transition: height 0.3s; border-radius: 6px; }
+.week-graph-fill.empty { background: transparent; }
+.week-graph-label { font-size: 0.7rem; color: var(--muted); font-weight: 600; }
+.week-graph-day.today .week-graph-label { color: var(--accent); font-weight: 700; }
+.week-graph-day.today .week-graph-bar { outline: 1px solid var(--accent); }
+
+.notif-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--card-2); border-radius: 12px; margin-bottom: 8px; }
+.notif-item.done { opacity: 0.55; }
+.notif-item .notif-status { font-size: 1.2rem; flex-shrink: 0; }
+.notif-item .notif-body { flex: 1; min-width: 0; }
+.notif-item .notif-name { font-weight: 600; word-break: break-word; }
+.notif-item .notif-sub { font-size: 0.8rem; color: var(--muted); margin-top: 2px; }
+
+.workout-search-row { display: flex; gap: 8px; margin-bottom: 12px; }
+.workout-search-row .input { margin: 0; flex: 1; }
+.workout-search-row .select { margin: 0; width: auto; min-width: 130px; }
+
+.reps-input-row { display: flex; gap: 8px; align-items: center; justify-content: center; }
+.reps-input-row .input { width: 110px; text-align: center; font-size: 1.6rem; font-weight: 700; margin: 0; padding: 14px 12px; }
+.reps-stepper { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
+.reps-stepper button { width: 48px; height: 48px; padding: 0; min-height: 48px; font-size: 1rem; }
+
+.share-textarea { min-height: 140px !important; font-size: 0.85rem !important; font-family: inherit; }
+
+@media (max-height: 700px) {
+    .big-timer { font-size: 3.5rem; height: 5rem; }
+    .big-timer.countdown { font-size: 5rem; height: 6rem; }
+    .current-exercise { font-size: 2.4rem; min-height: 3rem; }
+    .rest-icon-display { font-size: 3.5rem; height: 4rem; }
+}
+</style>
+</head>
+<body>
+<div class="app-container">
+
+<div id="screen-home" class="screen active">
+    <h1>💪 Fit Trainer Pro v1.5</h1>
+    <div id="streak-banner-home"></div>
+    <div id="home-today-banner" style="display:none;"></div>
+    <button class="menu-btn" id="menu-btn-workouts" onclick="showScreen('screen-workouts')">
+        <span class="icon">🏋️</span>
+        <div><div>Мои тренировки</div><div class="sub">Создать, редактировать, запустить</div></div>
+    </button>
+    <button class="menu-btn" id="menu-btn-templates" onclick="showScreen('screen-templates')" style="border-color:var(--accent)">
+        <span class="icon">📋</span>
+        <div><div>Шаблоны</div><div class="sub">Мои и готовые тренировки</div></div>
+    </button>
+    <button class="menu-btn" id="menu-btn-programs" onclick="showScreen('screen-programs')" style="border-color:var(--blue)">
+        <span class="icon">📅</span>
+        <div><div>Программы</div><div class="sub">Планировщик по неделям</div></div>
+    </button>
+    <button class="menu-btn" id="menu-btn-activity" onclick="showScreen('screen-activity')" style="border-color:var(--fire)">
+        <span class="icon">🔥</span>
+        <div><div>Активность</div><div class="sub">Стрик, календарь</div></div>
+    </button>
+    <button class="menu-btn" id="menu-btn-history" onclick="showScreen('screen-history')" style="border-color:#ff5c6c">
+        <span class="icon">📜</span>
+        <div><div>История</div><div class="sub">Записи, статистика</div></div>
+    </button>
+    <button class="menu-btn" id="menu-btn-settings" onclick="showScreen('screen-settings')" style="border-color:var(--warn)">
+        <span class="icon">⚙️</span>
+        <div><div>Настройки</div><div class="sub">Тема, голос, звук</div></div>
+    </button>
+</div>
+
+<div id="screen-workouts" class="screen">
+    <div class="top-bar">
+        <button class="back-btn" onclick="showScreen('screen-home')" aria-label="Назад">←</button>
+        <h1>Мои тренировки</h1>
+        <div class="spacer"></div>
+    </div>
+    <div class="workout-search-row">
+        <input type="text" id="workout-search" class="input" placeholder="🔍 Поиск..." oninput="renderWorkoutsList()">
+        <select id="workout-sort" class="select" onchange="renderWorkoutsList()">
+            <option value="custom">↕ Свои</option>
+            <option value="name">📝 По имени</option>
+            <option value="duration">⏱ По длит.</option>
+            <option value="exercises">🏋️ По упр.</option>
+        </select>
+    </div>
+    <div id="workouts-list"></div>
+    <button class="btn" onclick="openEditor(null, false)">+ Создать тренировку</button>
+    <button class="btn ghost" onclick="document.getElementById('import-workout-file').click()" style="margin-top:8px;">📥 Импорт тренировки</button>
+    <input type="file" id="import-workout-file" accept=".json" style="display:none" onchange="importWorkout(event)">
+</div>
+
+<div id="screen-templates" class="screen">
+    <div class="top-bar">
+        <button class="back-btn" onclick="showScreen('screen-home')" aria-label="Назад">←</button>
+        <h1>Шаблоны</h1>
+        <div class="spacer"></div>
+    </div>
+    <button class="btn accent" onclick="openEditor(null, true)">+ Создать шаблон</button>
+    <div class="template-section-title" id="user-templates-title" style="display:none;">Мои шаблоны</div>
+    <div id="user-templates-list"></div>
+    <div class="template-section-title" id="builtin-templates-title" style="display:none;">Готовые</div>
+    <div id="builtin-templates-list"></div>
+    <div id="templates-empty" class="empty-state" style="display:none;">Шаблоны скрыты</div>
+</div>
+
+<div id="screen-programs" class="screen">
+    <div class="top-bar">
+        <button class="back-btn" onclick="showScreen('screen-home')" aria-label="Назад">←</button>
+        <h1>Программы</h1>
+        <div class="spacer"></div>
+    </div>
+    <button class="btn accent" onclick="openProgramEditor(null)">+ Создать программу</button>
+    <div id="programs-list"></div>
+</div>
+
+<div id="screen-program-editor" class="screen">
+    <div class="top-bar">
+        <button class="back-btn" onclick="cancelProgramEditor()" aria-label="Назад">←</button>
+        <h1 id="program-editor-title" style="margin:0;">Программа</h1>
+        <div class="spacer"></div>
+    </div>
+    <div class="card">
+        <label style="color:var(--muted); font-size:0.85rem;">Название программы</label>
+        <input type="text" id="program-name" class="input" placeholder="Например: Неделя силы">
+    </div>
+    <h2>Недели</h2>
+    <div id="program-weeks-list"></div>
+    <button class="btn ghost" onclick="addWeekToEditor()">+ Добавить неделю</button>
+    <button class="btn accent" onclick="saveProgram()" style="margin-top:14px;">💾 Сохранить</button>
+    <button class="btn danger" id="program-delete-btn" style="display:none;" onclick="deleteProgram()">🗑 Удалить</button>
+</div>
+
+<div id="screen-editor" class="screen">
+    <div class="top-bar">
+        <button class="back-btn" onclick="cancelEditor()" aria-label="Назад">←</button>
+        <h1 id="editor-title" style="margin:0;">Новая тренировка</h1>
+        <div class="spacer"></div>
+    </div>
+    <div class="card">
+        <label style="color:var(--muted); font-size:0.85rem;">Название</label>
+        <input type="text" id="workout-name" class="input" placeholder="Например: Пресс">
+    </div>
+
+    <details class="settings-group" open id="editor-settings-group">
+        <summary>⚙️ Настройки тренировки</summary>
+        <div style="padding: 0 14px 14px;">
+            <div class="editor-settings-card">
+                <div class="checkbox-row">
+                    <input type="checkbox" id="auto-start">
+                    <label for="auto-start">🔄 Автозапуск упражнения</label>
+                </div>
+                <div class="checkbox-row">
+                    <input type="checkbox" id="workout-countdown">
+                    <label for="workout-countdown">⏱ Обратный отсчёт перед упражнением</label>
+                </div>
+                <div id="workout-countdown-interval-row" class="editor-subrow" style="display:none;">
+                    <label>Длительность:</label>
+                    <select id="workout-countdown-duration" class="select">
+                        <option value="3">3 сек</option>
+                        <option value="5">5 сек</option>
+                        <option value="15">15 сек</option>
+                        <option value="20">20 сек</option>
+                    </select>
+                </div>
+                <div class="checkbox-row">
+                    <input type="checkbox" id="workout-minute-beep">
+                    <label for="workout-minute-beep">⏱ Пикать каждую минуту</label>
+                </div>
+                <div id="workout-minute-beep-interval-row" class="editor-subrow" style="display:none;">
+                    <label>Интервал:</label>
+                    <select id="workout-minute-beep-interval" class="select">
+                        <option value="60">Каждую минуту</option>
+                        <option value="120">Каждые 2 мин</option>
+                        <option value="300">Каждые 5 мин</option>
+                        <option value="600">Каждые 10 мин</option>
+                    </select>
+                </div>
+                <div class="checkbox-row">
+                    <input type="checkbox" id="workout-announce-numbers">
+                    <label for="workout-announce-numbers">🔢 Озвучивать номер упражнения</label>
+                </div>
+                <div class="checkbox-row">
+                    <input type="checkbox" id="workout-continuous-beep">
+                    <label for="workout-continuous-beep">🔁 Непрерывно повторять звук окончания отдыха</label>
+                </div>
+                <div class="checkbox-row">
+                    <input type="checkbox" id="workout-ask-reps">
+                    <label for="workout-ask-reps">🔢 Спрашивать количество повторов после подхода</label>
+                </div>
+                <div class="checkbox-row">
+                    <input type="checkbox" id="workout-skip-warmup">
+                    <label for="workout-skip-warmup">⏭ Пропускать разминку при автозапуске</label>
+                </div>
+            </div>
+            <button class="btn ghost small" onclick="resetWorkoutSettingsToGlobal()" style="width:100%;">↺ Сбросить к глобальным настройкам</button>
+        </div>
+    </details>
+
+    <h2>Содержание</h2>
+    <div id="exercises-list"></div>
+    <button class="btn ghost" onclick="addExercise()">+ Добавить упражнение</button>
+    <button class="btn ghost" onclick="addWarmup()" style="margin-top:6px; border:1px solid var(--warn); color:var(--warn);">🔥 Добавить разминку</button>
+    <button class="btn ghost" onclick="addRest()" style="margin-top:6px; border:1px solid var(--rest); color:var(--muted);">🛌 Добавить отдых / 💧 Воду</button>
+    <div style="margin-top: 16px;">
+        <button class="btn accent" onclick="saveWorkout()">💾 Сохранить</button>
+        <button class="btn ghost" id="export-btn" style="display:none;" onclick="exportCurrentWorkout()">📤 Экспорт</button>
+        <button class="btn danger" id="delete-btn" style="display:none;" onclick="deleteWorkout()">🗑 Удалить</button>
+    </div>
+</div>
+
+<div id="screen-preview" class="screen">
+    <div class="top-bar">
+        <button class="back-btn" id="preview-back-btn" onclick="showScreen('screen-workouts')" aria-label="Назад">←</button>
+        <h1 id="preview-title" style="margin:0;">Предпросмотр</h1>
+        <div class="spacer"></div>
+    </div>
+    <div id="preview-content"></div>
+    <div id="preview-actions"></div>
+</div>
+
+<div id="screen-run" class="screen">
+    <div class="start-time-display" id="start-time-display" style="display:none;">
+        <span id="start-time-label">Старт</span>
+        <span id="start-time-value">--:--</span>
+    </div>
+    <div class="top-bar">
+        <button class="back-btn" onclick="confirmExit()" aria-label="Назад">←</button>
+        <h1 id="run-title" style="margin:0;">Тренировка</h1>
+        <div class="spacer"></div>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+    <div class="phase-header" id="phase-header-el"><div class="phase-label" id="phase-label">УПРАЖНЕНИЕ</div></div>
+    <div class="current-exercise" id="current-exercise">—</div>
+    <div id="set-badge" class="set-badge" style="display:none;"></div>
+    <div id="phase-ready" style="display:none;"></div>
+    <div id="phase-countdown" style="display:none;">
+        <div class="big-timer countdown" id="countdown-timer">3</div>
+        <p style="text-align:center; color:var(--muted);">Приготовься...</p>
+    </div>
+    <div id="phase-warmup" style="display:none;">
+        <div class="big-timer warmup" id="warmup-timer">00:00</div>
+        <button class="btn warn" id="warmup-pause-btn" onclick="toggleWarmupPause()">⏸ Пауза</button>
+        <button class="btn accent" id="warmup-finish-early-btn" onclick="finishWarmupEarly()">✅ Закончить разминку</button>
+        <button class="btn ghost" id="warmup-skip-btn" onclick="skipWarmupElement()" style="background:var(--card-2); color:var(--muted);">⏭ Пропустить разминку</button>
+        <button class="btn accent" id="warmup-confirm-btn" onclick="confirmWarmupFinished()" style="display:none;">✅ Готов</button>
+    </div>
+    <div id="phase-work" style="display:none;">
+        <div class="big-timer" id="work-timer">00:00</div>
+        <div id="work-reps-info" style="text-align:center; color:var(--accent); font-size:1.2rem; font-weight:700; margin-bottom:12px; display:none;">Цель: <span id="work-reps-target">10</span> повторов</div>
+        <button class="btn warn" id="work-pause-btn" onclick="toggleWorkPause()">⏸ Пауза</button>
+        <button class="btn danger" id="work-finish-btn" onclick="finishExercise()">✅ Завершить упражнение</button>
+        <button class="btn ghost" id="work-skip-btn" onclick="skipExercise()" style="background:var(--card-2); color:var(--muted);">⏭ Пропустить упражнение</button>
+    </div>
+    <div id="phase-rest" style="display:none;">
+        <div id="rest-middle-icon" class="rest-icon-display" style="display:none;">💧</div>
+        <div class="big-timer" id="rest-timer">00:00</div>
+        <div class="next-exercise-block" id="next-exercise-block">
+            <div class="next-exercise-label" id="next-exercise-label">Далее</div>
+            <div class="next-exercise-name" id="next-exercise-name">—</div>
+        </div>
+        <div id="rest-note-block" style="display:none; margin:12px 0;">
+            <button id="rest-note-toggle" class="btn ghost small" style="width:100%; padding:10px; font-size:0.85rem;" onclick="toggleRestNote()">📝 Добавить заметку</button>
+            <textarea id="rest-note-textarea" class="input" placeholder="Например: отжался 55 раз" style="display:none; margin-top:8px; min-height:70px;"></textarea>
+        </div>
+        <div class="rest-adjust" id="rest-adjust">
+            <button class="btn small ghost" onclick="adjustRest(-30)">-30с</button>
+            <button class="btn small ghost" onclick="adjustRest(-10)">-10с</button>
+            <button class="btn small ghost" onclick="adjustRest(+10)">+10с</button>
+            <button class="btn small ghost" onclick="adjustRest(+30)">+30с</button>
+        </div>
+        <div class="rest-buttons">
+            <button class="btn warn" id="rest-pause-btn" onclick="toggleRestPause()">⏸ Пауза</button>
+            <button class="btn" style="background:var(--blue); color:#fff;" id="rest-undo-btn" onclick="undoLastElement()">↩ Предыдущее упражнение</button>
+            <button class="btn accent" id="rest-skip-btn" onclick="skipRest()">⏭ Пропустить</button>
+            <button class="btn accent" id="rest-confirm-btn" onclick="confirmRestFinished()" style="display:none;">✅ Завершить отдых</button>
+            <button class="btn accent" id="rest-banner-btn" onclick="confirmBanner()" style="display:none;">✅ Продолжить</button>
+        </div>
+    </div>
+    <div id="phase-finish" style="display:none;"></div>
+</div>
+
+<div id="screen-activity" class="screen">
+    <div class="top-bar">
+        <button class="back-btn" onclick="showScreen('screen-home')" aria-label="Назад">←</button>
+        <h1>Активность</h1>
+        <div class="spacer"></div>
+    </div>
+    <div id="activity-content"></div>
+</div>
+
+<div id="screen-history" class="screen">
+    <div class="top-bar">
+        <button class="back-btn" onclick="showScreen('screen-home')" aria-label="Назад">←</button>
+        <h1>История</h1>
+        <div class="spacer"></div>
+    </div>
+    <div class="workout-search-row">
+        <input type="text" id="history-search" class="input" placeholder="🔍 Поиск..." oninput="renderHistory()">
+        <select id="history-period" class="select" onchange="renderHistory()">
+            <option value="all">Всё время</option>
+            <option value="7">7 дней</option>
+            <option value="30">30 дней</option>
+            <option value="90">90 дней</option>
+        </select>
+    </div>
+    <div class="tabs">
+        <div class="tab active" onclick="switchHistoryTab('list', this)">Записи</div>
+        <div class="tab" onclick="switchHistoryTab('stats', this)">Статистика</div>
+        <div class="tab" onclick="switchHistoryTab('records', this)">Рекорды</div>
+    </div>
+    <div id="history-tab-list"></div>
+    <div id="history-tab-stats" style="display:none;"></div>
+    <div id="history-tab-records" style="display:none;"></div>
+</div>
+
+<div id="screen-settings" class="screen">
+    <div class="top-bar">
+        <button class="back-btn" onclick="showScreen('screen-home')" aria-label="Назад">←</button>
+        <h1>Настройки</h1>
+        <div class="spacer"></div>
+    </div>
+
+    <details class="settings-group" open data-group="appearance">
+        <summary>🎨 Внешний вид</summary>
+        <div class="group-body">
+            <div class="sound-section"><div class="sound-section-title">Тема</div><div class="sound-options" id="theme-mode-options"></div></div>
+        </div>
+    </details>
+
+    <details class="settings-group" open data-group="sound">
+        <summary>🔊 Звук и голос</summary>
+        <div class="group-body">
+            <div class="sound-section"><div class="sound-section-title">Режим звука</div><div class="sound-options" id="sound-mode-options"></div></div>
+            <div class="sound-section"><div class="sound-section-title">Голос</div><div class="sound-options" id="voice-options"></div></div>
+            <div class="sound-section"><div class="sound-section-title">Скорость речи</div><div class="sound-options" id="voice-rate-options"></div></div>
+            <div class="checkbox-row" id="announce-buttons-row"><input type="checkbox" id="set-announce-buttons"><label for="set-announce-buttons">👆 Озвучивать кнопки</label></div>
+            <div class="checkbox-row"><input type="checkbox" id="set-announce-numbers"><label for="set-announce-numbers">🔢 Озвучивать номер упражнения</label></div>
+            <div class="checkbox-row"><input type="checkbox" id="set-ask-reps"><label for="set-ask-reps">🔢 Спрашивать количество повторов</label></div>
+            <div class="checkbox-row"><input type="checkbox" id="set-minute-beep"><label for="set-minute-beep">⏱ Пикать каждую минуту</label></div>
+            <div id="minute-beep-options" style="display:none;"><div class="sound-section"><div class="sound-section-title">Интервал пиканья</div><div class="sound-options" id="minute-beep-interval-options"></div></div></div>
+            <div class="sound-section"><div class="sound-section-title">Звук окончания отдыха</div><div class="sound-options" id="sound-options"></div></div>
+            <div class="checkbox-row"><input type="checkbox" id="set-continuous-beep"><label for="set-continuous-beep">🔁 Непрерывно повторять</label></div>
+        </div>
+    </details>
+
+    <details class="settings-group" open data-group="notify">
+        <summary>🔔 Уведомления</summary>
+        <div class="group-body">
+            <div class="checkbox-row"><input type="checkbox" id="set-notify-scheduled"><label for="set-notify-scheduled">📅 Напоминать о тренировках</label></div>
+            <div class="checkbox-row"><input type="checkbox" id="set-notify-show-completed"><label for="set-notify-show-completed">✅ Показывать выполненные</label></div>
+            <div class="checkbox-row"><input type="checkbox" id="set-show-activity"><label for="set-show-activity">🔥 Календарь активностей на главной</label></div>
+        </div>
+    </details>
+
+    <details class="settings-group" open data-group="timers">
+        <summary>⏱ Таймеры</summary>
+        <div class="group-body">
+            <div class="checkbox-row"><input type="checkbox" id="set-countdown"><label for="set-countdown">⏱ Обратный отсчёт</label></div>
+            <div id="countdown-interval-options" style="display:none;"><div class="sound-section"><div class="sound-section-title">Интервал отсчёта</div><div class="sound-options" id="countdown-interval-list"></div></div></div>
+            <div class="checkbox-row"><input type="checkbox" id="set-default-auto"><label for="set-default-auto">🔄 Автозапуск по умолчанию</label></div>
+            <div class="checkbox-row"><input type="checkbox" id="set-show-start-time"><label for="set-show-start-time">🕐 Показывать время старта</label></div>
+        </div>
+    </details>
+
+    <details class="settings-group" open data-group="behavior">
+        <summary>📱 Поведение</summary>
+        <div class="group-body">
+            <div class="checkbox-row"><input type="checkbox" id="set-wakelock"><label for="set-wakelock">🔒 Не гасить экран</label></div>
+            <div id="vibration-warning" class="checkbox-row disabled" style="display:none;"><label>📳 Вибро не поддерживается</label></div>
+        </div>
+    </details>
+
+    <details class="settings-group" open data-group="home">
+        <summary>🏠 Главный экран</summary>
+        <div class="group-body">
+            <div style="color:var(--muted); font-size:0.8rem; padding:0 4px 10px;">Скройте ненужные пункты с главного экрана. «Мои тренировки» и «Настройки» скрыть нельзя.</div>
+            <div class="checkbox-row"><input type="checkbox" id="set-hide-templates"><label for="set-hide-templates">📋 Скрыть «Шаблоны»</label></div>
+            <div class="checkbox-row"><input type="checkbox" id="set-hide-programs"><label for="set-hide-programs">📅 Скрыть «Программы»</label></div>
+            <div class="checkbox-row"><input type="checkbox" id="set-hide-activity"><label for="set-hide-activity">🔥 Скрыть «Активность»</label></div>
+            <div class="checkbox-row"><input type="checkbox" id="set-hide-history"><label for="set-hide-history">📜 Скрыть «История»</label></div>
+        </div>
+    </details>
+
+    <details class="settings-group" open data-group="data">
+        <summary>💾 Данные</summary>
+        <div class="group-body">
+            <div class="checkbox-row"><input type="checkbox" id="set-auto-backup"><label for="set-auto-backup">💾 Напоминать о бэкапе<span class="hint">Раз в 20 тренировок или 7 дней · <span id="last-backup-info">—</span></span></label></div>
+            <button class="btn ghost" onclick="exportData()">💾 Сделать бэкап (JSON)</button>
+            <button class="btn ghost" onclick="exportCSV()">📥 Экспорт истории (CSV)</button>
+            <button class="btn ghost" onclick="document.getElementById('import-file').click()">📥 Импорт</button>
+            <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)">
+            <button class="btn danger" onclick="clearHistory()">🗑 Очистить историю</button>
+            <button class="btn ghost" onclick="restoreBuiltins()">🔄 Восстановить шаблоны</button>
+        </div>
+    </details>
+
+    <details class="settings-group" data-group="about">
+        <summary>ℹ️ О приложении</summary>
+        <div class="group-body">
+            <div class="card" style="color:var(--muted); font-size:0.85rem; line-height:1.6;">
+                <strong style="color:var(--text);">Fit Trainer Pro v1.5</strong><br>
+                Данные хранятся локально.
+            </div>
+        </div>
+    </details>
+</div>
+
+</div>
+
+<script>
+window.addEventListener('error', (e) => console.error('[FT error]', e.error || e.message));
+window.addEventListener('unhandledrejection', (e) => console.error('[FT unhandled]', e.reason));
+
+/* ===================== SCHEMA VERSION ===================== */
+const SCHEMA_VERSION = 2;
+(function initSchema() {
+    try {
+        const v = parseInt(localStorage.getItem('ft_schema_version') || '0', 10);
+        if (v < SCHEMA_VERSION) {
+            localStorage.setItem('ft_schema_version', String(SCHEMA_VERSION));
+        }
+    } catch(e) {}
+})();
+
+/* ===================== STORAGE AVAILABILITY ===================== */
+function checkStorageAvailable() {
+    try {
+        const testKey = '__ft_test_storage__';
+        localStorage.setItem(testKey, '1');
+        localStorage.removeItem(testKey);
+        return true;
+    } catch(e) { return false; }
+}
+if (!checkStorageAvailable()) {
+    setTimeout(() => showToast('⚠️ Хранилище недоступно — данные не сохраняются. Возможно, вы в приватном режиме.', 12000), 1500);
+}
+
+function showToast(text, duration = 2500) {
+    try {
+        const t = document.createElement('div');
+        t.className = 'ft-toast';
+        t.textContent = text;
+        document.body.appendChild(t);
+        setTimeout(() => { try { t.remove(); } catch(e) {} }, duration);
+    } catch(e) {}
+}
+
+function showUndoToast(text, onUndo, duration = 8000) {
+    try {
+        const t = document.createElement('div');
+        t.className = 'ft-toast';
+        t.style.cssText = 'display:flex;align-items:center;gap:12px;min-width:220px;justify-content:space-between;';
+        const span = document.createElement('span');
+        span.textContent = text;
+        span.style.flex = '1';
+        t.appendChild(span);
+        const btn = document.createElement('button');
+        btn.textContent = 'Отменить';
+        btn.style.cssText = 'background:transparent;border:none;color:var(--accent);font-weight:700;font-size:0.9rem;cursor:pointer;padding:4px 8px;white-space:nowrap;';
+        t.appendChild(btn);
+        document.body.appendChild(t);
+        let removed = false;
+        const remove = () => { if (removed) return; removed = true; try { t.remove(); } catch(e) {} };
+        btn.onclick = () => { remove(); try { onUndo(); } catch(e) { console.error(e); } };
+        setTimeout(remove, duration);
+    } catch(e) {}
+}
+
+const Storage = {
+    get(key, defaultValue) {
+        try { const item = localStorage.getItem(key); return item ? JSON.parse(item) : defaultValue; }
+        catch (e) { return defaultValue; }
+    },
+    set(key, value) {
+        try { localStorage.setItem(key, JSON.stringify(value)); return true; }
+        catch (e) { console.warn('[Storage.set]', key, e); return false; }
+    }
+};
+
+(async function() {
+    try {
+        if (navigator.storage && navigator.storage.persist) {
+            const granted = await navigator.storage.persist();
+            if (!granted) setTimeout(() => showToast('⚠️ Браузер может удалить данные при очистке кэша', 5000), 8000);
+        }
+    } catch(e) {}
+})();
+
+const DB = {
+    workouts: Storage.get('ft_workouts', []),
+    templates: Storage.get('ft_templates', []),
+    programs: Storage.get('ft_programs', []),
+    history: Storage.get('ft_history', []),
+    settings: Storage.get('ft_settings', {})
+};
+
+DB.settings = Object.assign({
+    wakeLock: false, voice: false, countdown: false,
+    defaultAutoStart: true, continuousBeep: false,
+    alarmSound: 'alarm', hiddenBuiltins: [],
+    minuteBeep: false, minuteBeepInterval: 60,
+    announceNumbers: true, countdownDuration: 3, showStartTime: false,
+    themeMode: 'auto', voiceRate: 1, voiceURI: null,
+    announceButtons: false,
+    notifyScheduledWorkouts: true, notifyShowCompleted: true,
+    showActivityCalendar: true,
+    autoBackupReminder: true, lastBackupAt: 0, lastBackupRecordCount: 0,
+    askReps: true,
+    hiddenMenuItems: [],
+    accordions: {}
+}, DB.settings);
+if ('announceConfirm' in DB.settings) delete DB.settings.announceConfirm;
+if (!Array.isArray(DB.settings.hiddenBuiltins)) DB.settings.hiddenBuiltins = [];
+if (!['auto','light','dark'].includes(DB.settings.themeMode)) DB.settings.themeMode = 'auto';
+if (![0.8, 1, 1.3].includes(DB.settings.voiceRate)) DB.settings.voiceRate = 1;
+if (DB.settings.soundMode !== 'voice' && DB.settings.soundMode !== 'beep') {
+    DB.settings.soundMode = 'beep';
+}
+// Cleanup obsolete `voice` field
+if ('voice' in DB.settings) delete DB.settings.voice;
+if (typeof DB.settings.autoBackupReminder !== 'boolean') DB.settings.autoBackupReminder = true;
+if (typeof DB.settings.lastBackupAt !== 'number') DB.settings.lastBackupAt = 0;
+if (typeof DB.settings.lastBackupRecordCount !== 'number') DB.settings.lastBackupRecordCount = 0;
+if (typeof DB.settings.askReps !== 'boolean') DB.settings.askReps = true;
+if (typeof DB.settings.showActivityCalendar !== 'boolean') DB.settings.showActivityCalendar = true;
+if (!DB.settings.accordions || typeof DB.settings.accordions !== 'object') DB.settings.accordions = {};
+// Hidden menu items: only these keys are allowed
+const HIDEABLE_MENU_KEYS = ['templates','programs','activity','history'];
+if (!Array.isArray(DB.settings.hiddenMenuItems)) DB.settings.hiddenMenuItems = [];
+DB.settings.hiddenMenuItems = DB.settings.hiddenMenuItems.filter(k => HIDEABLE_MENU_KEYS.includes(k));
+
+function isVoiceMode() { return DB.settings.soundMode === 'voice'; }
+function isBeepMode() { return DB.settings.soundMode !== 'voice'; }
+function getAutoAdvanceDelay() { return isVoiceMode() ? 1500 : 900; }
+
+function getEffectiveSetting(key) {
+    if (runState && runState.workout && runState.workout.settings) {
+        const v = runState.workout.settings[key];
+        if (v !== undefined && v !== null) return v;
+    }
+    return DB.settings[key];
+}
+
+function hasOpenOverlay() { return !!document.querySelector('.bottom-sheet-overlay'); }
+
+/* ===================== HOME MENU VISIBILITY ===================== */
+function applyHomeMenuVisibility() {
+    const map = {
+        templates: 'menu-btn-templates',
+        programs: 'menu-btn-programs',
+        activity: 'menu-btn-activity',
+        history: 'menu-btn-history'
+    };
+    Object.keys(map).forEach(k => {
+        const el = document.getElementById(map[k]);
+        if (!el) return;
+        el.style.display = DB.settings.hiddenMenuItems.includes(k) ? 'none' : '';
+    });
+}
+
+/* ===================== CUSTOM CONFIRM (queue) ===================== */
+const customConfirmQueue = [];
+let customConfirmBusy = false;
+
+function customConfirm(message, options = {}) {
+    return new Promise((resolve) => {
+        customConfirmQueue.push({ message, options, resolve });
+        if (!customConfirmBusy) processNextConfirm();
+    });
+}
+
+function processNextConfirm() {
+    if (customConfirmBusy || customConfirmQueue.length === 0) return;
+    const item = customConfirmQueue.shift();
+    customConfirmBusy = true;
+    const okText = item.options.okText || 'OK';
+    const cancelText = item.options.cancelText || 'Отмена';
+    const isDanger = item.options.danger !== false;
+    const title = item.options.title || 'Подтверждение';
+    const overlay = document.createElement('div');
+    overlay.className = 'bottom-sheet-overlay';
+    overlay.setAttribute('tabindex', '-1');
+    overlay.innerHTML = `<div class="bottom-sheet">
+        <div class="sheet-grip"></div>
+        <h2 class="sheet-title">${escapeHtml(title)}</h2>
+        <div style="text-align:center; white-space:pre-line; padding: 4px 8px; line-height: 1.5; color: var(--text);">${escapeHtml(item.message)}</div>
+        <button class="btn ${isDanger ? 'danger' : 'accent'}" id="cc-ok">${escapeHtml(okText)}</button>
+        <button class="btn ghost" id="cc-cancel">${escapeHtml(cancelText)}</button>
+    </div>`;
+    document.body.appendChild(overlay);
+    const finish = (r) => {
+        try { overlay.remove(); } catch(e) {}
+        customConfirmBusy = false;
+        item.resolve(r);
+        setTimeout(() => processNextConfirm(), 50);
+    };
+    overlay.querySelector('#cc-ok').onclick = () => finish(true);
+    overlay.querySelector('#cc-cancel').onclick = () => finish(false);
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) finish(false); });
+    overlay.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); finish(true); }
+        else if (e.key === 'Escape') { e.preventDefault(); finish(false); }
+    });
+}
+
+/* ===================== ASK REPS (queue) ===================== */
+const askRepsQueue = [];
+let askRepsBusy = false;
+
+function askRepsCount(defaultValue) {
+    return new Promise((resolve) => {
+        askRepsQueue.push({ defaultValue, resolve });
+        if (!askRepsBusy) processNextAskReps();
+    });
+}
+
+function processNextAskReps() {
+    if (askRepsBusy || askRepsQueue.length === 0) return;
+    const item = askRepsQueue.shift();
+    askRepsBusy = true;
+    const def = Math.max(0, parseInt(item.defaultValue) || 0);
+    const overlay = document.createElement('div');
+    overlay.className = 'bottom-sheet-overlay';
+    overlay.innerHTML = `<div class="bottom-sheet">
+        <div class="sheet-grip"></div>
+        <h2 class="sheet-title">Сколько раз сделал?</h2>
+        <div class="sheet-info"><div class="sheet-info-details">Цель: ${def} ${pluralReps(def)}</div></div>
+        <div class="reps-input-row">
+            <button class="btn small ghost" data-d="-3">-3</button>
+            <input type="number" id="ask-reps-input" class="input" min="0" max="999" step="1" value="${def}">
+            <button class="btn small ghost" data-d="+3">+3</button>
+        </div>
+        <div class="reps-stepper">
+            <button class="btn small ghost" data-d="-1">-1</button>
+            <button class="btn small ghost" data-d="+1">+1</button>
+        </div>
+        <button class="btn accent" id="ask-reps-save">✅ Сохранить</button>
+        <button class="btn ghost" id="ask-reps-cancel">Отмена</button>
+    </div>`;
+    document.body.appendChild(overlay);
+    const input = overlay.querySelector('#ask-reps-input');
+    setTimeout(() => { try { input.focus(); input.select(); } catch(e) {} }, 100);
+    overlay.querySelectorAll('[data-d]').forEach(btn => {
+        btn.onclick = () => {
+            const d = parseInt(btn.dataset.d);
+            input.value = Math.max(0, Math.min(999, (parseInt(input.value) || 0) + d));
+        };
+    });
+    const finish = (val) => {
+        try { overlay.remove(); } catch(e) {}
+        askRepsBusy = false;
+        item.resolve(val);
+        setTimeout(() => processNextAskReps(), 50);
+    };
+    overlay.querySelector('#ask-reps-save').onclick = () => finish(Math.max(0, Math.min(999, parseInt(input.value) || 0)));
+    overlay.querySelector('#ask-reps-cancel').onclick = () => finish(null);
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) finish(null); });
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); overlay.querySelector('#ask-reps-save').click(); }
+        if (e.key === 'Escape') { e.preventDefault(); finish(null); }
+    });
+}
+
+/* ===================== SHARE FALLBACK ===================== */
+function showShareFallback(text) {
+    const ov = document.createElement('div');
+    ov.className = 'bottom-sheet-overlay';
+    ov.innerHTML = `<div class="bottom-sheet">
+        <div class="sheet-grip"></div>
+        <h2 class="sheet-title">Скопировать текст</h2>
+        <textarea class="input share-textarea" readonly>${escapeHtml(text)}</textarea>
+        <button class="btn accent" id="share-copy-btn">📋 Копировать</button>
+        <button class="btn ghost" id="share-close-btn">Закрыть</button>
+    </div>`;
+    document.body.appendChild(ov);
+    const ta = ov.querySelector('textarea');
+    ov.querySelector('#share-copy-btn').onclick = () => {
+        try {
+            ta.select();
+            document.execCommand('copy');
+            ov.querySelector('#share-copy-btn').textContent = '✅ Скопировано';
+        } catch(e) {
+            try { navigator.clipboard.writeText(text); ov.querySelector('#share-copy-btn').textContent = '✅ Скопировано'; } catch(err) {}
+        }
+    };
+    ov.querySelector('#share-close-btn').onclick = () => ov.remove();
+    ov.addEventListener('click', (e) => { if (e.target === ov) ov.remove(); });
+}
+
+/* ===================== PRUNE / QUOTA ===================== */
+const HISTORY_PRUNE_LIMIT = 500;
+const HISTORY_HARD_LIMIT = 500;
+
+function pruneHistory(maxRecords = HISTORY_PRUNE_LIMIT) {
+    if (!Array.isArray(DB.history)) return 0;
+    if (DB.history.length <= maxRecords) return 0;
+    const sorted = [...DB.history].sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
+    const removed = DB.history.length - maxRecords;
+    DB.history = sorted.slice(0, maxRecords);
+    return removed;
+}
+
+function saveDBWithQuotaRecovery(key) {
+    const map = { workouts: 'ft_workouts', templates: 'ft_templates', programs: 'ft_programs', history: 'ft_history', settings: 'ft_settings' };
+    const storageKey = map[key];
+    if (!storageKey) return;
+    const ok = Storage.set(storageKey, DB[key]);
+    if (ok) return;
+    const removed = pruneHistory(200);
+    if (removed > 0) {
+        Storage.set('ft_history', DB.history);
+        const ok2 = Storage.set(storageKey, DB[key]);
+        if (ok2) { showToast(`💾 Мало места. Удалено ${removed} старых записей.`, 4000); return; }
+    }
+    const removed2 = pruneHistory(50);
+    if (removed2 > 0) {
+        Storage.set('ft_history', DB.history);
+        const ok3 = Storage.set(storageKey, DB[key]);
+        if (ok3) { showToast(`💾 Мало места. Удалено ${removed + removed2} старых записей.`, 4000); return; }
+    }
+    showToast('⚠️ Не удалось сохранить. Освободите место в браузере.', 5000);
+}
+
+function saveDB(key) { saveDBWithQuotaRecovery(key); }
+
+/* ===================== ВАЛИДАЦИЯ ===================== */
+function validateAndMigrateDB() {
+    if (!Array.isArray(DB.workouts)) DB.workouts = [];
+    if (!Array.isArray(DB.templates)) DB.templates = [];
+    if (!Array.isArray(DB.programs)) DB.programs = [];
+    if (!Array.isArray(DB.history)) DB.history = [];
+    if (!DB.settings || typeof DB.settings !== 'object' || Array.isArray(DB.settings)) DB.settings = {};
+
+    DB.workouts = DB.workouts.filter(w => w && typeof w === 'object' && w.id && Array.isArray(w.exercises));
+    DB.templates = DB.templates.filter(t => t && typeof t === 'object' && t.id && Array.isArray(t.exercises));
+    DB.programs = DB.programs.filter(p => p && typeof p === 'object' && p.id);
+    DB.history = DB.history.filter(h => h && typeof h === 'object' && h.id && h.startTime);
+
+    let migrated = false;
+
+    if (DB.history.length > HISTORY_HARD_LIMIT) {
+        const removed = pruneHistory(HISTORY_HARD_LIMIT);
+        if (removed > 0) {
+            saveDB('history');
+            setTimeout(() => showToast(`📜 История обрезана до ${HISTORY_HARD_LIMIT} записей`), 500);
+        }
+    }
+
+    const migrateExercisesList = (list) => {
+        const hasKind = list.some(e => e && (e.kind === 'exercise' || e.kind === 'rest' || e.kind === 'warmup'));
+        if (hasKind) {
+            return list.map(e => {
+                if (!e || typeof e !== 'object') return null;
+                if (e.kind === 'rest') {
+                    return {
+                        kind: 'rest',
+                        restType: e.restType === 'water' ? 'water' : 'rest',
+                        duration: (typeof e.duration === 'number') ? e.duration : (e.duration === null ? null : 60),
+                        notes: e.notes || ''
+                    };
+                }
+                if (e.kind === 'warmup') {
+                    const mode = e.mode === 'free' ? 'free' : 'timer';
+                    if (mode === 'free') return { kind: 'warmup', name: 'Разминка', duration: null, mode: 'free' };
+                    let dur = (typeof e.duration === 'number') ? e.duration : 180;
+                    if (dur < 5) dur = 5;
+                    return { kind: 'warmup', name: 'Разминка', duration: dur, mode: 'timer' };
+                }
+                const ex = {
+                    kind: 'exercise',
+                    name: e.name || '',
+                    type: e.type === 'reps' || e.type === 'sets' ? e.type : 'time',
+                    notes: e.notes || ''
+                };
+                if (ex.type === 'reps') ex.targetReps = e.targetReps || 10;
+                if (ex.type === 'sets') {
+                    ex.setsCount = e.setsCount || 3;
+                    ex.setMode = e.setMode === 'time' ? 'time' : 'reps';
+                    if (ex.setMode === 'reps') ex.targetReps = e.targetReps || 10;
+                    else ex.setDuration = e.setDuration || 45;
+                    ex.restBetweenSets = e.restBetweenSets || 60;
+                }
+                return ex;
+            }).filter(Boolean);
+        }
+
+        const result = [];
+        list.forEach((ex, i) => {
+            if (!ex || typeof ex !== 'object') return;
+            const next = list[i + 1];
+            const isLast = i === list.length - 1;
+            if (ex.waterBreak) {
+                const dur = isLast ? null : (ex.restSeconds || 60);
+                result.push({ kind: 'rest', restType: 'water', duration: dur, notes: ex.notes || '' });
+                return;
+            }
+            const newEx = {
+                kind: 'exercise',
+                name: ex.name || '',
+                type: ex.type === 'reps' || ex.type === 'sets' ? ex.type : 'time',
+                notes: ex.notes || ''
+            };
+            if (newEx.type === 'reps') newEx.targetReps = ex.targetReps || 10;
+            if (newEx.type === 'sets') {
+                newEx.setsCount = ex.setsCount || 3;
+                newEx.setMode = ex.setMode === 'time' ? 'time' : 'reps';
+                if (newEx.setMode === 'reps') newEx.targetReps = ex.targetReps || 10;
+                else newEx.setDuration = ex.setDuration || 45;
+                newEx.restBetweenSets = ex.restBetweenSets || 60;
+            }
+            result.push(newEx);
+            const nextIsWater = next && next.waterBreak;
+            if (!isLast && ex.restSeconds > 0 && !nextIsWater) {
+                result.push({ kind: 'rest', restType: 'rest', duration: ex.restSeconds, notes: '' });
+            }
+        });
+        return result;
+    };
+
+    [...DB.workouts, ...DB.templates].forEach(w => {
+        const before = JSON.stringify(w.exercises);
+        w.exercises = migrateExercisesList(w.exercises);
+        const after = JSON.stringify(w.exercises);
+        if (before !== after) migrated = true;
+    });
+
+    DB.programs.forEach(p => {
+        if (!p.weeks || !Array.isArray(p.weeks) || p.weeks.length === 0) {
+            const oldDays = p.days || {};
+            const newDays = {};
+            DAY_KEYS.forEach(k => { newDays[k] = Array.isArray(oldDays[k]) ? oldDays[k] : (oldDays[k] ? [oldDays[k]] : []); });
+            const now = new Date();
+            const monday = startOfWeekMonday(now);
+            p.weeks = [{ startDate: formatDateKey(monday), days: newDays }];
+            delete p.days;
+            migrated = true;
+        } else {
+            p.weeks.forEach(w => {
+                if (!w || typeof w !== 'object') { migrated = true; return; }
+                if (!w.startDate || typeof w.startDate !== 'string' || !w.startDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                    w.startDate = formatDateKey(startOfWeekMonday(new Date()));
+                    migrated = true;
+                }
+                if (!w.days || typeof w.days !== 'object') {
+                    w.days = { mon:[], tue:[], wed:[], thu:[], fri:[], sat:[], sun:[] };
+                    migrated = true;
+                } else {
+                    DAY_KEYS.forEach(k => {
+                        if (!Array.isArray(w.days[k])) {
+                            w.days[k] = w.days[k] ? [w.days[k]] : [];
+                            migrated = true;
+                        }
+                    });
+                }
+            });
+        }
+    });
+
+    if (migrated) {
+        saveDB('workouts');
+        saveDB('templates');
+        saveDB('programs');
+    }
+}
+
+/* ===================== ХЕЛПЕРЫ ===================== */
+const DAY_KEYS = ['mon','tue','wed','thu','fri','sat','sun'];
+const DAY_NAMES_SHORT = { mon:'Пн', tue:'Вт', wed:'Ср', thu:'Чт', fri:'Пт', sat:'Сб', sun:'Вс' };
+const DAY_NAMES_FULL = { mon:'Понедельник', tue:'Вторник', wed:'Среда', thu:'Четверг', fri:'Пятница', sat:'Суббота', sun:'Воскресенье' };
+
+function getTodayKey() { const d = new Date().getDay(); return ['sun','mon','tue','wed','thu','fri','sat'][d]; }
+function formatDateKey(d) { const y = d.getFullYear(); const m = String(d.getMonth() + 1).padStart(2, '0'); const dd = String(d.getDate()).padStart(2, '0'); return `${y}-${m}-${dd}`; }
+function parseDateKey(key) {
+    if (typeof key !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(key)) {
+        console.warn('[parseDateKey] invalid input:', key);
+        return new Date();
+    }
+    const [y, m, d] = key.split('-').map(Number);
+    const date = new Date(y, m - 1, d);
+    if (isNaN(date.getTime())) return new Date();
+    return date;
+}
+function addDays(date, n) { const d = new Date(date); d.setDate(d.getDate() + n); return d; }
+function startOfWeekMonday(date) { const d = new Date(date); d.setHours(0,0,0,0); const day = d.getDay(); const diff = (day === 0 ? -6 : 1 - day); d.setDate(d.getDate() + diff); return d; }
+function formatWeekRange(startKey) {
+    const start = parseDateKey(startKey); const end = addDays(start, 6);
+    const months = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+    if (start.getMonth() === end.getMonth()) return `${start.getDate()}–${end.getDate()} ${months[end.getMonth()]}`;
+    return `${start.getDate()} ${months[start.getMonth()]} – ${end.getDate()} ${months[end.getMonth()]}`;
+}
+function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function formatTime(s) {
+    s = Math.max(0, Math.floor(s || 0));
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const sec = s % 60;
+    if (h > 0) return `${h}:${m.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}`;
+    return `${m.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}`;
+}
+function formatClock(d) { return d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0'); }
+function formatDate(d) { const months = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек']; return `${d.getDate()} ${months[d.getMonth()]}, ${formatClock(d)}`; }
+
+function pluralDays(n) { const m10 = n % 10, m100 = n % 100; if (m10 === 1 && m100 !== 11) return 'день'; if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return 'дня'; return 'дней'; }
+function pluralWeeks(n) { const m10 = n % 10, m100 = n % 100; if (m10 === 1 && m100 !== 11) return 'неделя'; if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return 'недели'; return 'недель'; }
+function pluralApproaches(n) { const m10 = n % 10, m100 = n % 100; if (m10 === 1 && m100 !== 11) return 'подход'; if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return 'подхода'; return 'подходов'; }
+function pluralReps(n) { const m10 = n % 10, m100 = n % 100; if (m10 === 1 && m100 !== 11) return 'повтор'; if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return 'повтора'; return 'повторов'; }
+function pluralMinutes(n) { const m10 = n % 10, m100 = n % 100; if (m10 === 1 && m100 !== 11) return 'минута'; if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return 'минуты'; return 'минут'; }
+function pluralWorkouts(n) { const m10 = n % 10, m100 = n % 100; if (m10 === 1 && m100 !== 11) return 'тренировка'; if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return 'тренировки'; return 'тренировок'; }
+
+function getExerciseNumber(exercises, i) { let n = 0; for (let j = 0; j <= i; j++) if (exercises[j] && exercises[j].kind === 'exercise') n++; return n; }
+function getTotalExerciseCount(exercises) { return exercises.filter(e => e && e.kind === 'exercise').length; }
+function getTotalRestTime(exercises) { return exercises.filter(e => e && e.kind === 'rest' && e.duration).reduce((s, e) => s + (e.duration || 0), 0); }
+function findPrevExerciseIndex(exercises, fromIndex) {
+    for (let i = fromIndex - 1; i >= 0; i--) if (exercises[i] && exercises[i].kind === 'exercise') return i;
+    return -1;
+}
+function findNextElement(exercises, fromIndex) {
+    for (let i = fromIndex + 1; i < exercises.length; i++) if (exercises[i]) return { el: exercises[i], idx: i };
+    return null;
+}
+
+function estimateWorkoutDuration(w) {
+    if (!w || !Array.isArray(w.exercises)) return 0;
+    let total = 0;
+    w.exercises.forEach(el => {
+        if (!el) return;
+        if (el.kind === 'warmup') {
+            if (el.mode === 'free') return;
+            total += (el.duration || 180);
+            return;
+        }
+        if (el.kind === 'rest') {
+            if (el.duration) total += el.duration;
+        } else if (el.kind === 'exercise') {
+            if (el.type === 'time') total += (el.estimatedDuration || 60);
+            else if (el.type === 'reps') total += (el.targetReps || 10) * 3;
+            else if (el.type === 'sets') {
+                const sets = el.setsCount || 3;
+                const perSet = el.setMode === 'time' ? (el.setDuration || 45) : (el.targetReps || 10) * 3;
+                total += sets * perSet + (sets - 1) * (el.restBetweenSets || 60);
+            }
+        }
+    });
+    return total;
+}
+
+const BUILTIN_TEMPLATES = [
+    { builtin: true, id: 'bt_1', name: 'Пресс 10 минут', autoStart: true, exercises: [
+        { kind: 'exercise', name: 'Скручивания', type: 'sets', setsCount: 3, setMode: 'reps', targetReps: 15, restBetweenSets: 30, notes: '' },
+        { kind: 'rest', restType: 'rest', duration: 30, notes: '' },
+        { kind: 'exercise', name: 'Подъём ног', type: 'sets', setsCount: 3, setMode: 'reps', targetReps: 12, restBetweenSets: 30, notes: '' },
+        { kind: 'rest', restType: 'rest', duration: 30, notes: '' },
+        { kind: 'exercise', name: 'Планка', type: 'sets', setsCount: 2, setMode: 'time', setDuration: 45, restBetweenSets: 30, notes: '' },
+        { kind: 'rest', restType: 'rest', duration: 30, notes: '' },
+        { kind: 'exercise', name: 'Велосипед', type: 'reps', targetReps: 20, notes: '' }
+    ]},
+    { builtin: true, id: 'bt_2', name: 'Отжимания прогрессия', autoStart: true, exercises: [
+        { kind: 'exercise', name: 'Отжимания классические', type: 'sets', setsCount: 3, setMode: 'reps', targetReps: 12, restBetweenSets: 60, notes: '' },
+        { kind: 'rest', restType: 'rest', duration: 60, notes: '' },
+        { kind: 'exercise', name: 'Отжимания узкие', type: 'sets', setsCount: 3, setMode: 'reps', targetReps: 10, restBetweenSets: 60, notes: '' },
+        { kind: 'rest', restType: 'rest', duration: 60, notes: '' },
+        { kind: 'exercise', name: 'Отжимания широкие', type: 'sets', setsCount: 3, setMode: 'reps', targetReps: 10, restBetweenSets: 60, notes: '' },
+        { kind: 'rest', restType: 'rest', duration: 60, notes: '' },
+        { kind: 'exercise', name: 'Алмазные', type: 'reps', targetReps: 8, notes: '' }
+    ]},
+    { builtin: true, id: 'bt_3', name: 'Планка Challenge', autoStart: false, exercises: [
+        { kind: 'warmup', name: 'Разминка', duration: 180, mode: 'timer' },
+        { kind: 'exercise', name: 'Планка на локтях', type: 'time', notes: 'Максимум' },
+        { kind: 'rest', restType: 'rest', duration: 60, notes: '' },
+        { kind: 'exercise', name: 'Планка на руках', type: 'time', notes: '' },
+        { kind: 'rest', restType: 'rest', duration: 60, notes: '' },
+        { kind: 'exercise', name: 'Боковая планка (лево)', type: 'time', notes: '' },
+        { kind: 'rest', restType: 'rest', duration: 45, notes: '' },
+        { kind: 'exercise', name: 'Боковая планка (право)', type: 'time', notes: '' }
+    ]},
+    { builtin: true, id: 'bt_4', name: 'Растяжка', autoStart: false, exercises: [
+        { kind: 'warmup', name: 'Разминка', duration: null, mode: 'free' },
+        { kind: 'exercise', name: 'Наклон к ногам', type: 'time', notes: '30 сек' },
+        { kind: 'rest', restType: 'rest', duration: 90, notes: '' },
+        { kind: 'exercise', name: 'Бабочка', type: 'time', notes: '' },
+        { kind: 'rest', restType: 'rest', duration: 90, notes: '' },
+        { kind: 'exercise', name: 'Поза ребёнка', type: 'time', notes: '' },
+        { kind: 'rest', restType: 'rest', duration: 120, notes: '' },
+        { kind: 'exercise', name: 'Кошка-корова', type: 'time', notes: '' },
+        { kind: 'rest', restType: 'water', duration: null, notes: '' }
+    ]}
+];
+
+try { validateAndMigrateDB(); } catch (e) { console.error('[validateDB]', e); }
+
+/* ===================== ТЕМА ===================== */
+function applyTheme() {
+    try {
+        const mode = DB.settings.themeMode || 'auto';
+        let effective = mode;
+        if (mode === 'auto') effective = (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
+        document.body.classList.toggle('light', effective === 'light');
+        const meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.setAttribute('content', effective === 'light' ? '#f4f4f7' : '#0f0f12');
+    } catch(e) {}
+}
+function renderThemeModeOptions() {
+    const c = document.getElementById('theme-mode-options');
+    if (!c) return;
+    const modes = [
+        { v: 'auto', name: '🌗 Авто', desc: 'Как в системе' },
+        { v: 'light', name: '☀️ Светлая', desc: 'Всегда светлая' },
+        { v: 'dark', name: '🌙 Тёмная', desc: 'Всегда тёмная' }
+    ];
+    const cur = DB.settings.themeMode || 'auto';
+    c.innerHTML = modes.map(m => `<div class="sound-option ${cur === m.v ? 'selected' : ''}" onclick="selectThemeMode('${m.v}')">
+        <div class="radio"></div><div class="sound-info"><div class="sound-name">${m.name}</div><div class="sound-desc">${m.desc}</div></div>
+    </div>`).join('');
+}
+function selectThemeMode(mode) {
+    if (!['auto','light','dark'].includes(mode)) return;
+    DB.settings.themeMode = mode;
+    saveDB('settings'); applyTheme(); renderThemeModeOptions();
+}
+
+/* ===================== ГОЛОС ===================== */
+let availableVoices = [];
+function refreshVoices() {
+    if (!('speechSynthesis' in window)) return;
+    try { availableVoices = speechSynthesis.getVoices() || []; } catch(e) { availableVoices = []; }
+    renderVoiceOptions();
+}
+function renderVoiceOptions() {
+    const c = document.getElementById('voice-options');
+    if (!c) return;
+    const ru = availableVoices.filter(v => (v.lang || '').toLowerCase().startsWith('ru'));
+    let html = `<div class="sound-option ${!DB.settings.voiceURI ? 'selected' : ''}" onclick="selectVoice(null)">
+        <div class="radio"></div><div class="sound-info"><div class="sound-name">По умолчанию</div><div class="sound-desc">Системный голос</div></div>
+    </div>`;
+    if (ru.length === 0) html += `<div style="color:var(--muted); font-size:0.85rem; padding:10px; text-align:center;">Русские голоса не найдены</div>`;
+    else ru.forEach(v => {
+        const sel = DB.settings.voiceURI === v.voiceURI;
+        const safe = String(v.voiceURI).replace(/'/g, '&#39;');
+        html += `<div class="sound-option ${sel ? 'selected' : ''}" onclick="selectVoice('${safe}')">
+            <div class="radio"></div>
+            <div class="sound-info"><div class="sound-name">${escapeHtml(v.name || 'Голос')}</div><div class="sound-desc">${v.lang}</div></div>
+            <button class="preview-btn" onclick="event.stopPropagation(); previewVoice('${safe}')" aria-label="Прослушать">▶</button>
+        </div>`;
+    });
+    c.innerHTML = html;
+}
+function selectVoice(uri) { DB.settings.voiceURI = uri || null; saveDB('settings'); renderVoiceOptions(); if (isVoiceMode()) speakCritical('голос выбран'); }
+function previewVoice(uri) {
+    try {
+        speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance('Приготовься. Одна минута');
+        u.lang = 'ru-RU'; u.rate = DB.settings.voiceRate || 1;
+        const v = availableVoices.find(x => x.voiceURI === uri);
+        if (v) u.voice = v;
+        speechSynthesis.speak(u);
+    } catch(e) {}
+}
+function renderVoiceRateOptions() {
+    const c = document.getElementById('voice-rate-options');
+    if (!c) return;
+    const rates = [
+        { v: 0.8, name: '🐢 Медленная', desc: 'Понятнее' },
+        { v: 1.0, name: '🚶 Обычная', desc: 'Как в системе' },
+        { v: 1.3, name: '🐇 Быстрая', desc: 'Меньше пауз' }
+    ];
+    const cur = DB.settings.voiceRate || 1;
+    c.innerHTML = rates.map(r => `<div class="sound-option ${cur === r.v ? 'selected' : ''}" onclick="selectVoiceRate(${r.v})">
+        <div class="radio"></div><div class="sound-info"><div class="sound-name">${r.name}</div><div class="sound-desc">${r.desc}</div></div>
+    </div>`).join('');
+}
+function selectVoiceRate(v) { DB.settings.voiceRate = v; saveDB('settings'); renderVoiceRateOptions(); if (isVoiceMode()) speakCritical('скорость изменена'); }
+
+/* ===================== EXIT PROTECTION ===================== */
+let exitProtectionActive = false;
+function enableExitProtection() { if (exitProtectionActive) return; exitProtectionActive = true; try { history.pushState({ ftProtected: true, ts: Date.now() }, '', location.href); } catch(e) {} }
+function disableExitProtection() { exitProtectionActive = false; }
+window.addEventListener('popstate', async () => {
+    if (!exitProtectionActive) return;
+    if (!runState || runState.phase === 'finish') { disableExitProtection(); return; }
+    const exited = await confirmExit();
+    if (!exited) { try { history.pushState({ ftProtected: true, ts: Date.now() }, '', location.href); } catch(err) {} }
+});
+window.addEventListener('beforeunload', (e) => {
+    if (!exitProtectionActive) return;
+    if (!runState || runState.phase === 'finish') return;
+    e.preventDefault(); e.returnValue = 'Тренировка не завершена. Выйти?';
+    return e.returnValue;
 });
 
-self.addEventListener('activate', (event) => {
-    event.waitUntil(
-        caches.keys()
-            .then((keys) => Promise.all(
-                keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
-            ))
-            .then(() => self.clients.claim())
-    );
-});
+/* ===================== AUDIO ===================== */
+let audioCtx = null;
+async function getAudioCtx() {
+    try {
+        if (!audioCtx || audioCtx.state === 'closed') audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended' || audioCtx.state === 'interrupted') { try { await audioCtx.resume(); } catch(e) {} }
+    } catch(e) {}
+    return audioCtx;
+}
+async function unlockAudio() {
+    try {
+        if (audioCtx && audioCtx.state === 'closed') audioCtx = null;
+        const ctx = await getAudioCtx();
+        if (ctx && (ctx.state === 'suspended' || ctx.state === 'interrupted')) { try { await ctx.resume(); } catch(e) {} }
+    } catch(e) {}
+}
+function applyVoiceToUtterance(u) {
+    try {
+        u.lang = 'ru-RU'; u.rate = DB.settings.voiceRate || 1; u.volume = 1;
+        if (DB.settings.voiceURI) {
+            const v = (availableVoices.length ? availableVoices : (speechSynthesis.getVoices() || [])).find(x => x.voiceURI === DB.settings.voiceURI);
+            if (v) u.voice = v;
+        }
+    } catch(e) {}
+}
+function speak(text) {
+    if (!isVoiceMode() || !('speechSynthesis' in window)) return;
+    try {
+        const u = new SpeechSynthesisUtterance(text);
+        applyVoiceToUtterance(u);
+        speechSynthesis.cancel(); speechSynthesis.speak(u);
+    } catch(e) {}
+}
+function speakCritical(text) {
+    if (!isVoiceMode() || !('speechSynthesis' in window)) return;
+    try {
+        const u = new SpeechSynthesisUtterance(text);
+        applyVoiceToUtterance(u);
+        u.rate = (DB.settings.voiceRate || 1) * 1.1;
+        speechSynthesis.speak(u);
+    } catch(e) {}
+}
+function cleanButtonText(text) {
+    if (!text) return '';
+    return String(text).replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}\u{2300}-\u{23FF}\u{2190}-\u{21FF}\u{2900}-\u{297F}]/gu, '').replace(/[^\p{L}\p{N}\s.,!?+\-]/gu, '').replace(/\s+/g, ' ').trim();
+}
+function speakButton(text) {
+    if (!DB.settings.announceButtons || !isVoiceMode() || !('speechSynthesis' in window)) return;
+    const clean = cleanButtonText(text);
+    if (!clean) return;
+    try {
+        speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(clean.substring(0, 50));
+        applyVoiceToUtterance(u);
+        u.rate = Math.min((DB.settings.voiceRate || 1) * 1.25, 2);
+        speechSynthesis.speak(u);
+    } catch(e) {}
+}
+document.addEventListener('click', (e) => {
+    if (!DB.settings.announceButtons || !isVoiceMode()) return;
+    if (!runState || runState.phase === 'finish') return;
+    const runScreen = document.getElementById('screen-run');
+    if (!runScreen || !runScreen.classList.contains('active')) return;
+    try {
+        const btn = e.target.closest('button, .menu-btn, .sound-option, .tab');
+        if (!btn) return;
+        if (!btn.closest('#screen-run')) return;
+        if (btn.classList.contains('sheet-btn-cancel')) return;
+        if (btn.classList.contains('icon-btn')) { const t = btn.getAttribute('title') || btn.getAttribute('aria-label') || ''; if (t) speakButton(t); return; }
+        let txt = (btn.innerText || btn.textContent || '').trim();
+        if (!txt) { const t = btn.getAttribute('title') || btn.getAttribute('aria-label') || ''; if (t) txt = t; }
+        if (txt) speakButton(txt);
+    } catch(err) {}
+}, true);
 
-self.addEventListener('fetch', (event) => {
-    const req = event.request;
-    if (req.method !== 'GET') return;
-    let url;
-    try { url = new URL(req.url); } catch (e) { return; }
-    if (url.origin !== location.origin) return;
+async function playBeep(freq = 800, duration = 0.3) {
+    if (!isBeepMode()) return;
+    try {
+        const ctx = await getAudioCtx();
+        if (!ctx || ctx.state !== 'running') return;
+        const osc = ctx.createOscillator(); const gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.3, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
+        osc.start(); osc.stop(ctx.currentTime + duration);
+    } catch(e) {}
+}
+async function playEndBeep() {
+    if (!isBeepMode()) return;
+    try {
+        const ctx = await getAudioCtx();
+        if (!ctx || ctx.state !== 'running') return;
+        const sound = ALARM_SOUNDS[DB.settings.alarmSound] || ALARM_SOUNDS.alarm;
+        sound.playOnce(ctx);
+    } catch(e) {}
+}
+function announcePause() { if (isBeepMode()) playBeep(400, 0.15); }
+function announceResume() { if (isBeepMode()) playBeep(620, 0.15); }
+function announceFinalCount(n) { if (isVoiceMode()) speakCritical(String(n)); else playBeep(600, 0.1); }
 
-    // Навигация / HTML — network-first, fallback кэш
-    if (req.mode === 'navigate' || (req.headers.get('accept') || '').includes('text/html')) {
-        event.respondWith(
-            fetch(req)
-                .then((res) => {
-                    // ИСПРАВЛЕНО: кэшируем только успешные ответы (2xx).
-                    // Раньше 404/500 от сервера тоже попадали в кэш и потом
-                    // показывались офлайн вместо приложения.
-                    if (res && res.ok) {
-                        const copy = res.clone();
-                        caches.open(CACHE_NAME).then((c) => c.put(req, copy)).catch(() => {});
-                    }
-                    return res;
-                })
-                .catch(() => caches.match(req)
-                    .then((cached) => cached
-                        || caches.match('./index.html')
-                        .then((r) => r || caches.match('./'))
-                    )
-                )
-        );
+const ALARM_SOUNDS = {
+    classic: { name: 'Классический', desc: 'Один бип', playOnce: (ctx) => {
+        const osc = ctx.createOscillator(); const gain = ctx.createGain();
+        osc.type = 'sine'; osc.frequency.value = 880;
+        gain.gain.setValueAtTime(0.3, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.start(); osc.stop(ctx.currentTime + 0.3);
+    }, loopPattern: [{ type: 'beep', dur: 300, freq: 880, wave: 'sine' }, { type: 'silence', dur: 700 }] },
+    alarm: { name: 'Будильник', desc: 'Бип-бип', playOnce: (ctx) => {
+        [0, 0.2].forEach(o => {
+            const osc = ctx.createOscillator(); const gain = ctx.createGain();
+            osc.type = 'square'; osc.frequency.value = 650;
+            gain.gain.setValueAtTime(0.15, ctx.currentTime + o);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + o + 0.18);
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.start(ctx.currentTime + o); osc.stop(ctx.currentTime + o + 0.18);
+        });
+    }, loopPattern: [{ type: 'beep', dur: 180, freq: 650, wave: 'square' }, { type: 'silence', dur: 100 }, { type: 'beep', dur: 180, freq: 650, wave: 'square' }, { type: 'silence', dur: 600 }] },
+    soft: { name: 'Мягкий', desc: 'Низкий тон', playOnce: (ctx) => {
+        const osc = ctx.createOscillator(); const gain = ctx.createGain();
+        osc.type = 'triangle'; osc.frequency.value = 440;
+        gain.gain.setValueAtTime(0.25, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.start(); osc.stop(ctx.currentTime + 0.5);
+    }, loopPattern: [{ type: 'beep', dur: 400, freq: 440, wave: 'triangle' }, { type: 'silence', dur: 800 }] },
+    siren: { name: 'Сирена', desc: 'Плавная', playOnce: (ctx) => {
+        const osc = ctx.createOscillator(); const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(500, ctx.currentTime);
+        osc.frequency.linearRampToValueAtTime(900, ctx.currentTime + 0.3);
+        osc.frequency.linearRampToValueAtTime(500, ctx.currentTime + 0.6);
+        gain.gain.setValueAtTime(0.25, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.6);
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.start(); osc.stop(ctx.currentTime + 0.6);
+    }, loopPattern: [{ type: 'siren', dur: 600, freqStart: 500, freqEnd: 900 }, { type: 'silence', dur: 600 }] }
+};
+
+const MINUTE_BEEP_INTERVALS = [{ v: 60, t: 'Каждую минуту' }, { v: 120, t: 'Каждые 2 мин' }, { v: 300, t: 'Каждые 5 мин' }, { v: 600, t: 'Каждые 10 мин' }];
+const COUNTDOWN_INTERVALS = [{ v: 3, t: '3 сек' }, { v: 5, t: '5 сек' }, { v: 15, t: '15 сек' }, { v: 20, t: '20 сек' }];
+
+/* ===================== NOTIFICATION PERMISSION ===================== */
+async function requestNotificationPermission() {
+    if (!('Notification' in window)) return false;
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    if (!isStandalone) return false;
+    if (Notification.permission === 'granted') return true;
+    if (Notification.permission === 'denied') return false;
+    try { return (await Notification.requestPermission()) === 'granted'; } catch(e) { return false; }
+}
+
+/* ===================== RUN STATE SAVE ===================== */
+const RUN_STATE_KEY = 'ft_run_state';
+let saveCounter = 0;
+let hiddenAt = 0;
+
+function saveRunState() {
+    if (!runState || runState.phase === 'finish') return;
+    let savedAtTs = Date.now();
+    if (document.visibilityState === 'hidden' && hiddenAt > 0) savedAtTs = hiddenAt;
+    const snapshot = {
+        workoutId: runState.workout.id, workoutName: runState.workout.name,
+        index: runState.index, phase: runState.phase,
+        currentSet: runState.currentSet || 1,
+        restPhase: runState.restPhase || null,
+        setResults: JSON.parse(JSON.stringify(runState.setResults || {})),
+        exerciseNotes: JSON.parse(JSON.stringify(runState.exerciseNotes || {})),
+        workoutNoteDraft: runState.workoutNoteDraft || '',
+        currentExerciseWorkTime: runState.currentExerciseWorkTime || 0,
+        lastSetElapsed: runState.lastSetElapsed || 0,
+        warmupFinished: !!runState.warmupFinished,
+        warmupBeepPlayed: !!runState.warmupBeepPlayed,
+        warmupMode: runState.warmupMode || 'timer',
+        warmupSeconds: runState.warmupSeconds || 0,
+        warmupDuration: runState.warmupDuration || 0,
+        warmupElapsedBeforePause: getCurrentElapsed('warmup'),
+        startTime: runState.startTime.getTime(),
+        totalWorkTime: runState.totalWorkTime,
+        exerciseTimes: [...runState.exerciseTimes],
+        lastFinishedWorkElapsed: runState.lastFinishedWorkElapsed,
+        workElapsedBeforePause: getCurrentElapsed('work'),
+        restElapsedBeforePause: getCurrentElapsed('rest'),
+        restDuration: runState.restDuration, restFinished: runState.restFinished,
+        restBannerMode: !!runState.restBannerMode,
+        savedAt: savedAtTs
+    };
+    try { localStorage.setItem(RUN_STATE_KEY, JSON.stringify(snapshot)); } catch(e) {}
+}
+function clearSavedRunState() { try { localStorage.removeItem(RUN_STATE_KEY); } catch(e) {} }
+function loadSavedRunState() { try { const r = localStorage.getItem(RUN_STATE_KEY); return r ? JSON.parse(r) : null; } catch(e) { return null; } }
+
+async function offerResumeSavedSession() {
+    const saved = loadSavedRunState();
+    if (!saved || !saved.workoutId || saved.phase === 'finish') return;
+    const workout = DB.workouts.find(w => w.id === saved.workoutId);
+    if (!workout) { clearSavedRunState(); return; }
+    if (!['ready','work','rest','countdown','warmup'].includes(saved.phase)) { clearSavedRunState(); return; }
+    const age = saved.savedAt ? ` (${formatTime(Math.floor((Date.now() - saved.savedAt)/1000))} назад)` : '';
+    const ok = await customConfirm(`Найдена незавершённая тренировка:\n«${saved.workoutName}»${age}\n\nПродолжить?`, {
+        title: 'Продолжить тренировку?',
+        okText: '▶ Продолжить',
+        cancelText: '🗑 Отменить тренировку',
+        danger: false
+    });
+    if (ok) restoreRunState(saved);
+    else clearSavedRunState();
+}
+
+function restoreRunState(saved) {
+    const workout = DB.workouts.find(w => w.id === saved.workoutId);
+    if (!workout) { clearSavedRunState(); return; }
+
+    let restoredPhase = saved.phase;
+    let restoredWarmupFinished = false;
+    let restoredWarmupPaused = false;
+
+    if (saved.phase === 'warmup') {
+        if (saved.warmupFinished) { restoredPhase = 'warmup'; restoredWarmupFinished = true; }
+        else { restoredPhase = 'warmup'; restoredWarmupFinished = false; restoredWarmupPaused = true; }
+    } else if (saved.phase === 'countdown') {
+        restoredPhase = 'ready';
+    }
+
+    runState = {
+        workout, index: saved.index || 0,
+        phase: restoredPhase,
+        currentSet: saved.currentSet || 1,
+        restPhase: saved.restPhase || null,
+        setResults: saved.setResults || {},
+        exerciseNotes: saved.exerciseNotes || {},
+        workoutNoteDraft: saved.workoutNoteDraft || '',
+        currentExerciseWorkTime: saved.currentExerciseWorkTime || 0,
+        lastSetElapsed: saved.lastSetElapsed || 0,
+        warmupFinished: restoredWarmupFinished,
+        warmupBeepPlayed: !!saved.warmupBeepPlayed,
+        warmupMode: saved.warmupMode || 'timer',
+        warmupSeconds: saved.warmupSeconds || 0,
+        warmupDuration: saved.warmupDuration || 0,
+        warmupElapsedBeforePause: saved.warmupElapsedBeforePause || 0,
+        warmupPaused: restoredWarmupPaused,
+        warmupStartTime: null,
+        countdownInterval: null, restOvertimeInterval: null, tickInterval: null,
+        workStartTime: null, workElapsedBeforePause: saved.workElapsedBeforePause || 0, workPaused: true,
+        restStartTime: null, restElapsedBeforePause: saved.restElapsedBeforePause || 0, restPaused: true,
+        restDuration: saved.restDuration || 0, restBeepPlayed: true,
+        restFinished: !!saved.restFinished, restOvertime: 0,
+        restBannerMode: !!saved.restBannerMode,
+        startTime: new Date(saved.startTime || Date.now()),
+        totalWorkTime: saved.totalWorkTime || 0,
+        lastFinishedWorkElapsed: saved.lastFinishedWorkElapsed || 0,
+        exerciseTimes: saved.exerciseTimes ? [...saved.exerciseTimes] : [],
+        lastBeepTargetTime: undefined, setFinishing: false, countdownValue: 3
+    };
+    document.getElementById('run-title').innerText = workout.name;
+    acquireWakeLock(); enableExitProtection();
+    renderRun();
+    if (runState.phase === 'rest' && !runState.restBannerMode) {
+        const timerEl = document.getElementById('rest-timer');
+        if (timerEl) {
+            if (runState.restFinished) timerEl.innerText = formatTime(getOvertime('rest'));
+            else timerEl.innerText = formatTime(getRemainingTime('rest'));
+        }
+    } else if (runState.phase === 'work') {
+        const timerEl = document.getElementById('work-timer');
+        if (timerEl) timerEl.innerText = formatTime(getCurrentElapsed('work'));
+    }
+    showScreen('screen-run');
+    ensureTicker();
+    showToast('▶ Тренировка на паузе. Нажмите «Продолжить»', 4000);
+}
+
+function showResumeDialog(saved, newWorkout) {
+    return new Promise((resolve) => {
+        const savedWorkout = DB.workouts.find(x => x.id === saved.workoutId);
+        const canResume = !!savedWorkout;
+        const overlay = document.createElement('div');
+        overlay.className = 'bottom-sheet-overlay';
+        overlay.innerHTML = `<div class="bottom-sheet">
+            <div class="sheet-grip"></div>
+            <div class="sheet-icon">${canResume ? '⏸️' : '🗑'}</div>
+            <h2 class="sheet-title">${canResume ? 'Незавершённая тренировка' : 'Тренировка удалена'}</h2>
+            <div class="sheet-info">
+                <div class="sheet-info-name">${escapeHtml(saved.workoutName || 'Тренировка')}</div>
+                <div class="sheet-info-details">${canResume ? `Элемент ${(saved.index||0) + 1}` : 'Нельзя продолжить'}</div>
+            </div>
+            <button class="btn accent resume-btn" ${!canResume ? 'disabled' : ''}>▶ Продолжить</button>
+            <button class="btn ghost resume-new">🆕 Начать новую</button>
+            <button class="btn sheet-btn-cancel resume-cancel">Отмена</button>
+        </div>`;
+        document.body.appendChild(overlay);
+        const close = (r) => {
+            const s = overlay.querySelector('.bottom-sheet');
+            if (s) s.classList.add('closing');
+            setTimeout(() => { try { overlay.remove(); } catch(e) {} resolve(r); }, 150);
+        };
+        overlay.querySelector('.resume-btn').onclick = () => { if (canResume) close('resume'); };
+        overlay.querySelector('.resume-new').onclick = () => close('new');
+        overlay.querySelector('.resume-cancel').onclick = () => close('cancel');
+        overlay.addEventListener('click', (e) => { if (e.target === overlay) close('cancel'); });
+    });
+}
+
+const REST_PRESETS = [
+    { v: 10, t: '10 сек' }, { v: 15, t: '15 сек' }, { v: 30, t: '30 сек' }, { v: 45, t: '45 сек' },
+    { v: 60, t: '1 мин' }, { v: 90, t: '1 мин 30 сек' }, { v: 120, t: '2 мин' }, { v: 180, t: '3 мин' }, { v: 300, t: '5 мин' }
+];
+
+let editingId = null, editingIsTemplate = false, editorExercises = [];
+let editingProgramId = null, editorProgram = null;
+let previewWorkoutId = null;
+let restAlarmTimeout = null, restVoiceTimeout = null;
+let previewCtx = null;
+let collapsedWeeks = {};
+
+/* ===================== WAKE LOCK ===================== */
+let wakeLockSentinel = null;
+async function acquireWakeLock() {
+    if (!DB.settings.wakeLock) return;
+    if (!('wakeLock' in navigator)) return;
+    try {
+        wakeLockSentinel = await navigator.wakeLock.request('screen');
+        wakeLockSentinel.addEventListener('release', () => { wakeLockSentinel = null; });
+    } catch(e) {}
+}
+function releaseWakeLock() {
+    if (wakeLockSentinel) {
+        try { wakeLockSentinel.release(); } catch(e) {}
+        wakeLockSentinel = null;
+    }
+}
+
+function playPatternStep(ctx, step) {
+    if (step.type === 'silence') return;
+    if (step.type === 'beep') {
+        const osc = ctx.createOscillator(); const gain = ctx.createGain();
+        osc.type = step.wave || 'sine'; osc.frequency.value = step.freq;
+        const dur = step.dur / 1000;
+        gain.gain.setValueAtTime(0.2, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + dur);
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.start(); osc.stop(ctx.currentTime + dur);
+    } else if (step.type === 'siren') {
+        const osc = ctx.createOscillator(); const gain = ctx.createGain();
+        osc.type = 'sine';
+        const dur = step.dur / 1000;
+        osc.frequency.setValueAtTime(step.freqStart, ctx.currentTime);
+        osc.frequency.linearRampToValueAtTime(step.freqEnd, ctx.currentTime + dur);
+        gain.gain.setValueAtTime(0.2, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + dur);
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.start(); osc.stop(ctx.currentTime + dur);
+    }
+}
+async function startRestAlarm() {
+    stopRestAlarm();
+    if (isBeepMode()) {
+        try {
+            const ctx = await getAudioCtx();
+            if (ctx && ctx.state === 'running') {
+                const sound = ALARM_SOUNDS[DB.settings.alarmSound] || ALARM_SOUNDS.alarm;
+                let idx = 0;
+                const next = () => { const s = sound.loopPattern[idx % sound.loopPattern.length]; playPatternStep(ctx, s); restAlarmTimeout = setTimeout(next, s.dur); idx++; };
+                next();
+            }
+        } catch(e) {}
+    } else {
+        speakCritical('отдых закончен');
+        let cnt = 0;
+        const vn = () => { if (cnt >= 20) return; speakCritical('время вышло'); cnt++; restVoiceTimeout = setTimeout(vn, 5000); };
+        restVoiceTimeout = setTimeout(vn, 3500);
+    }
+    if (navigator.vibrate) { const vp = []; for (let i = 0; i < 30; i++) vp.push(150,100,150,600); navigator.vibrate(vp); }
+}
+function stopRestAlarm() { if (restAlarmTimeout) { clearTimeout(restAlarmTimeout); restAlarmTimeout = null; } if (restVoiceTimeout) { clearTimeout(restVoiceTimeout); restVoiceTimeout = null; } if (navigator.vibrate) navigator.vibrate(0); }
+
+function previewAlarmSound(key) {
+    try {
+        if (previewCtx) { try { previewCtx.close(); } catch(e) {} }
+        previewCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (previewCtx.state === 'suspended') previewCtx.resume();
+        const sound = ALARM_SOUNDS[key];
+        if (DB.settings.continuousBeep) {
+            let idx = 0, cyc = 0;
+            const next = () => {
+                if (cyc >= 2) { try { previewCtx.close(); } catch(e) {} return; }
+                const s = sound.loopPattern[idx % sound.loopPattern.length];
+                playPatternStep(previewCtx, s);
+                setTimeout(() => { idx++; if (idx % sound.loopPattern.length === 0) cyc++; next(); }, s.dur);
+            };
+            next();
+        } else sound.playOnce(previewCtx);
+    } catch(e) {}
+}
+
+/* ===================== SHOW SCREEN ===================== */
+function resetWorkoutFilters() {
+    const s = document.getElementById('workout-search');
+    const o = document.getElementById('workout-sort');
+    if (s) s.value = '';
+    if (o) o.value = 'custom';
+}
+function resetHistoryFilters() {
+    const s = document.getElementById('history-search');
+    const o = document.getElementById('history-period');
+    if (s) s.value = '';
+    if (o) o.value = 'all';
+}
+function showScreen(id) {
+    const prevActive = document.querySelector('.screen.active');
+    const prevId = prevActive ? prevActive.id : null;
+    if (prevId === 'screen-workouts' && id !== 'screen-workouts') resetWorkoutFilters();
+    if (prevId === 'screen-history' && id !== 'screen-history') resetHistoryFilters();
+
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    document.querySelector('.app-container').scrollTop = 0;
+    if (id !== 'screen-settings' && previewCtx) {
+        try { previewCtx.close(); } catch(e) {}
+        previewCtx = null;
+    }
+    if (id === 'screen-home') { renderHomeTodayBanner(); renderStreakBanner(); applyHomeMenuVisibility(); }
+    if (id === 'screen-workouts') renderWorkoutsList();
+    if (id === 'screen-history') renderHistory();
+    if (id === 'screen-settings') renderSettings();
+    if (id === 'screen-templates') renderTemplates();
+    if (id === 'screen-programs') renderPrograms();
+    if (id === 'screen-activity') renderActivity();
+}
+
+/* ===================== SWIPE DELETE ===================== */
+document.addEventListener('touchstart', (e) => {
+    document.querySelectorAll('.swipe-container .history-card').forEach(card => {
+        if (card.style.transform && !card.contains(e.target)) {
+            card.style.transition = 'transform 0.2s';
+            card.style.transform = '';
+        }
+    });
+}, { passive: true });
+
+function initSwipeDelete(container, onDelete) {
+    const card = container.querySelector('.history-card');
+    if (!card) return;
+    const btn = container.querySelector('.swipe-delete-btn');
+    let startX = 0, startY = 0, swiping = false, baseOffset = 0, currentOffset = 0;
+
+    card.addEventListener('touchstart', (e) => {
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+        swiping = false;
+        const t = card.style.transform;
+        baseOffset = t ? -100 : 0;
+        currentOffset = baseOffset;
+        card.style.transition = 'none';
+    }, { passive: true });
+
+    card.addEventListener('touchmove', (e) => {
+        if (!startX) return;
+        const dx = e.touches[0].clientX - startX;
+        const dy = e.touches[0].clientY - startY;
+        if (!swiping && Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 10) {
+            startX = 0;
+            card.style.transition = 'transform 0.2s';
+            card.style.transform = baseOffset < 0 ? 'translateX(-100px)' : '';
+            return;
+        }
+        if (Math.abs(dx) > 10) swiping = true;
+        if (swiping) {
+            try { e.preventDefault(); } catch(err) {}
+            const offset = Math.max(-100, Math.min(0, baseOffset + dx));
+            card.style.transform = `translateX(${offset}px)`;
+            currentOffset = offset;
+        }
+    }, { passive: false });
+
+    card.addEventListener('touchend', () => {
+        card.style.transition = 'transform 0.2s';
+        if (currentOffset < -50) { card.style.transform = 'translateX(-100px)'; currentOffset = -100; }
+        else { card.style.transform = ''; currentOffset = 0; }
+        startX = 0;
+        swiping = false;
+    }, { passive: true });
+
+    if (btn) {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            card.style.transform = '';
+            onDelete();
+        });
+    }
+}
+
+/* ===================== DRAG (generalized) ===================== */
+let draggedItem = null, dragPlaceholder = null, dragOffsetY = 0, longPressTimer = null;
+let dragContext = null;
+
+function initDragAndDrop(item, opts) {
+    opts = opts || {};
+    const containerSelector = opts.containerSelector || '#workouts-list';
+    const itemSelector = opts.itemSelector || '.workout-item';
+    const dbKey = opts.dbKey || 'workouts';
+    item._dragOpts = { containerSelector, itemSelector, dbKey };
+    item.setAttribute('draggable', 'true');
+
+    item.addEventListener('dragstart', (e) => {
+        draggedItem = item;
+        dragContext = item._dragOpts;
+        item.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+    });
+    item.addEventListener('dragend', () => { cleanupDrag(); });
+    item.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        const c = document.querySelector(dragContext ? dragContext.containerSelector : containerSelector);
+        if (c) updatePlaceholderPosition(getDragAfterElement(c, e.clientY));
+    });
+    item.addEventListener('drop', (e) => { e.preventDefault(); finalizeDrop(); });
+    item.addEventListener('touchstart', (e) => {
+        if (e.target.closest('.icon-btn') || e.target.closest('.btn') || e.target.closest('button')) return;
+        const t = e.touches[0];
+        longPressTimer = setTimeout(() => {
+            dragContext = item._dragOpts;
+            startDragging(item, t.clientY);
+        }, 350);
+    }, { passive: true });
+}
+document.addEventListener('touchmove', handleGlobalTouchMove, { passive: false });
+document.addEventListener('touchend', handleGlobalTouchEnd);
+document.addEventListener('touchcancel', handleGlobalTouchEnd);
+
+function startDragging(item, cy) {
+    if (!item._dragOpts) return;
+    draggedItem = item;
+    dragContext = item._dragOpts;
+    dragPlaceholder = document.createElement('div');
+    dragPlaceholder.className = 'drag-placeholder';
+    item.classList.add('dragging');
+    dragPlaceholder.style.height = item.offsetHeight + 'px';
+    item.parentNode.insertBefore(dragPlaceholder, item);
+    const r = item.getBoundingClientRect();
+    dragOffsetY = cy - r.top;
+    item.style.top = (cy - dragOffsetY) + 'px';
+    document.body.classList.add('no-scroll');
+}
+function handleGlobalTouchMove(e) {
+    if (!draggedItem) { clearTimeout(longPressTimer); return; }
+    e.preventDefault();
+    const t = e.touches[0];
+    const ny = t.clientY - dragOffsetY;
+    draggedItem.style.transform = `translate3d(0, ${ny - parseFloat(draggedItem.style.top)}px, 0)`;
+    const eb = document.elementFromPoint(t.clientX, t.clientY);
+    if (!eb) return;
+    const sel = (dragContext && dragContext.itemSelector) || '.workout-item';
+    const contSel = (dragContext && dragContext.containerSelector) || '#workouts-list';
+    const ti = eb.closest(sel);
+    document.querySelectorAll('.drag-placeholder').forEach(p => p.classList.remove('active-drop'));
+    if (ti && ti !== draggedItem) {
+        const l = document.querySelector(contSel);
+        if (!l || !l.contains(ti)) return;
+        const b = ti.getBoundingClientRect();
+        const o = t.clientY - b.top - (b.height / 2);
+        if (o > 0) {
+            if (ti.nextSibling && ti.nextSibling !== dragPlaceholder) l.insertBefore(dragPlaceholder, ti.nextSibling);
+            else if (ti.nextSibling !== dragPlaceholder) l.appendChild(dragPlaceholder);
+        } else if (ti !== dragPlaceholder) l.insertBefore(dragPlaceholder, ti);
+        dragPlaceholder.classList.add('active-drop');
+    }
+}
+function handleGlobalTouchEnd() { clearTimeout(longPressTimer); if (draggedItem) finalizeDrop(); }
+function updatePlaceholderPosition(a) {
+    if (!draggedItem) return;
+    const l = document.querySelector(dragContext ? dragContext.containerSelector : '#workouts-list');
+    if (!l) return;
+    if (!dragPlaceholder) {
+        dragPlaceholder = document.createElement('div');
+        dragPlaceholder.className = 'drag-placeholder';
+        dragPlaceholder.style.height = draggedItem.offsetHeight + 'px';
+    }
+    if (a == null) l.appendChild(dragPlaceholder);
+    else l.insertBefore(dragPlaceholder, a);
+}
+function finalizeDrop() {
+    if (!draggedItem || !dragPlaceholder) return;
+    if (dragPlaceholder.parentNode) dragPlaceholder.parentNode.insertBefore(draggedItem, dragPlaceholder);
+    saveNewOrder();
+    cleanupDrag();
+}
+function cleanupDrag() {
+    if (draggedItem) {
+        draggedItem.classList.remove('dragging');
+        draggedItem.style.top = '';
+        draggedItem.style.transform = '';
+        draggedItem = null;
+    }
+    if (dragPlaceholder) { dragPlaceholder.remove(); dragPlaceholder = null; }
+    dragContext = null;
+    document.body.classList.remove('no-scroll');
+    document.querySelectorAll('.drag-placeholder').forEach(p => p.classList.remove('active-drop'));
+}
+function getDragAfterElement(c, y) {
+    if (!c) return null;
+    const sel = (dragContext && dragContext.itemSelector) || '.workout-item';
+    const els = [...c.querySelectorAll(`${sel}:not(.dragging)`)];
+    return els.reduce((cl, ch) => {
+        const b = ch.getBoundingClientRect();
+        const o = y - b.top - b.height / 2;
+        return (o < 0 && o > cl.offset) ? { offset: o, element: ch } : cl;
+    }, { offset: Number.NEGATIVE_INFINITY }).element;
+}
+function saveNewOrder() {
+    if (!dragContext) return;
+    const container = document.querySelector(dragContext.containerSelector);
+    if (!container) return;
+    const sel = dragContext.itemSelector;
+    const dbKey = dragContext.dbKey;
+    const els = Array.from(container.querySelectorAll(sel));
+    const ids = els.map(el => parseInt(el.dataset.id)).filter(n => !isNaN(n));
+    const db = DB[dbKey];
+    if (!Array.isArray(db)) return;
+    const ro = [];
+    ids.forEach(id => { const w = db.find(x => x.id === id); if (w) ro.push(w); });
+    db.forEach(w => { if (!ro.includes(w)) ro.push(w); });
+    DB[dbKey] = ro;
+    saveDB(dbKey);
+}
+
+/* ===================== HOME ===================== */
+function renderHomeTodayBanner() {
+    const banner = document.getElementById('home-today-banner');
+    if (!banner) return;
+    try {
+        const todayKey = getTodayKey(), todayDate = new Date(), todayDateKey = formatDateKey(todayDate);
+        const todays = [];
+        DB.programs.forEach(p => {
+            const week = getActiveWeek(p, todayDate);
+            if (!week) return;
+            (week.days[todayKey] || []).forEach(wid => {
+                const w = DB.workouts.find(x => x.id === wid);
+                if (w) todays.push({ workout: w, program: p });
+            });
+        });
+        if (todays.length === 0) { banner.style.display = 'none'; return; }
+        const todayHistory = DB.history.filter(r => formatDateKey(new Date(r.startTime)) === todayDateKey);
+        const completedIds = new Set(todayHistory.map(r => r.workoutId));
+        const pending = todays.filter(t => !completedIds.has(t.workout.id));
+        if (pending.length === 0) {
+            banner.style.display = 'block';
+            banner.innerHTML = `<div class="card" style="border:2px solid var(--accent);"><div style="color:var(--accent); font-size:0.9rem; margin-bottom:6px;">🎉 Всё по плану!</div><div style="color:var(--muted); font-size:0.85rem;">${todays.length} тренировок выполнено</div></div>`;
+            return;
+        }
+        const first = pending[0].workout;
+        banner.style.display = 'block';
+        banner.innerHTML = `<div class="card" style="border:2px solid var(--accent);"><div style="color:var(--accent); font-size:0.8rem; text-transform:uppercase; margin-bottom:6px;">📅 ${DAY_NAMES_FULL[todayKey]} · ${pending.length} из ${todays.length} осталось</div><div style="font-size:1.2rem; font-weight:600; margin-bottom:12px;">${escapeHtml(first.name)}</div><button class="btn accent" onclick="startWorkout(${first.id})" style="margin:0;">▶ Начать</button></div>`;
+    } catch(e) { banner.style.display = 'none'; }
+}
+
+function getTrainingDates() { const s = new Set(); DB.history.forEach(r => { try { s.add(formatDateKey(new Date(r.startTime))); } catch(e) {} }); return s; }
+function calculateStreak(dates) {
+    if (dates.size === 0) return 0;
+    const today = new Date(); today.setHours(0,0,0,0);
+    const todayKey = formatDateKey(today), yKey = formatDateKey(addDays(today, -1));
+    let start = null;
+    if (dates.has(todayKey)) start = today;
+    else if (dates.has(yKey)) start = addDays(today, -1);
+    else return 0;
+    let s = 0, cur = start;
+    while (dates.has(formatDateKey(cur))) { s++; cur = addDays(cur, -1); }
+    return s;
+}
+function calculateRecordStreak(dates) {
+    if (dates.size === 0) return 0;
+    const sorted = Array.from(dates).sort();
+    let max = 0, cur = 0, prev = null;
+    for (const k of sorted) {
+        const dt = parseDateKey(k);
+        if (prev && (dt - prev) / 86400000 === 1) cur++;
+        else cur = 1;
+        if (cur > max) max = cur;
+        prev = dt;
+    }
+    return max;
+}
+function getDayWorkMinutes(dateKey) { return DB.history.filter(r => formatDateKey(new Date(r.startTime)) === dateKey).reduce((s, r) => s + (r.workTime || 0), 0) / 60; }
+function dayLevel(dateKey) { const m = getDayWorkMinutes(dateKey); if (m <= 0) return 0; if (m < 10) return 1; if (m < 30) return 2; return 3; }
+function buildLast30DaysGrid() {
+    let html = '';
+    const today = new Date(); today.setHours(0,0,0,0);
+    for (let i = 29; i >= 0; i--) {
+        const d = addDays(today, -i); const k = formatDateKey(d);
+        const lv = dayLevel(k);
+        const cls = `streak-cell${lv ? ' lv' + lv : ''}${k === formatDateKey(today) ? ' today' : ''}`;
+        html += `<div class="${cls}"></div>`;
+    }
+    return html;
+}
+function renderStreakBanner() {
+    const el = document.getElementById('streak-banner-home');
+    if (!el) return;
+    if (!DB.settings.showActivityCalendar) { el.innerHTML = ''; return; }
+    try {
+        const dates = getTrainingDates();
+        if (dates.size === 0) { el.innerHTML = ''; return; }
+        const s = calculateStreak(dates), r = calculateRecordStreak(dates);
+        el.innerHTML = `<div class="streak-banner" onclick="showScreen('screen-activity')">
+            <div class="streak-banner-top">
+                <div class="streak-banner-title"><span class="fire">🔥</span> ${s} ${pluralDays(s)} подряд</div>
+                <div class="streak-banner-record">Рекорд: ${r}</div>
+            </div>
+            <div class="streak-banner-grid">${buildLast30DaysGrid()}</div>
+        </div>`;
+    } catch(e) { el.innerHTML = ''; }
+}
+function buildHeatmap30() {
+    let html = '';
+    const today = new Date(); today.setHours(0,0,0,0);
+    const todayKey = formatDateKey(today);
+    for (let i = 29; i >= 0; i--) {
+        const d = addDays(today, -i);
+        const k = formatDateKey(d);
+        const lv = dayLevel(k);
+        const isToday = k === todayKey;
+        const cls = `heatmap-cell${lv ? ' lv' + lv : ''}${isToday ? ' today' : ''}`;
+        html += `<div class="${cls}" onclick="showDayActivityDetail('${k}')" role="button" aria-label="${k}"></div>`;
+    }
+    return html;
+}
+
+function buildWeekGraph() {
+    let html = '';
+    const today = new Date(); today.setHours(0,0,0,0);
+    const monday = startOfWeekMonday(today);
+    const todayKey = formatDateKey(today);
+    const days = [];
+    for (let i = 0; i < 7; i++) {
+        const d = addDays(monday, i);
+        const k = formatDateKey(d);
+        const m = getDayWorkMinutes(k);
+        days.push({ d, k, m });
+    }
+    const maxM = Math.max(1, ...days.map(x => x.m));
+    days.forEach(({ d, k, m }, i) => {
+        const pct = Math.min(100, Math.round((m / maxM) * 100));
+        const isToday = k === todayKey;
+        html += `<div class="week-graph-day ${isToday ? 'today' : ''}">
+            <div class="week-graph-bar">
+                <div class="week-graph-fill${m <= 0 ? ' empty' : ''}" style="height: ${m > 0 ? Math.max(10, pct) : 0}%;"></div>
+            </div>
+            <div class="week-graph-label">${DAY_NAMES_SHORT[['mon','tue','wed','thu','fri','sat','sun'][i]]}</div>
+        </div>`;
+    });
+    return html;
+}
+
+function renderActivity() {
+    const c = document.getElementById('activity-content');
+    if (!c) return;
+    const dates = getTrainingDates();
+    const streak = calculateStreak(dates), record = calculateRecordStreak(dates);
+    const totalTime = DB.history.reduce((s, r) => s + (r.totalDuration || 0), 0);
+    c.innerHTML = `
+        <div class="card" style="text-align:center; border:2px solid var(--fire);">
+            <div style="font-size:3rem;">🔥</div>
+            <div style="font-size:2rem; font-weight:800; margin:8px 0 4px; color:var(--fire);">${streak} ${pluralDays(streak)}</div>
+            <div style="color:var(--muted); font-size:0.9rem;">подряд · рекорд ${record}</div>
+        </div>
+        <div class="card">
+            <div style="font-weight:700; margin-bottom:4px;">📊 Неделя</div>
+            <div class="week-graph">${buildWeekGraph()}</div>
+            <div style="color:var(--muted); font-size:0.75rem; text-align:center; margin-top:8px;">минут работы по дням</div>
+        </div>
+        <div class="card">
+            <div style="font-weight:700; margin-bottom:4px;">📅 Активность 30 дней</div>
+            <div class="heatmap-grid">${buildHeatmap30()}</div>
+            <div class="heatmap-legend">
+                <span>меньше</span>
+                <div class="heatmap-legend-box" style="background:var(--card-2);"></div>
+                <div class="heatmap-legend-box" style="background:rgba(187,134,252,0.25);"></div>
+                <div class="heatmap-legend-box" style="background:rgba(187,134,252,0.5);"></div>
+                <div class="heatmap-legend-box" style="background:var(--primary);"></div>
+                <span>больше</span>
+            </div>
+        </div>
+        <div class="card">
+            <div class="stat-row"><div class="stat-label">🏆 Всего тренировок</div><div class="stat-value highlight">${DB.history.length}</div></div>
+            <div class="stat-row" style="margin-top:8px;"><div class="stat-label">⏱ Общее время</div><div class="stat-value">${formatTime(Math.floor(totalTime))}</div></div>
+        </div>`;
+}
+
+function showDayActivityDetail(key) {
+    const date = parseDateKey(key);
+    const records = DB.history.filter(r => formatDateKey(new Date(r.startTime)) === key);
+    const months = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+    const dateStr = `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
+    if (records.length === 0) { showToast(`${dateStr} · нет тренировок`); return; }
+
+    const sorted = [...records].sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
+    const totalWorkTime = sorted.reduce((s, r) => s + (r.workTime || 0), 0);
+    const totalDuration = sorted.reduce((s, r) => s + (r.totalDuration || 0), 0);
+
+    let html = `<div class="bottom-sheet" style="max-height:88vh;"><div class="sheet-grip"></div>
+        <h2 class="sheet-title">${dateStr}</h2>
+        <div style="color:var(--muted); font-size:0.85rem; text-align:center;">${sorted.length} тренировок · ${formatTime(Math.floor(totalDuration))} всего · 💪 ${formatTime(Math.floor(totalWorkTime))}</div>
+        <div style="max-height:62vh; overflow-y:auto; display:flex; flex-direction:column; gap:10px; padding-right:2px;">`;
+
+    sorted.forEach(r => {
+        const notes = r.exerciseNotes || {};
+        const hasNotes = Object.values(notes).some(n => n) || r.workoutNote;
+        const wExists = r.workoutId && DB.workouts.find(w => w.id === r.workoutId);
+        const startT = new Date(r.startTime);
+        const endT = r.endTime ? new Date(r.endTime) : new Date(startT.getTime() + (r.totalDuration || 0) * 1000);
+        const hasWarmup = (r.warmupSeconds || 0) > 0;
+
+        html += `<div class="history-card" style="margin:0;">
+            <div class="history-top">
+                <div class="history-info">
+                    <div class="name">${escapeHtml(r.workoutName || 'Тренировка')}</div>
+                    <div class="stats">🕐 ${formatClock(startT)} → ${formatClock(endT)} · ⏱ ${formatTime(r.totalDuration)} · 💪 ${formatTime(r.workTime)}</div>
+                </div>
+                <div class="history-actions">
+                    ${wExists ? `<button class="icon-btn" onclick="closeTopSheet(); repeatLastWorkout(${r.workoutId})" title="Повторить" aria-label="Повторить">▶</button>` : ''}
+                    <button class="icon-btn" onclick="shareResult(${r.id})" title="Поделиться" aria-label="Поделиться">📤</button>
+                </div>
+            </div>
+            ${r.workoutNote ? `<div style="background:var(--primary-soft); border-left:3px solid var(--primary); border-radius:10px; padding:10px 12px; font-size:0.85rem;">📝 ${escapeHtml(r.workoutNote)}</div>` : ''}
+            ${((r.exerciseNames && r.exerciseNames.length > 0) || hasWarmup) ? `<details style="background:var(--card-2); border-radius:10px;">
+                <summary style="padding:10px 12px; font-size:0.85rem; color:var(--muted);">📊 Упражнения${hasNotes ? ' и заметки' : ''}</summary>
+                <div style="padding:0 12px 12px; display:flex; flex-direction:column; gap:6px;">
+                    ${hasWarmup ? `<div style="padding:6px 0; border-bottom:1px solid var(--card-2);"><div style="display:flex; justify-content:space-between; font-size:0.85rem; gap:8px;"><span style="flex:1; min-width:0; color:var(--warn);">🔥 Разминка</span><span style="color:var(--warn); font-weight:600; flex-shrink:0;">${formatTime(r.warmupSeconds)}</span></div></div>` : ''}
+                    ${(r.exerciseNames || []).map((name, i) => {
+                        const note = (r.exerciseNotes || {})[i];
+                        const sets = (r.setResults || {})[i];
+                        const t = (r.exerciseTimes || [])[i];
+                        const isSkipped = t !== undefined && t !== null && t < 0;
+                        return `<div style="padding:6px 0; border-bottom:1px solid var(--card-2);">
+                            <div style="display:flex; justify-content:space-between; font-size:0.85rem; gap:8px;">
+                                <span style="flex:1; min-width:0; word-break:break-word;">${i+1}. ${escapeHtml(name || 'Упражнение')}</span>
+                                <span style="color:${isSkipped ? 'var(--muted)' : 'var(--accent)'}; font-weight:600; flex-shrink:0;">${isSkipped ? '⏭ пропущено' : formatTime(t || 0)}</span>
+                            </div>
+                            ${sets && Array.isArray(sets) && sets.length ? `<div style="color:var(--muted); font-size:0.8rem; margin-top:2px;">🔁 подходы: ${sets.join(' / ')}</div>` : (sets === 'skipped' ? `<div style="color:var(--muted); font-size:0.8rem; margin-top:2px;">⏭ пропущено</div>` : '')}
+                            ${note ? `<div style="color:var(--accent); font-size:0.8rem; margin-top:4px; font-style:italic;">📝 ${escapeHtml(note)}</div>` : ''}
+                        </div>`;
+                    }).join('')}
+                </div>
+            </details>` : ''}
+        </div>`;
+    });
+
+    html += `</div><button class="btn sheet-btn-cancel" onclick="closeTopSheet()">Закрыть</button></div>`;
+    const ov = document.createElement('div');
+    ov.className = 'bottom-sheet-overlay';
+    ov.innerHTML = html;
+    document.body.appendChild(ov);
+    ov.addEventListener('click', (e) => { if (e.target === ov) ov.remove(); });
+}
+function closeTopSheet() { const o = document.querySelectorAll('.bottom-sheet-overlay'); if (o.length) o[o.length - 1].remove(); }
+
+/* ===================== WORKOUTS LIST ===================== */
+function renderWorkoutsList() {
+    const c = document.getElementById('workouts-list');
+    if (!c) return;
+
+    const searchEl = document.getElementById('workout-search');
+    const sortEl = document.getElementById('workout-sort');
+    const q = searchEl ? searchEl.value.toLowerCase().trim() : '';
+    const sortBy = sortEl ? sortEl.value : 'custom';
+
+    let workouts = [...DB.workouts];
+    if (q) workouts = workouts.filter(w => (w.name || '').toLowerCase().includes(q));
+
+    if (sortBy === 'name') workouts.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ru'));
+    else if (sortBy === 'duration') workouts.sort((a, b) => estimateWorkoutDuration(b) - estimateWorkoutDuration(a));
+    else if (sortBy === 'exercises') workouts.sort((a, b) => getTotalExerciseCount(b.exercises) - getTotalExerciseCount(a.exercises));
+
+    if (workouts.length === 0) {
+        c.innerHTML = DB.workouts.length === 0
+            ? '<div class="empty-state">Пока нет тренировок.<br>Создай первую или выбери шаблон!</div>'
+            : '<div class="empty-state">Ничего не найдено</div>';
         return;
     }
 
-    // Всё остальное — cache-first
-    event.respondWith(
-        caches.match(req).then((cached) => {
-            if (cached) return cached;
-            return fetch(req).then((res) => {
-                if (res && res.status === 200 && res.type === 'basic') {
-                    const copy = res.clone();
-                    caches.open(CACHE_NAME).then((c) => c.put(req, copy)).catch(() => {});
-                }
-                return res;
-            }).catch(() => {
-                // ИСПРАВЛЕНО: если офлайн и в кэше нет — возвращаем
-                // пустой 504 вместо undefined (иначе respondWith крашится
-                // и браузер показывает неинформативную "Failed to fetch").
-                return new Response('', { status: 504, statusText: 'Offline' });
+    c.innerHTML = workouts.map(w => {
+        const exCount = getTotalExerciseCount(w.exercises);
+        const totalSec = estimateWorkoutDuration(w);
+        const totalMin = Math.round(totalSec / 60);
+        return `<div class="workout-item" data-id="${w.id}">
+            <div class="workout-name">${escapeHtml(w.name || 'Без названия')}</div>
+            <div class="workout-meta-row">
+                <div class="workout-meta">${exCount} упр. · ~${totalMin} мин всего</div>
+                <div class="workout-actions">
+                    <button class="icon-btn" onclick="showPreview(${w.id})" title="Просмотр" aria-label="Просмотр">👁</button>
+                    <button class="icon-btn" onclick="duplicateWorkout(${w.id})" title="Копия" aria-label="Дублировать">📋</button>
+                    <button class="icon-btn" onclick="openEditor(${w.id}, false)" title="Редактировать" aria-label="Редактировать">✏️</button>
+                    <button class="icon-btn delete" onclick="deleteWorkoutById(${w.id})" title="Удалить" aria-label="Удалить">🗑</button>
+                </div>
+            </div>
+            <button class="btn accent btn-start-workout" onclick="startWorkout(${w.id})">▶ Начать тренировку</button>
+        </div>`;
+    }).join('');
+
+    const allowDrag = (sortBy === 'custom' && !q);
+    c.querySelectorAll('.workout-item').forEach(el => {
+        if (allowDrag) initDragAndDrop(el);
+        else el.setAttribute('draggable', 'false');
+    });
+}
+
+function duplicateWorkout(id) {
+    const w = DB.workouts.find(x => x.id === id);
+    if (!w) return;
+    const copy = JSON.parse(JSON.stringify(w));
+    copy.id = Date.now(); copy.name = w.name + ' (копия)';
+    DB.workouts.push(copy); saveDB('workouts'); renderWorkoutsList();
+}
+
+async function deleteWorkoutById(id) {
+    if (!await customConfirm('Удалить тренировку?', { danger: true, okText: '🗑 Удалить' })) return;
+    const idx = DB.workouts.findIndex(w => w.id === id);
+    if (idx < 0) return;
+    const removed = DB.workouts[idx];
+    DB.workouts.splice(idx, 1);
+    saveDB('workouts');
+    renderWorkoutsList();
+    showUndoToast('Тренировка удалена', () => {
+        DB.workouts.splice(idx, 0, removed);
+        saveDB('workouts');
+        renderWorkoutsList();
+        showToast('Восстановлено');
+    });
+}
+
+/* ===================== PROGRAMS ===================== */
+function getActiveWeek(program, date) {
+    if (!program.weeks || program.weeks.length === 0) return null;
+    for (const w of program.weeks) {
+        if (!w || !w.days || !w.startDate) continue;
+        const s = parseDateKey(w.startDate), e = addDays(s, 6);
+        if (date >= s && date <= e) return w;
+    }
+    return null;
+}
+
+function renderPrograms() {
+    const c = document.getElementById('programs-list');
+    if (DB.programs.length === 0) { c.innerHTML = '<div class="empty-state">Пока нет программ.</div>'; return; }
+    const today = new Date(), todayKey = getTodayKey();
+    c.innerHTML = DB.programs.map(p => {
+        const week = getActiveWeek(p, today);
+        let todayInfo = 'сегодня вне программы';
+        if (week) {
+            const ids = (week.days && week.days[todayKey]) || [];
+            if (ids.length > 0) todayInfo = `Сегодня: ${ids.map(id => (DB.workouts.find(x => x.id === id) || {}).name || '?').join(' → ')}`;
+            else todayInfo = 'Сегодня отдых';
+        }
+        return `<div class="card" style="cursor:pointer;" onclick="openProgramEditor(${p.id})">
+            <div style="display:flex; justify-content:space-between;">
+                <div style="flex:1;">
+                    <div style="font-weight:700; font-size:1.1rem;">📅 ${escapeHtml(p.name)}</div>
+                    <div style="color:var(--muted); font-size:0.85rem; margin-top:4px;">${(p.weeks||[]).length} ${pluralWeeks((p.weeks||[]).length)}</div>
+                    <div style="color:var(--accent); font-size:0.9rem; margin-top:8px;">${escapeHtml(todayInfo)}</div>
+                </div>
+                <button class="icon-btn delete" onclick="event.stopPropagation(); deleteProgramById(${p.id})" aria-label="Удалить" style="background:var(--card-2); border:none; color:var(--danger); width:38px; height:38px; border-radius:10px; font-size:1rem; cursor:pointer;">🗑</button>
+            </div>
+        </div>`;
+    }).join('');
+}
+function openProgramEditor(id) {
+    editingProgramId = id;
+    if (id === null) {
+        const monday = startOfWeekMonday(new Date());
+        editorProgram = { name: '', weeks: [{ startDate: formatDateKey(monday), days: { mon:[], tue:[], wed:[], thu:[], fri:[], sat:[], sun:[] } }] };
+        document.getElementById('program-name').value = '';
+        document.getElementById('program-editor-title').innerText = 'Новая программа';
+        document.getElementById('program-delete-btn').style.display = 'none';
+    } else {
+        const p = DB.programs.find(x => x.id === id);
+        if (!p) return;
+        editorProgram = JSON.parse(JSON.stringify(p));
+        if (!editorProgram.weeks || editorProgram.weeks.length === 0) {
+            const monday = startOfWeekMonday(new Date());
+            editorProgram.weeks = [{ startDate: formatDateKey(monday), days: { mon:[], tue:[], wed:[], thu:[], fri:[], sat:[], sun:[] } }];
+        }
+        editorProgram.weeks.forEach(w => {
+            if (!w.days) w.days = {};
+            DAY_KEYS.forEach(k => { if (!Array.isArray(w.days[k])) w.days[k] = w.days[k] ? [w.days[k]] : []; });
+        });
+        document.getElementById('program-name').value = p.name || '';
+        document.getElementById('program-editor-title').innerText = 'Редактирование';
+        document.getElementById('program-delete-btn').style.display = 'block';
+    }
+    renderProgramWeeksList();
+    showScreen('screen-program-editor');
+}
+function cancelProgramEditor() { showScreen('screen-programs'); }
+function renderProgramWeeksList() {
+    const c = document.getElementById('program-weeks-list');
+    if (!c) return;
+    const todayKey = formatDateKey(new Date());
+    c.innerHTML = editorProgram.weeks.map((w, idx) => {
+        const isCollapsed = collapsedWeeks[w.startDate];
+        const s = parseDateKey(w.startDate), e = addDays(s, 6);
+        const t = parseDateKey(todayKey);
+        const isCurrent = t >= s && t <= e;
+        let daysHtml = '';
+        DAY_KEYS.forEach((dk, dayIdx) => {
+            const ids = w.days[dk] || [];
+            const dk_date = addDays(parseDateKey(w.startDate), dayIdx);
+            const isToday = formatDateKey(dk_date) === todayKey;
+            const names = ids.map(id => (DB.workouts.find(x => x.id === id) || {}).name || '(удалено)');
+            daysHtml += `<div class="week-day-row ${isToday ? 'today' : ''}" onclick="openDayEditor(${idx}, '${dk}')">
+                <span class="day-name">${DAY_NAMES_SHORT[dk]}</span>
+                <span class="day-workouts">${names.length ? escapeHtml(names.join(' → ')) : '—'}</span>
+                ${ids.length ? `<span class="day-count">${ids.length}</span>` : ''}
+            </div>`;
+        });
+        return `<div class="week-block">
+            <div class="week-header" onclick="toggleWeekCollapse('${w.startDate}')">
+                <div>
+                    <div class="week-title">${isCurrent ? '📅 ' : ''}Неделя ${idx + 1}${isCurrent ? ' (текущая)' : ''}</div>
+                    <div class="week-subtitle">${formatWeekRange(w.startDate)}</div>
+                </div>
+                <div style="color:var(--muted); font-size:1.2rem;">${isCollapsed ? '▸' : '▾'}</div>
+            </div>
+            ${isCollapsed ? '' : `<div class="week-days">${daysHtml}</div>
+            <div class="week-actions">
+                <button class="btn ghost small" onclick="copyWeek(${idx})" style="flex:1;">📋 Скопировать на след.</button>
+                <button class="btn ghost small" onclick="deleteWeek(${idx})" style="color:var(--danger);" aria-label="Удалить неделю">🗑</button>
+            </div>`}
+        </div>`;
+    }).join('');
+}
+function toggleWeekCollapse(key) { collapsedWeeks[key] = !collapsedWeeks[key]; renderProgramWeeksList(); }
+function addWeekToEditor() {
+    const last = editorProgram.weeks[editorProgram.weeks.length - 1];
+    const start = last ? formatDateKey(addDays(parseDateKey(last.startDate), 7)) : formatDateKey(startOfWeekMonday(new Date()));
+    editorProgram.weeks.push({ startDate: start, days: { mon:[], tue:[], wed:[], thu:[], fri:[], sat:[], sun:[] } });
+    renderProgramWeeksList();
+}
+async function deleteWeek(idx) {
+    if (editorProgram.weeks.length <= 1) { showToast('Должна остаться хотя бы одна неделя'); return; }
+    if (!await customConfirm('Удалить неделю?', { danger: true, okText: '🗑 Удалить' })) return;
+    editorProgram.weeks.splice(idx, 1);
+    renderProgramWeeksList();
+}
+function copyWeek(idx) {
+    const src = editorProgram.weeks[idx];
+    if (!src) return;
+    const newStart = formatDateKey(addDays(parseDateKey(src.startDate), 7));
+    const newWeek = { startDate: newStart, days: {} };
+    DAY_KEYS.forEach(k => { newWeek.days[k] = [...(src.days[k] || [])]; });
+    editorProgram.weeks.splice(idx + 1, 0, newWeek);
+    renderProgramWeeksList();
+    showToast(`Скопировано на ${formatWeekRange(newStart)}`);
+}
+
+/* --- Program day editor with ordering --- */
+function renderDaySelected(weekIdx, dayKey) {
+    const w = editorProgram.weeks[weekIdx];
+    const ids = (w && w.days[dayKey]) || [];
+    if (ids.length === 0) return '<div style="color:var(--muted); font-size:0.85rem; padding:12px; text-align:center;">Ничего не выбрано</div>';
+    return ids.map((wid, idx) => {
+        const wo = DB.workouts.find(x => x.id === wid);
+        const name = wo ? wo.name : '(удалено)';
+        const btnStyle = 'width:32px;height:32px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;';
+        return `<div class="sound-option selected" style="cursor:default; padding:8px 10px; gap:6px;">
+            <div class="sound-info"><div class="sound-name" style="font-size:0.9rem;">${idx + 1}. ${escapeHtml(name)}</div></div>
+            <button class="icon-btn" onclick="event.stopPropagation(); moveDayWorkout(${weekIdx}, '${dayKey}', ${idx}, -1)" ${idx === 0 ? 'disabled' : ''} aria-label="Выше" style="${btnStyle}${idx === 0 ? 'opacity:0.4;' : ''}">↑</button>
+            <button class="icon-btn" onclick="event.stopPropagation(); moveDayWorkout(${weekIdx}, '${dayKey}', ${idx}, 1)" ${idx === ids.length - 1 ? 'disabled' : ''} aria-label="Ниже" style="${btnStyle}${idx === ids.length - 1 ? 'opacity:0.4;' : ''}">↓</button>
+            <button class="icon-btn" onclick="event.stopPropagation(); removeDayWorkout(${weekIdx}, '${dayKey}', ${idx})" aria-label="Убрать" style="${btnStyle}color:var(--danger);">✕</button>
+        </div>`;
+    }).join('');
+}
+function renderDayAvailable(weekIdx, dayKey) {
+    const w = editorProgram.weeks[weekIdx];
+    const ids = (w && w.days[dayKey]) || [];
+    const avail = DB.workouts.filter(x => !ids.includes(x.id));
+    if (avail.length === 0) return '<div style="color:var(--muted); font-size:0.85rem; padding:12px; text-align:center;">Все добавлены</div>';
+    return avail.map(wo => `<div class="sound-option" onclick="addDayWorkout(${weekIdx}, '${dayKey}', ${wo.id})" style="cursor:pointer;">
+        <div class="radio"></div><div class="sound-info"><div class="sound-name" style="font-size:0.9rem;">${escapeHtml(wo.name)}</div></div>
+        <span style="color:var(--accent); font-size:1.3rem; font-weight:700; flex-shrink:0;">+</span>
+    </div>`).join('');
+}
+function refreshDayEditor(weekIdx, dayKey) {
+    const ov = document.getElementById('day-editor-overlay');
+    if (!ov) return;
+    const selectedEl = ov.querySelector('#day-selected-list');
+    const availableEl = ov.querySelector('#day-available-list');
+    const countEl = ov.querySelector('#day-count-label');
+    const w = editorProgram.weeks[weekIdx];
+    const cur = (w && w.days[dayKey]) || [];
+    if (selectedEl) selectedEl.innerHTML = renderDaySelected(weekIdx, dayKey);
+    if (availableEl) availableEl.innerHTML = renderDayAvailable(weekIdx, dayKey);
+    if (countEl) countEl.textContent = `${cur.length} выбрано`;
+}
+function openDayEditor(weekIdx, dayKey) {
+    const week = editorProgram.weeks[weekIdx];
+    if (!week) return;
+    const currentIds = week.days[dayKey] || [];
+    const d = addDays(parseDateKey(week.startDate), DAY_KEYS.indexOf(dayKey));
+    const months = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+    const title = `${DAY_NAMES_FULL[dayKey]}, ${d.getDate()} ${months[d.getMonth()]}`;
+    const ov = document.createElement('div');
+    ov.className = 'bottom-sheet-overlay';
+    ov.id = 'day-editor-overlay';
+    ov.innerHTML = `<div class="bottom-sheet" style="max-height:88vh;">
+        <div class="sheet-grip"></div>
+        <h2 class="sheet-title">${title}</h2>
+        <div style="color:var(--muted); font-size:0.85rem; text-align:center;" id="day-count-label">${currentIds.length} выбрано</div>
+        <div style="font-size:0.8rem; color:var(--muted); text-transform:uppercase; letter-spacing:1px;">Выбрано (в порядке выполнения)</div>
+        <div style="display:flex; flex-direction:column; gap:6px; max-height:32vh; overflow-y:auto;" id="day-selected-list">${renderDaySelected(weekIdx, dayKey)}</div>
+        <div style="font-size:0.8rem; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-top:6px;">Доступные</div>
+        <div style="display:flex; flex-direction:column; gap:6px; max-height:24vh; overflow-y:auto;" id="day-available-list">${renderDayAvailable(weekIdx, dayKey)}</div>
+        <button class="btn accent" onclick="closeDayEditor()">Готово</button>
+    </div>`;
+    document.body.appendChild(ov);
+    ov.addEventListener('click', (e) => { if (e.target === ov) closeDayEditor(); });
+}
+function addDayWorkout(weekIdx, dayKey, workoutId) {
+    const w = editorProgram.weeks[weekIdx];
+    if (!w) return;
+    if (!w.days[dayKey]) w.days[dayKey] = [];
+    if (!w.days[dayKey].includes(workoutId)) w.days[dayKey].push(workoutId);
+    refreshDayEditor(weekIdx, dayKey);
+}
+function removeDayWorkout(weekIdx, dayKey, idx) {
+    const w = editorProgram.weeks[weekIdx];
+    if (!w || !w.days[dayKey]) return;
+    w.days[dayKey].splice(idx, 1);
+    refreshDayEditor(weekIdx, dayKey);
+}
+function moveDayWorkout(weekIdx, dayKey, idx, dir) {
+    const w = editorProgram.weeks[weekIdx];
+    if (!w || !w.days[dayKey]) return;
+    const arr = w.days[dayKey];
+    const j = idx + dir;
+    if (j < 0 || j >= arr.length) return;
+    [arr[idx], arr[j]] = [arr[j], arr[idx]];
+    refreshDayEditor(weekIdx, dayKey);
+}
+function closeDayEditor() {
+    const o = document.getElementById('day-editor-overlay');
+    if (o) o.remove();
+    renderProgramWeeksList();
+}
+function saveProgram() {
+    const name = document.getElementById('program-name').value.trim();
+    if (!name) { showToast('Введи название'); return; }
+    editorProgram.weeks.sort((a, b) => a.startDate.localeCompare(b.startDate));
+    if (editingProgramId === null) DB.programs.push({ id: Date.now(), name, weeks: editorProgram.weeks });
+    else { const p = DB.programs.find(x => x.id === editingProgramId); if (p) Object.assign(p, { name, weeks: editorProgram.weeks }); }
+    saveDB('programs');
+    showScreen('screen-programs');
+}
+async function deleteProgram() {
+    if (!await customConfirm('Удалить программу?', { danger: true, okText: '🗑 Удалить' })) return;
+    const idx = DB.programs.findIndex(x => x.id === editingProgramId);
+    if (idx < 0) return;
+    const removed = DB.programs[idx];
+    DB.programs.splice(idx, 1);
+    saveDB('programs');
+    showScreen('screen-programs');
+    showUndoToast('Программа удалена', () => {
+        DB.programs.splice(idx, 0, removed);
+        saveDB('programs');
+        renderPrograms();
+        showToast('Восстановлено');
+    });
+}
+async function deleteProgramById(id) {
+    if (!await customConfirm('Удалить программу?', { danger: true, okText: '🗑 Удалить' })) return;
+    const idx = DB.programs.findIndex(x => x.id === id);
+    if (idx < 0) return;
+    const removed = DB.programs[idx];
+    DB.programs.splice(idx, 1);
+    saveDB('programs');
+    renderPrograms();
+    showUndoToast('Программа удалена', () => {
+        DB.programs.splice(idx, 0, removed);
+        saveDB('programs');
+        renderPrograms();
+        showToast('Восстановлено');
+    });
+}
+
+/* ===================== TEMPLATES (split + drag) ===================== */
+function renderTemplates() {
+    const userList = document.getElementById('user-templates-list');
+    const builtinList = document.getElementById('builtin-templates-list');
+    const userTitle = document.getElementById('user-templates-title');
+    const builtinTitle = document.getElementById('builtin-templates-title');
+    const emptyEl = document.getElementById('templates-empty');
+    if (!userList || !builtinList) return;
+
+    // --- User templates ---
+    if (DB.templates.length > 0) {
+        userTitle.style.display = 'block';
+        userList.style.display = 'block';
+        userList.innerHTML = DB.templates.map(t => `<div class="template-card" data-id="${t.id}">
+            <div class="template-card-name" onclick="showTemplatePreview(${t.id}, false)">${escapeHtml(t.name)}</div>
+            <div class="template-card-meta-row">
+                <div class="template-card-meta">${getTotalExerciseCount(t.exercises)} упр. · ${t.autoStart ? 'автозапуск' : 'ручной'}</div>
+                <div class="template-card-actions">
+                    <button class="icon-btn add" onclick="createFromTemplate(${t.id}, false)" title="Добавить" aria-label="Добавить в тренировки">+</button>
+                    <button class="icon-btn" onclick="showTemplatePreview(${t.id}, false)" title="Просмотр" aria-label="Просмотр">👁</button>
+                    <button class="icon-btn" onclick="openEditor(${t.id}, true)" title="Редактировать" aria-label="Редактировать">✏️</button>
+                    <button class="icon-btn delete" onclick="deleteTemplate(${t.id})" title="Удалить" aria-label="Удалить">🗑</button>
+                </div>
+            </div>
+        </div>`).join('');
+        userList.querySelectorAll('.template-card').forEach(el => {
+            initDragAndDrop(el, {
+                containerSelector: '#user-templates-list',
+                itemSelector: '.template-card',
+                dbKey: 'templates'
             });
-        })
-    );
-});
+        });
+    } else {
+        userTitle.style.display = 'none';
+        userList.style.display = 'none';
+        userList.innerHTML = '';
+    }
 
-self.addEventListener('notificationclick', (event) => {
-    event.notification.close();
-    event.waitUntil(
-        clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
-            for (const client of list) {
-                if ('focus' in client) return client.focus();
+    // --- Builtin templates ---
+    const visible = BUILTIN_TEMPLATES.filter(t => !DB.settings.hiddenBuiltins.includes(t.id));
+    if (visible.length > 0) {
+        builtinTitle.style.display = 'block';
+        builtinList.style.display = 'block';
+        builtinList.innerHTML = visible.map(t => `<div class="template-card">
+            <div class="template-card-name" onclick="showTemplatePreview('${t.id}', true)">${escapeHtml(t.name)}</div>
+            <div class="template-card-meta-row">
+                <div class="template-card-meta">${getTotalExerciseCount(t.exercises)} упр.</div>
+                <div class="template-card-actions">
+                    <button class="icon-btn add" onclick="createFromTemplate('${t.id}', true)" title="Добавить" aria-label="Добавить в тренировки">+</button>
+                    <button class="icon-btn" onclick="showTemplatePreview('${t.id}', true)" title="Просмотр" aria-label="Просмотр">👁</button>
+                    <button class="icon-btn" onclick="editBuiltinTemplate('${t.id}')" title="Редактировать" aria-label="Редактировать">✏️</button>
+                    <button class="icon-btn delete" onclick="hideBuiltinTemplate('${t.id}')" title="Удалить" aria-label="Удалить">🗑</button>
+                </div>
+            </div>
+        </div>`).join('');
+    } else {
+        builtinTitle.style.display = 'none';
+        builtinList.style.display = 'none';
+        builtinList.innerHTML = '';
+    }
+
+    emptyEl.style.display = (DB.templates.length === 0 && visible.length === 0) ? 'block' : 'none';
+}
+function createFromTemplate(id, isBuiltin) {
+    const t = isBuiltin ? BUILTIN_TEMPLATES.find(x => x.id === id) : DB.templates.find(x => x.id === id);
+    if (!t) return;
+    const nw = JSON.parse(JSON.stringify(t));
+    delete nw.builtin;
+    nw.id = Date.now();
+    DB.workouts.push(nw);
+    saveDB('workouts');
+    showToast('Добавлено в тренировки');
+    showScreen('screen-workouts');
+}
+async function deleteTemplate(id) {
+    if (!await customConfirm('Удалить шаблон?', { danger: true, okText: '🗑 Удалить' })) return;
+    const idx = DB.templates.findIndex(t => t.id === id);
+    if (idx < 0) return;
+    const removed = DB.templates[idx];
+    DB.templates.splice(idx, 1);
+    saveDB('templates'); renderTemplates();
+    showUndoToast('Шаблон удалён', () => {
+        DB.templates.splice(idx, 0, removed);
+        saveDB('templates');
+        renderTemplates();
+        showToast('Восстановлено');
+    });
+}
+async function hideBuiltinTemplate(id) {
+    if (!await customConfirm('Скрыть шаблон?', { danger: true, okText: '👁‍🗨 Скрыть' })) return;
+    if (!DB.settings.hiddenBuiltins.includes(id)) DB.settings.hiddenBuiltins.push(id);
+    saveDB('settings'); renderTemplates();
+    showUndoToast('Шаблон скрыт', () => {
+        DB.settings.hiddenBuiltins = DB.settings.hiddenBuiltins.filter(x => x !== id);
+        saveDB('settings');
+        renderTemplates();
+        showToast('Восстановлено');
+    });
+}
+function editBuiltinTemplate(id) {
+    const t = BUILTIN_TEMPLATES.find(x => x.id === id);
+    if (!t) return;
+    const c = JSON.parse(JSON.stringify(t));
+    delete c.builtin;
+    c.id = Date.now(); c.name = t.name + ' (моя версия)';
+    DB.templates.push(c); saveDB('templates'); openEditor(c.id, true);
+}
+async function restoreBuiltins() {
+    if (DB.settings.hiddenBuiltins.length === 0) { showToast('Все шаблоны на месте'); return; }
+    if (!await customConfirm(`Восстановить ${DB.settings.hiddenBuiltins.length} шаблонов?`, { danger: false, okText: '🔄 Восстановить' })) return;
+    const backup = [...DB.settings.hiddenBuiltins];
+    DB.settings.hiddenBuiltins = []; saveDB('settings');
+    renderSettings();
+    showUndoToast('Шаблоны восстановлены', () => {
+        DB.settings.hiddenBuiltins = backup;
+        saveDB('settings');
+        renderSettings();
+        showToast('Отменено');
+    });
+}
+function showTemplatePreview(id, isBuiltin) {
+    const t = isBuiltin ? BUILTIN_TEMPLATES.find(x => x.id === id) : DB.templates.find(x => x.id === id);
+    if (!t) return;
+    previewWorkoutId = null;
+    document.getElementById('preview-title').innerText = t.name;
+    document.getElementById('preview-back-btn').onclick = () => showScreen('screen-templates');
+    document.getElementById('preview-content').innerHTML = `<div class="card"><div style="color:var(--muted); font-size:0.9rem;">
+        ${getTotalExerciseCount(t.exercises)} упр. · ~${Math.round(getTotalRestTime(t.exercises)/60)} мин отдыха
+    </div></div>${renderPreviewElements(t.exercises)}`;
+    document.getElementById('preview-actions').innerHTML = `<button class="btn accent" onclick="createFromTemplate('${id}', ${isBuiltin})">+ В тренировки</button>`;
+    showScreen('screen-preview');
+}
+
+function renderPreviewElements(exercises) {
+    return exercises.map((e, i) => {
+        if (!e) return '';
+        if (e.kind === 'warmup') {
+            const mode = e.mode === 'free' ? 'free' : 'timer';
+            const durText = mode === 'timer' ? formatTime(e.duration || 180) : 'свободно';
+            return `<div class="preview-exercise warmup"><div class="num">🔥</div><div class="info"><div class="name">Разминка${mode === 'free' ? ' (свободно)' : ''}</div><div class="rest-info">${durText} · <span style="color:var(--warn); font-weight:600;">можно пропустить</span></div></div></div>`;
+        }
+        if (e.kind === 'rest') {
+            const isWater = e.restType === 'water';
+            const num = isWater ? '💧' : '🛌';
+            const dur = e.duration === null ? 'без таймера' : formatTime(e.duration || 0);
+            const name = isWater ? 'Необходимо попить воды' : 'Отдых';
+            return `<div class="preview-exercise ${isWater ? 'water' : 'rest'}"><div class="num">${num}</div><div class="info"><div class="name">${escapeHtml(name)}</div><div class="rest-info">${dur}</div></div></div>`;
+        }
+        const exNum = getExerciseNumber(exercises, i);
+        let info = '';
+        if (e.type === 'sets') {
+            const sets = e.setsCount || 3;
+            const perSet = e.setMode === 'reps' ? (e.targetReps || 10) + ' повт' : formatTime(e.setDuration || 45);
+            info = `${sets}×${perSet}`;
+            if (e.restBetweenSets) info += ` · отдых ${formatTime(e.restBetweenSets)}`;
+        } else if (e.type === 'reps') info = `${e.targetReps || 10} ${pluralReps(e.targetReps || 10)}`;
+        else info = 'по времени';
+        const icon = e.type === 'sets' ? ' 🔁' : e.type === 'reps' ? ' 🔢' : '';
+        return `<div class="preview-exercise"><div class="num">${exNum}</div><div class="info"><div class="name">${escapeHtml(e.name || 'Упражнение')}${icon}</div><div class="rest-info">${info}${e.notes ? ' · ' + escapeHtml(e.notes) : ''}</div></div></div>`;
+    }).join('');
+}
+
+/* ===================== EDITOR ===================== */
+function updateEditorSettingVisibility() {
+    const cdEl = document.getElementById('workout-countdown');
+    const cdRow = document.getElementById('workout-countdown-interval-row');
+    if (cdEl && cdRow) cdRow.style.display = cdEl.checked ? 'flex' : 'none';
+    const mbEl = document.getElementById('workout-minute-beep');
+    const mbRow = document.getElementById('workout-minute-beep-interval-row');
+    if (mbEl && mbRow) mbRow.style.display = mbEl.checked ? 'flex' : 'none';
+}
+
+function initWorkoutSettingsFields(w) {
+    const ws = (w && w.settings) || {};
+    const countdown = ws.countdown !== undefined ? ws.countdown : DB.settings.countdown;
+    const countdownDur = ws.countdownDuration !== undefined ? ws.countdownDuration : DB.settings.countdownDuration;
+    const minuteBeep = ws.minuteBeep !== undefined ? ws.minuteBeep : DB.settings.minuteBeep;
+    const minuteBeepInt = ws.minuteBeepInterval !== undefined ? ws.minuteBeepInterval : DB.settings.minuteBeepInterval;
+    const announceNumbers = ws.announceNumbers !== undefined ? ws.announceNumbers : DB.settings.announceNumbers;
+    const continuousBeep = ws.continuousBeep !== undefined ? ws.continuousBeep : DB.settings.continuousBeep;
+    const askReps = ws.askReps !== undefined ? ws.askReps : DB.settings.askReps;
+    const skipWarmup = ws.skipWarmup !== undefined ? ws.skipWarmup : false;
+
+    const cdEl = document.getElementById('workout-countdown');
+    const cdDurEl = document.getElementById('workout-countdown-duration');
+    const mbEl = document.getElementById('workout-minute-beep');
+    const mbIntEl = document.getElementById('workout-minute-beep-interval');
+    const anEl = document.getElementById('workout-announce-numbers');
+    const cbEl = document.getElementById('workout-continuous-beep');
+    const arEl = document.getElementById('workout-ask-reps');
+    const swEl = document.getElementById('workout-skip-warmup');
+    if (cdEl) cdEl.checked = !!countdown;
+    if (cdDurEl) cdDurEl.value = String(countdownDur || 3);
+    if (mbEl) mbEl.checked = !!minuteBeep;
+    if (mbIntEl) mbIntEl.value = String(minuteBeepInt || 60);
+    if (anEl) anEl.checked = !!announceNumbers;
+    if (cbEl) cbEl.checked = !!continuousBeep;
+    if (arEl) arEl.checked = askReps !== false;
+    if (swEl) swEl.checked = !!skipWarmup;
+    updateEditorSettingVisibility();
+}
+
+function initEditorSettingsAccordion() {
+    const group = document.getElementById('editor-settings-group');
+    if (!group) return;
+    if (DB.settings.accordions && DB.settings.accordions.editorSettings !== undefined) {
+        group.open = DB.settings.accordions.editorSettings;
+    }
+    if (group.dataset.accBound !== '1') {
+        group.dataset.accBound = '1';
+        group.addEventListener('toggle', () => {
+            DB.settings.accordions = DB.settings.accordions || {};
+            DB.settings.accordions.editorSettings = group.open;
+            Storage.set('ft_settings', DB.settings);
+        });
+    }
+}
+
+async function resetWorkoutSettingsToGlobal() {
+    if (!await customConfirm('Сбросить настройки тренировки к глобальным?', { danger: false, okText: '↺ Сбросить' })) return;
+    initWorkoutSettingsFields(null);
+    showToast('↺ Сброшено к глобальным');
+}
+
+function openEditor(id, isTemplate) {
+    editingId = id;
+    editingIsTemplate = isTemplate;
+    initEditorSettingsAccordion();
+    if (id === null) {
+        editorExercises = [];
+        document.getElementById('workout-name').value = '';
+        document.getElementById('auto-start').checked = DB.settings.defaultAutoStart;
+        document.getElementById('editor-title').innerText = isTemplate ? 'Новый шаблон' : 'Новая тренировка';
+        document.getElementById('delete-btn').style.display = 'none';
+        document.getElementById('export-btn').style.display = 'none';
+        initWorkoutSettingsFields(null);
+    } else {
+        const src = isTemplate ? DB.templates : DB.workouts;
+        const w = src.find(x => x.id === id);
+        if (!w) return;
+        editorExercises = JSON.parse(JSON.stringify(w.exercises));
+        editorExercises.forEach(ex => {
+            if (ex.kind === 'rest' && ex.duration !== null && ex.duration !== undefined && !REST_PRESETS.some(p => p.v === ex.duration)) {
+                ex.customDuration = true;
             }
-            if (clients.openWindow) return clients.openWindow('./');
-        })
-    );
+            if (ex.kind === 'warmup' && ex.mode !== 'free' && ex.duration !== null && ex.duration !== undefined && !REST_PRESETS.some(p => p.v === ex.duration)) {
+                ex.customDuration = true;
+            }
+        });
+        document.getElementById('workout-name').value = w.name;
+        document.getElementById('auto-start').checked = w.autoStart;
+        document.getElementById('editor-title').innerText = isTemplate ? 'Редактирование шаблона' : 'Редактирование';
+        document.getElementById('delete-btn').style.display = 'block';
+        document.getElementById('export-btn').style.display = 'block';
+        initWorkoutSettingsFields(w);
+    }
+    renderEditorExercises();
+    showScreen('screen-editor');
+}
+function cancelEditor() { showScreen(editingIsTemplate ? 'screen-templates' : 'screen-workouts'); }
+
+function renderDurationRow(i, el, presets, label, allowNone = true) {
+    const isPreset = !el.customDuration && presets.some(p => p.v === el.duration);
+    let html = `<div class="rest-row"><label>${label}</label>
+        <select class="select" onchange="handleDurationSelect(${i}, this.value)" style="flex:1; margin:0;">`;
+    presets.forEach(p => { html += `<option value="${p.v}" ${isPreset && p.v === el.duration ? 'selected' : ''}>${p.t}</option>`; });
+    html += `<option value="custom" ${(!isPreset && el.duration !== null) ? 'selected' : ''}>Другое...</option>`;
+    if (allowNone) html += `<option value="none" ${el.duration === null ? 'selected' : ''}>Без таймера</option>`;
+    html += `</select>`;
+    if (!isPreset && el.duration !== null) {
+        html += `<input type="number" value="${el.duration}" min="0" step="5" onchange="updateElement(${i}, 'duration', parseInt(this.value)||0); renderEditorExercises();" style="width:70px; margin:0; padding:8px;"><span style="color:var(--muted); font-size:0.85rem;">сек</span>`;
+    }
+    html += `</div>`;
+    return html;
+}
+function handleDurationSelect(i, value) {
+    const el = editorExercises[i];
+    if (!el) return;
+    if (value === 'custom') { el.customDuration = true; if (el.duration === null || el.duration === undefined) el.duration = 20; }
+    else if (value === 'none') { el.customDuration = false; el.duration = null; }
+    else { el.customDuration = false; el.duration = parseInt(value); }
+    renderEditorExercises();
+}
+
+function renderEditorExercises() {
+    const c = document.getElementById('exercises-list');
+    if (editorExercises.length === 0) { c.innerHTML = '<div class="empty-state">Добавьте упражнения или отдых</div>'; return; }
+    c.innerHTML = editorExercises.map((el, i) => {
+        if (el.kind === 'warmup') {
+            const mode = el.mode === 'free' ? 'free' : 'timer';
+            const header = `<div class="exercise-header">
+                <div class="exercise-number">🔥</div>
+                <input type="text" class="exercise-name-input" value="Разминка" disabled>
+                <div class="exercise-controls">
+                    <button class="icon-btn" onclick="moveElement(${i},-1)" ${i===0?'disabled':''} aria-label="Вверх"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg></button>
+                    <button class="icon-btn" onclick="moveElement(${i},1)" ${i===editorExercises.length-1?'disabled':''} aria-label="Вниз"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+                    <button class="icon-btn delete-btn" onclick="removeElement(${i})" aria-label="Удалить"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+                </div>
+            </div>`;
+            const modeRow = `<div class="type-row">
+                <label>Режим:</label>
+                <select class="select" onchange="updateElement(${i}, 'mode', this.value); renderEditorExercises();" style="flex:1;">
+                    <option value="timer" ${mode === 'timer' ? 'selected' : ''}>⏱ По таймеру</option>
+                    <option value="free" ${mode === 'free' ? 'selected' : ''}>🕐 Свободно</option>
+                </select>
+            </div>`;
+            const durRow = mode === 'timer' ? renderDurationRow(i, el, REST_PRESETS, 'Длительность:', false) : '';
+            return `<div class="exercise-block warmup-block">${header}${modeRow}${durRow}</div>`;
+        }
+        if (el.kind === 'rest') {
+            const isWater = el.restType === 'water';
+            const header = `<div class="exercise-header">
+                <div class="exercise-number">${isWater ? '💧' : '🛌'}</div>
+                <input type="text" class="exercise-name-input" value="${escapeHtml(isWater ? 'Необходимо попить воды' : 'Отдых')}" onchange="updateElement(${i}, 'name', this.value)" placeholder="Название">
+                <div class="exercise-controls">
+                    <button class="icon-btn" onclick="moveElement(${i},-1)" ${i===0?'disabled':''} aria-label="Вверх"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg></button>
+                    <button class="icon-btn" onclick="moveElement(${i},1)" ${i===editorExercises.length-1?'disabled':''} aria-label="Вниз"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+                    <button class="icon-btn delete-btn" onclick="removeElement(${i})" aria-label="Удалить"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+                </div>
+            </div>`;
+            const typeRow = `<div class="type-row"><label>Тип:</label><select class="select" onchange="updateElement(${i}, 'restType', this.value); renderEditorExercises();"><option value="rest" ${!isWater ? 'selected' : ''}>🛌 Обычный отдых</option><option value="water" ${isWater ? 'selected' : ''}>💧 Необходимо попить воды</option></select></div>`;
+            const durRow = renderDurationRow(i, el, REST_PRESETS, 'Длительность:');
+            return `<div class="exercise-block rest-block ${isWater ? 'water-type' : ''}">${header}${typeRow}${durRow}</div>`;
+        }
+        const num = getExerciseNumber(editorExercises, i);
+        const exType = el.type || 'time';
+        let typeRow = `<div class="type-row"><label>Тип:</label><select class="select" onchange="updateElement(${i}, 'type', this.value); renderEditorExercises();"><option value="time" ${exType === 'time' ? 'selected' : ''}>⏱ Время</option><option value="reps" ${exType === 'reps' ? 'selected' : ''}>🔢 Повторы</option><option value="sets" ${exType === 'sets' ? 'selected' : ''}>🔁 Подходы</option></select>
+            ${exType === 'reps' ? `<input type="number" value="${el.targetReps || 10}" min="1" step="1" onchange="updateElement(${i}, 'targetReps', parseInt(this.value)||10);"><span style="color:var(--muted); font-size:0.85rem;">повт.</span>` : ''}
+            ${exType === 'sets' ? `<label style="margin-left:6px;">Подходов:</label><input type="number" value="${el.setsCount || 3}" min="1" step="1" onchange="updateElement(${i}, 'setsCount', Math.max(1, parseInt(this.value)||3)); renderEditorExercises();">` : ''}
+        </div>`;
+        if (exType === 'sets') {
+            typeRow += `<div class="type-row"><label>В подходе:</label><select class="select" onchange="updateElement(${i}, 'setMode', this.value); renderEditorExercises();" style="flex:1;"><option value="reps" ${(el.setMode||'reps') === 'reps' ? 'selected' : ''}>🔢 Повторы</option><option value="time" ${el.setMode === 'time' ? 'selected' : ''}>⏱ Время</option></select>
+                ${(el.setMode||'reps') === 'reps' ? `<input type="number" value="${el.targetReps || 10}" min="1" step="1" onchange="updateElement(${i}, 'targetReps', parseInt(this.value)||10);"><span style="color:var(--muted); font-size:0.85rem;">повт.</span>` : `<input type="number" value="${el.setDuration || 45}" min="5" step="5" onchange="updateElement(${i}, 'setDuration', Math.max(5, parseInt(this.value)||45));"><span style="color:var(--muted); font-size:0.85rem;">сек</span>`}
+            </div>
+            <div class="rest-row"><label>Отдых между:</label><input type="number" value="${el.restBetweenSets || 60}" min="0" step="5" onchange="updateElement(${i}, 'restBetweenSets', parseInt(this.value)||0);" style="width:70px; margin:0; padding:8px;"><span style="color:var(--muted); font-size:0.85rem;">сек</span></div>`;
+        }
+        return `<div class="exercise-block">
+            <div class="exercise-header">
+                <div class="exercise-number">${num}</div>
+                <input type="text" class="exercise-name-input" value="${escapeHtml(el.name)}" onchange="updateElement(${i}, 'name', this.value)" placeholder="Название">
+                <div class="exercise-controls">
+                    <button class="icon-btn" onclick="moveElement(${i},-1)" ${i===0?'disabled':''} aria-label="Вверх"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg></button>
+                    <button class="icon-btn" onclick="moveElement(${i},1)" ${i===editorExercises.length-1?'disabled':''} aria-label="Вниз"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+                    <button class="icon-btn delete-btn" onclick="removeElement(${i})" aria-label="Удалить"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+                </div>
+            </div>
+            ${typeRow}
+            <div class="notes-row"><label>📝</label><textarea class="input" placeholder="Постоянная заметка" onchange="updateElement(${i}, 'notes', this.value)" style="margin:0;">${escapeHtml(el.notes || '')}</textarea></div>
+        </div>`;
+    }).join('');
+}
+
+function addExercise() {
+    editorExercises.push({ kind: 'exercise', name: '', type: 'time', notes: '', targetReps: 10, setsCount: 3, setMode: 'reps', setDuration: 45, restBetweenSets: 60 });
+    renderEditorExercises();
+}
+function addWarmup() {
+    editorExercises.push({ kind: 'warmup', name: 'Разминка', duration: 180, mode: 'timer' });
+    renderEditorExercises();
+}
+function addRest() {
+    editorExercises.push({ kind: 'rest', restType: 'rest', duration: 60, notes: '' });
+    renderEditorExercises();
+}
+function updateElement(i, f, v) {
+    if (!editorExercises[i]) return;
+    editorExercises[i][f] = v;
+    if (f === 'type') {
+        const ex = editorExercises[i];
+        if (v === 'sets') {
+            if (ex.setsCount === undefined || ex.setsCount === null) ex.setsCount = 3;
+            if (ex.setMode === undefined) ex.setMode = 'reps';
+            if (ex.targetReps === undefined || ex.targetReps === null) ex.targetReps = 10;
+            if (ex.setDuration === undefined || ex.setDuration === null) ex.setDuration = 45;
+            if (ex.restBetweenSets === undefined || ex.restBetweenSets === null) ex.restBetweenSets = 60;
+        } else if (v === 'reps') {
+            if (ex.targetReps === undefined || ex.targetReps === null) ex.targetReps = 10;
+        }
+    }
+    if (f === 'mode' && editorExercises[i].kind === 'warmup') {
+        if (v === 'free') editorExercises[i].duration = null;
+        else if (typeof editorExercises[i].duration !== 'number' || editorExercises[i].duration < 5) editorExercises[i].duration = 180;
+    }
+}
+function removeElement(i) { editorExercises.splice(i, 1); renderEditorExercises(); }
+function moveElement(i, d) {
+    const j = i + d;
+    if (j < 0 || j >= editorExercises.length) return;
+    [editorExercises[i], editorExercises[j]] = [editorExercises[j], editorExercises[i]];
+    renderEditorExercises();
+}
+
+let saveWorkoutInProgress = false;
+async function saveWorkout() {
+    if (saveWorkoutInProgress) return;
+    saveWorkoutInProgress = true;
+    try {
+        const name = document.getElementById('workout-name').value.trim();
+        if (!name) { showToast('Введи название'); return; }
+        if (editorExercises.length === 0) { showToast('Добавь элементы'); return; }
+        const hasExercise = editorExercises.some(e => e.kind === 'exercise');
+        if (!hasExercise) { showToast('Добавь хотя бы одно упражнение'); return; }
+        const emptyNames = editorExercises.filter(e => e.kind === 'exercise' && !e.name.trim());
+        if (emptyNames.length > 0) {
+            if (!await customConfirm(`У ${emptyNames.length} упражнений не указано название. Продолжить?`, { danger: false, okText: 'Продолжить' })) return;
+        }
+        editorExercises.forEach(ex => {
+            if (ex.kind === 'exercise' && ex.type === 'sets') {
+                if (ex.setsCount === undefined || ex.setsCount === null) ex.setsCount = 3;
+                if (ex.setMode === undefined) ex.setMode = 'reps';
+                if (ex.setMode === 'reps' && (ex.targetReps === undefined || ex.targetReps === null)) ex.targetReps = 10;
+                if (ex.setMode === 'time' && (ex.setDuration === undefined || ex.setDuration === null)) ex.setDuration = 45;
+                if (ex.restBetweenSets === undefined || ex.restBetweenSets === null) ex.restBetweenSets = 60;
+            }
+            if (ex.kind === 'exercise' && ex.type === 'reps') {
+                if (ex.targetReps === undefined || ex.targetReps === null) ex.targetReps = 10;
+            }
+            if (ex.kind === 'warmup') {
+                ex.name = 'Разминка';
+                if (ex.mode === 'free') {
+                    ex.duration = null;
+                } else {
+                    ex.mode = 'timer';
+                    if (typeof ex.duration !== 'number' || ex.duration <= 0) ex.duration = 180;
+                    if (ex.duration < 5) ex.duration = 5;
+                }
+            }
+            if (ex.customDuration !== undefined) delete ex.customDuration;
+        });
+        const autoStart = document.getElementById('auto-start').checked;
+        const settings = {
+            countdown: document.getElementById('workout-countdown').checked,
+            countdownDuration: parseInt(document.getElementById('workout-countdown-duration').value) || 3,
+            minuteBeep: document.getElementById('workout-minute-beep').checked,
+            minuteBeepInterval: parseInt(document.getElementById('workout-minute-beep-interval').value) || 60,
+            announceNumbers: document.getElementById('workout-announce-numbers').checked,
+            continuousBeep: document.getElementById('workout-continuous-beep').checked,
+            askReps: document.getElementById('workout-ask-reps').checked,
+            skipWarmup: document.getElementById('workout-skip-warmup').checked
+        };
+        const data = { name, autoStart, exercises: editorExercises, settings };
+        if (editingIsTemplate) {
+            if (editingId === null) DB.templates.push({ id: Date.now(), ...data });
+            else Object.assign(DB.templates.find(x => x.id === editingId), data);
+            saveDB('templates'); showScreen('screen-templates');
+        } else {
+            if (editingId === null) DB.workouts.push({ id: Date.now(), ...data });
+            else Object.assign(DB.workouts.find(x => x.id === editingId), data);
+            saveDB('workouts'); showScreen('screen-workouts');
+        }
+    } finally {
+        saveWorkoutInProgress = false;
+    }
+}
+async function deleteWorkout() {
+    if (!await customConfirm('Удалить?', { danger: true, okText: '🗑 Удалить' })) return;
+    if (editingIsTemplate) {
+        const idx = DB.templates.findIndex(w => w.id === editingId);
+        if (idx < 0) return;
+        const removed = DB.templates[idx];
+        DB.templates.splice(idx, 1);
+        saveDB('templates');
+        showScreen('screen-templates');
+        showUndoToast('Шаблон удалён', () => {
+            DB.templates.splice(idx, 0, removed);
+            saveDB('templates');
+            renderTemplates();
+            showToast('Восстановлено');
+        });
+    } else {
+        const idx = DB.workouts.findIndex(w => w.id === editingId);
+        if (idx < 0) return;
+        const removed = DB.workouts[idx];
+        DB.workouts.splice(idx, 1);
+        saveDB('workouts');
+        showScreen('screen-workouts');
+        showUndoToast('Тренировка удалена', () => {
+            DB.workouts.splice(idx, 0, removed);
+            saveDB('workouts');
+            renderWorkoutsList();
+            showToast('Восстановлено');
+        });
+    }
+}
+function exportCurrentWorkout() {
+    if (editingId === null) { showToast('Сначала сохрани'); return; }
+    const src = editingIsTemplate ? DB.templates : DB.workouts;
+    const w = src.find(x => x.id === editingId);
+    if (!w) return;
+    const data = { type: 'fit-trainer-workout', version: 3, exportedAt: new Date().toISOString(), workout: { name: w.name, autoStart: w.autoStart, exercises: w.exercises, settings: w.settings || {} } };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `fit-trainer-${w.name.replace(/[^a-zа-яё0-9]/gi, '_')}.json`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+function importWorkout(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+        try {
+            const data = JSON.parse(e.target.result);
+            if (data.type !== 'fit-trainer-workout' || !data.workout) { showToast('Не файл тренировки'); return; }
+            const w = data.workout;
+            if (!w.name || !w.exercises || !Array.isArray(w.exercises)) { showToast('Неверный формат'); return; }
+            const nw = { id: Date.now(), name: w.name + ' (импорт)', autoStart: w.autoStart || false, exercises: [], settings: w.settings || null };
+            const tmp = { exercises: w.exercises };
+            const migrated = (function() {
+                const list = tmp.exercises;
+                const hasKind = list.some(e => e && (e.kind === 'exercise' || e.kind === 'rest' || e.kind === 'warmup'));
+                if (hasKind) return list;
+                const res = [];
+                list.forEach((ex, i) => {
+                    const next = list[i + 1];
+                    const isLast = i === list.length - 1;
+                    if (ex.waterBreak) { res.push({ kind: 'rest', restType: 'water', duration: isLast ? null : (ex.restSeconds || null), notes: ex.notes || '' }); return; }
+                    const ne = { kind: 'exercise', name: ex.name || '', type: ex.type === 'reps' || ex.type === 'sets' ? ex.type : 'time', notes: ex.notes || '' };
+                    if (ne.type === 'reps') ne.targetReps = ex.targetReps || 10;
+                    if (ne.type === 'sets') { ne.setsCount = ex.setsCount || 3; ne.setMode = ex.setMode || 'reps'; ne.targetReps = ex.targetReps || 10; ne.setDuration = ex.setDuration || 45; ne.restBetweenSets = ex.restBetweenSets || 60; }
+                    res.push(ne);
+                    if (!isLast && ex.restSeconds > 0 && !(next && next.waterBreak)) res.push({ kind: 'rest', restType: 'rest', duration: ex.restSeconds, notes: '' });
+                });
+                return res;
+            })();
+            nw.exercises = migrated;
+            DB.workouts.push(nw); saveDB('workouts');
+            showToast(`Импортировано: ${nw.name}`);
+            showScreen('screen-workouts');
+        } catch(err) { showToast('Ошибка: ' + err.message); }
+    };
+    reader.readAsText(file);
+    event.target.value = '';
+}
+function showPreview(id) {
+    const w = DB.workouts.find(x => x.id === id);
+    if (!w) return;
+    previewWorkoutId = id;
+    document.getElementById('preview-title').innerText = w.name;
+    document.getElementById('preview-back-btn').onclick = () => showScreen('screen-workouts');
+    document.getElementById('preview-content').innerHTML = `<div class="card"><div style="color:var(--muted); font-size:0.9rem;">
+        ${getTotalExerciseCount(w.exercises)} упражнений · ~${Math.round(estimateWorkoutDuration(w)/60)} мин всего
+    </div></div>${renderPreviewElements(w.exercises)}`;
+    document.getElementById('preview-actions').innerHTML = `
+        <button class="btn accent" onclick="startFromPreview()">▶ Начать</button>
+        <button class="btn ghost" onclick="saveAsTemplate(${id})" style="margin-top:8px;">💾 Сохранить как шаблон</button>`;
+    showScreen('screen-preview');
+}
+function startFromPreview() { if (previewWorkoutId) startWorkout(previewWorkoutId); }
+function saveAsTemplate(id) {
+    const w = DB.workouts.find(x => x.id === id);
+    if (!w) return;
+    const copy = JSON.parse(JSON.stringify(w));
+    copy.id = Date.now();
+    copy.name = w.name + ' (шаблон)';
+    DB.templates.push(copy);
+    saveDB('templates');
+    showToast('💾 Сохранено в шаблоны');
+}
+function saveCurrentRunAsTemplate() {
+    if (!runState || !runState.workout) return;
+    const w = runState.workout;
+    const copy = JSON.parse(JSON.stringify(w));
+    copy.id = Date.now();
+    copy.name = w.name + ' (шаблон)';
+    DB.templates.push(copy);
+    saveDB('templates');
+    showToast('💾 Сохранено в шаблоны');
+}
+
+/* ===================== RUN CORE ===================== */
+let runState = null;
+
+function ensureTicker() {
+    if (!runState) return;
+    if (runState.tickInterval) clearInterval(runState.tickInterval);
+    runState.tickInterval = setInterval(updateTimersUI, 500);
+}
+function stopTickInterval() { if (runState && runState.tickInterval) { clearInterval(runState.tickInterval); runState.tickInterval = null; } }
+
+function startTimer(type, duration) {
+    if (!runState) return;
+    runState[`${type}StartTime`] = Date.now();
+    runState[`${type}ElapsedBeforePause`] = 0;
+    runState[`${type}Paused`] = false;
+    runState[`${type}Duration`] = duration || 0;
+    runState[`${type}BeepPlayed`] = false;
+    runState.lastBeepTargetTime = undefined;
+    ensureTicker();
+    updateTimersUI();
+}
+function pauseTimer(type) {
+    const e = getCurrentElapsed(type);
+    runState[`${type}ElapsedBeforePause`] = e;
+    runState[`${type}StartTime`] = null;
+    runState[`${type}Paused`] = true;
+}
+function resumeTimer(type) {
+    runState[`${type}StartTime`] = Date.now();
+    runState[`${type}Paused`] = false;
+}
+function stopTimer(type) {
+    runState[`${type}StartTime`] = null; runState[`${type}ElapsedBeforePause`] = 0;
+    runState[`${type}Paused`] = false; runState[`${type}Duration`] = 0;
+    runState[`${type}BeepPlayed`] = false;
+    runState.lastBeepTargetTime = undefined;
+}
+function getCurrentElapsed(type) {
+    const s = runState;
+    if (!s) return 0;
+    if (s[`${type}Paused`]) return s[`${type}ElapsedBeforePause`] || 0;
+    const st = s[`${type}StartTime`];
+    const bp = s[`${type}ElapsedBeforePause`] || 0;
+    if (!st) return bp;
+    return bp + Math.floor((Date.now() - st) / 1000);
+}
+function getRemainingTime(type) { return Math.max(0, (runState[`${type}Duration`] || 0) - getCurrentElapsed(type)); }
+function getOvertime(type) { return Math.max(0, getCurrentElapsed(type) - (runState[`${type}Duration`] || 0)); }
+
+function calcProgress() {
+    const elements = runState.workout.exercises;
+    const totalEx = getTotalExerciseCount(elements);
+    if (totalEx === 0) return 0;
+    const doneEx = runState.exerciseTimes.length;
+    let partial = 0;
+    const inActive = runState.phase === 'work' || runState.phase === 'countdown';
+    const inBetween = runState.phase === 'rest' && runState.restPhase === 'between-sets';
+    if (inActive || inBetween) {
+        const el = elements[runState.index];
+        if (el && el.kind === 'exercise' && el.type === 'sets') {
+            const setsCount = el.setsCount || 3;
+            if (inActive) partial = runState.currentSet / setsCount;
+            else partial = (runState.currentSet - 1) / setsCount;
+        }
+    }
+    return Math.min(100, ((doneEx + partial) / totalEx) * 100);
+}
+
+let startWorkoutInProgress = false;
+async function startWorkout(id) {
+    if (startWorkoutInProgress) return;
+    if (runState && runState.phase !== 'finish') {
+        showToast('⚠️ Тренировка уже запущена');
+        return;
+    }
+    const w = DB.workouts.find(x => x.id === id);
+    if (!w) return;
+    startWorkoutInProgress = true;
+    try {
+        const saved = loadSavedRunState();
+        if (saved && saved.workoutId && saved.phase && saved.phase !== 'finish') {
+            const sw = DB.workouts.find(x => x.id === saved.workoutId);
+            if (['ready','work','rest','countdown','warmup'].includes(saved.phase)) {
+                const choice = await showResumeDialog(saved, w);
+                if (choice === 'cancel') return;
+                if (choice === 'resume' && sw) { restoreRunState(saved); return; }
+                clearSavedRunState();
+            } else clearSavedRunState();
+        }
+        try { await requestNotificationPermission(); } catch(e) {}
+        runState = {
+            workout: w, index: 0, phase: 'ready',
+            currentSet: 1, restPhase: null,
+            setResults: {}, exerciseNotes: {}, workoutNoteDraft: '',
+            currentExerciseWorkTime: 0, lastSetElapsed: 0,
+            warmupFinished: false, warmupBeepPlayed: false,
+            warmupMode: 'timer',
+            warmupSeconds: 0, warmupDuration: 0, warmupElapsedBeforePause: 0,
+            warmupStartTime: null, warmupPaused: false,
+            countdownInterval: null, restOvertimeInterval: null, tickInterval: null,
+            workStartTime: null, workElapsedBeforePause: 0, workPaused: false,
+            restStartTime: null, restElapsedBeforePause: 0, restPaused: false,
+            restDuration: 0, restBeepPlayed: false,
+            restFinished: false, restOvertime: 0,
+            restBannerMode: false,
+            startTime: new Date(), totalWorkTime: 0, lastFinishedWorkElapsed: 0,
+            exerciseTimes: [], lastBeepTargetTime: undefined, setFinishing: false, countdownValue: 3
+        };
+        document.getElementById('run-title').innerText = w.name;
+        acquireWakeLock(); enableExitProtection();
+        renderRun(); showScreen('screen-run'); saveRunState();
+        if (w.autoStart) setTimeout(() => beginCurrentElementFlow(true), 400);
+    } finally {
+        startWorkoutInProgress = false;
+    }
+}
+
+function beginCurrentElementFlow(fromAuto = false) {
+    if (!runState) return;
+    if (runState.phase !== 'ready') return;
+    unlockAudio();
+    saveRunState();
+    const el = runState.workout.exercises[runState.index];
+    if (!el) { showFinishScreen(); return; }
+    if (el.kind === 'warmup') {
+        if (fromAuto && getEffectiveSetting('skipWarmup')) {
+            runState.index++;
+            runState.phase = 'ready';
+            if (runState.index >= runState.workout.exercises.length) { showFinishScreen(); return; }
+            renderRun();
+            if (runState.workout.autoStart) setTimeout(() => beginCurrentElementFlow(true), 300);
+            return;
+        }
+        beginWarmupPhase(el);
+    } else if (el.kind === 'rest') {
+        beginRestPhase(el);
+    } else {
+        if (getEffectiveSetting('countdown')) startCountdown();
+        else startExerciseNow();
+    }
+}
+
+function beginWarmupPhase(warmupEl) {
+    runState.phase = 'warmup';
+    runState.warmupFinished = false;
+    runState.warmupBeepPlayed = false;
+    runState.warmupMode = warmupEl.mode === 'free' ? 'free' : 'timer';
+    if (runState.warmupMode === 'free') {
+        runState.warmupDuration = 0;
+        startTimer('warmup', 0);
+    } else {
+        const dur = (typeof warmupEl.duration === 'number' && warmupEl.duration > 0) ? warmupEl.duration : 180;
+        runState.warmupDuration = dur;
+        startTimer('warmup', dur);
+    }
+    speak('Разминка');
+    saveRunState();
+    renderRun();
+}
+
+function toggleWarmupPause() {
+    if (!runState || runState.phase !== 'warmup') return;
+    if (runState.warmupFinished) return;
+    if (runState.warmupPaused) { unlockAudio(); resumeTimer('warmup'); announceResume(); }
+    else { pauseTimer('warmup'); announcePause(); }
+    saveRunState(); renderRun();
+}
+
+function onWarmupFinished() {
+    if (!runState || runState.warmupFinished) return;
+    runState.warmupFinished = true;
+    const elapsed = getCurrentElapsed('warmup');
+    const dur = runState.warmupDuration || elapsed;
+    runState.warmupSeconds = (runState.warmupSeconds || 0) + Math.min(elapsed, dur);
+    if (isVoiceMode()) {
+        try { speechSynthesis.cancel(); } catch(e) {}
+        speakCritical('разминка завершена');
+    } else playBeep(620, 0.2);
+    if (navigator.vibrate) navigator.vibrate([200]);
+    renderRun();
+    saveRunState();
+}
+
+function finishWarmupEarly() {
+    if (!runState || runState.phase !== 'warmup') return;
+    if (runState.warmupFinished) return;
+    const elapsed = getCurrentElapsed('warmup');
+    const dur = runState.warmupDuration || elapsed;
+    runState.warmupSeconds = (runState.warmupSeconds || 0) + Math.min(elapsed, dur);
+    stopTimer('warmup');
+    runState.index++;
+    runState.phase = 'ready';
+    saveRunState();
+    if (runState.index >= runState.workout.exercises.length) { showFinishScreen(); return; }
+    renderRun();
+    if (runState.workout.autoStart) setTimeout(() => beginCurrentElementFlow(true), getAutoAdvanceDelay());
+}
+
+async function skipWarmupElement() {
+    if (!runState) return;
+    const el = runState.workout.exercises[runState.index];
+    if (!el || el.kind !== 'warmup') return;
+    if (runState.phase === 'warmup' && !runState.warmupFinished) {
+        const ok = await customConfirm('Пропустить разминку?', { title: 'Пропустить разминку', okText: '⏭ Пропустить', cancelText: 'Отмена', danger: true });
+        if (!ok) return;
+    }
+    if (runState.phase === 'warmup') stopTimer('warmup');
+    runState.warmupFinished = false;
+    runState.index++;
+    runState.phase = 'ready';
+    saveRunState();
+    if (runState.index >= runState.workout.exercises.length) { showFinishScreen(); return; }
+    renderRun();
+    if (runState.workout.autoStart) setTimeout(() => beginCurrentElementFlow(true), getAutoAdvanceDelay());
+}
+
+function confirmWarmupFinished() {
+    if (!runState || runState.phase !== 'warmup') return;
+    if (runState.warmupMode === 'free') {
+        const elapsed = getCurrentElapsed('warmup');
+        runState.warmupSeconds = (runState.warmupSeconds || 0) + elapsed;
+    }
+    stopTimer('warmup');
+    runState.warmupFinished = false;
+    runState.index++;
+    runState.phase = 'ready';
+    saveRunState();
+    if (runState.index >= runState.workout.exercises.length) { showFinishScreen(); return; }
+    renderRun();
+    if (runState.workout.autoStart) setTimeout(() => beginCurrentElementFlow(true), getAutoAdvanceDelay());
+}
+
+function startCountdown() {
+    runState.phase = 'countdown';
+    runState.countdownValue = getEffectiveSetting('countdownDuration') || 3;
+    saveRunState(); renderRun();
+    if (isVoiceMode()) speakCritical(runState.countdownValue <= 3 ? String(runState.countdownValue) : 'внимание');
+    clearInterval(runState.countdownInterval);
+    runState.countdownInterval = setInterval(() => {
+        runState.countdownValue--;
+        if (runState.countdownValue > 0) {
+            if (isVoiceMode()) { if (runState.countdownValue <= 3) speakCritical(String(runState.countdownValue)); }
+            else playBeep(600, 0.1);
+            renderRun();
+        } else {
+            clearInterval(runState.countdownInterval);
+            if (isVoiceMode()) setTimeout(() => startExerciseNow(), 500);
+            else { playBeep(900, 0.3); setTimeout(() => startExerciseNow(), 300); }
+        }
+    }, 1000);
+}
+
+function startExerciseNow() {
+    runState.phase = 'work';
+    runState.workPaused = false;
+    runState.currentExerciseWorkTime = 0;
+    const el = runState.workout.exercises[runState.index];
+    const n = getExerciseNumber(runState.workout.exercises, runState.index);
+    let info = '';
+    if (el.type === 'reps') info = `, ${el.targetReps || 10} ${pluralReps(el.targetReps || 10)}`;
+    else if (el.type === 'sets') info = `, ${el.setsCount || 3} ${pluralApproaches(el.setsCount || 3)}`;
+    let speech = '';
+    if (getEffectiveSetting('announceNumbers')) speech = n + '. ' + (el.name || 'Упражнение') + info;
+    else speech = (el.name || 'Упражнение') + info;
+    if (el.type === 'sets' && runState.currentSet > 1) speech = `Подход ${runState.currentSet}. ` + speech;
+    speak(speech);
+    startTimer('work', 0);
+    saveRunState(); renderRun();
+}
+
+function beginRestPhase(restEl) {
+    runState.phase = 'rest';
+    runState.restFinished = false;
+    runState.restBeepPlayed = false;
+    runState.restPhase = 'normal';
+    if (restEl.duration === null || restEl.duration === 0) {
+        runState.restBannerMode = true;
+        stopTimer('rest');
+        stopTickInterval();
+    } else {
+        runState.restBannerMode = false;
+        startTimer('rest', restEl.duration);
+    }
+    const ta = document.getElementById('rest-note-textarea');
+    const btn = document.getElementById('rest-note-toggle');
+    if (ta) { ta.style.display = 'none'; ta.value = ''; }
+    if (btn) btn.innerText = '📝 Добавить заметку';
+
+    const isWater = restEl.restType === 'water';
+    const next = findNextElement(runState.workout.exercises, runState.index);
+    let speech = isWater ? 'Необходимо попить воды' : 'Отдых';
+    if (next) {
+        const nx = next.el;
+        if (nx.kind === 'exercise') {
+            const num = getExerciseNumber(runState.workout.exercises, next.idx);
+            if (getEffectiveSetting('announceNumbers')) speech += '. Следующее ' + num + '. ' + (nx.name || '');
+            else speech += '. Следующее ' + (nx.name || '');
+        }
+    }
+    speak(speech);
+    saveRunState();
+    renderRun();
+}
+
+function toggleWorkPause() {
+    if (runState.workPaused) { unlockAudio(); resumeTimer('work'); announceResume(); }
+    else { pauseTimer('work'); announcePause(); }
+    saveRunState(); renderRun();
+}
+
+let finishExerciseInProgress = false;
+async function finishExercise() {
+    if (finishExerciseInProgress) return;
+    const el = runState.workout.exercises[runState.index];
+    if (!el || el.kind !== 'exercise') return;
+    finishExerciseInProgress = true;
+    try {
+        const needAsk = ((el.type === 'sets' && el.setMode === 'reps') || el.type === 'reps') && getEffectiveSetting('askReps');
+        let askedCount = null;
+        const wasPausedBefore = runState.workPaused;
+        if (needAsk) {
+            if (!wasPausedBefore) pauseTimer('work');
+            renderRun();
+            askedCount = await askRepsCount(el.targetReps || 0);
+            if (askedCount === null) {
+                if (!wasPausedBefore) resumeTimer('work');
+                renderRun();
+                return;
+            }
+        }
+        const elapsed = getCurrentElapsed('work');
+        stopTimer('work');
+        runState.workPaused = false;
+        runState.totalWorkTime += elapsed;
+        runState.currentExerciseWorkTime = (runState.currentExerciseWorkTime || 0) + elapsed;
+        runState.lastSetElapsed = elapsed;
+        if (el.type === 'sets') {
+            if (!runState.setResults[runState.index]) runState.setResults[runState.index] = [];
+            let val = askedCount !== null ? askedCount : (el.setMode === 'time' ? Math.min(elapsed, el.setDuration || elapsed) : (el.targetReps || 0));
+            runState.setResults[runState.index].push(val);
+            const totalSets = el.setsCount || 3;
+            const isLastSet = runState.currentSet >= totalSets;
+            if (!isLastSet) {
+                runState.currentSet++;
+                runState.phase = 'rest';
+                runState.restPhase = 'between-sets';
+                runState.restFinished = false;
+                runState.restBeepPlayed = false;
+                runState.restBannerMode = false;
+                startTimer('rest', el.restBetweenSets || 60);
+                saveRunState(); renderRun();
+                if (getEffectiveSetting('announceNumbers')) speak(`Подход ${runState.currentSet - 1} готов. Отдых. Следующий ${runState.currentSet}`);
+                else speak(`Отдых. Следующий подход ${runState.currentSet}`);
+                return;
+            }
+            runState.exerciseTimes.push(runState.currentExerciseWorkTime);
+            runState.lastFinishedWorkElapsed = runState.currentExerciseWorkTime;
+            runState.currentExerciseWorkTime = 0;
+            runState.currentSet = 1;
+            runState.restPhase = null;
+            advanceAfterExercise();
+        } else if (el.type === 'reps') {
+            const val = askedCount !== null ? askedCount : (el.targetReps || 0);
+            runState.setResults[runState.index] = [val];
+            runState.exerciseTimes.push(elapsed);
+            runState.lastFinishedWorkElapsed = elapsed;
+            runState.currentExerciseWorkTime = 0;
+            advanceAfterExercise();
+        } else {
+            runState.exerciseTimes.push(elapsed);
+            runState.lastFinishedWorkElapsed = elapsed;
+            runState.currentExerciseWorkTime = 0;
+            advanceAfterExercise();
+        }
+    } finally {
+        finishExerciseInProgress = false;
+    }
+}
+
+function advanceAfterExercise() {
+    runState.index++;
+    runState.phase = 'ready';
+    runState.restFinished = false;
+    runState.restOvertime = 0;
+    saveRunState();
+    if (runState.index >= runState.workout.exercises.length) { showFinishScreen(); return; }
+    renderRun();
+    if (runState.workout.autoStart) setTimeout(() => beginCurrentElementFlow(true), getAutoAdvanceDelay());
+}
+
+let skipExerciseInProgress = false;
+async function skipExercise() {
+    if (skipExerciseInProgress) return;
+    if (!runState) return;
+    const el = runState.workout.exercises[runState.index];
+    if (!el || el.kind !== 'exercise') return;
+    skipExerciseInProgress = true;
+    try {
+        const inWork = runState.phase === 'work' || runState.phase === 'countdown';
+        const isMid = el.type === 'sets' && runState.currentSet > 1;
+        if (inWork || isMid) {
+            const ok = await customConfirm('Пропустить упражнение?\nОно не будет засчитано в статистике.', { title: 'Пропустить упражнение', okText: '⏭ Пропустить', cancelText: 'Отмена', danger: true });
+            if (!ok) return;
+        }
+        const savedIdx = runState.index;
+        const savedExerciseTimes = [...runState.exerciseTimes];
+        const savedSetResults = JSON.parse(JSON.stringify(runState.setResults));
+        const savedCurrentSet = runState.currentSet;
+
+        stopTimer('work');
+        stopTimer('rest');
+        stopRestAlarm();
+        runState.workPaused = false;
+        runState.setResults[runState.index] = 'skipped';
+        runState.exerciseTimes.push(-1);
+        runState.currentSet = 1;
+        runState.restPhase = null;
+        runState.restFinished = false;
+        runState.restOvertime = 0;
+        runState.restBannerMode = false;
+        runState.currentExerciseWorkTime = 0;
+        runState.lastSetElapsed = 0;
+        runState.index++;
+        runState.phase = 'ready';
+        saveRunState();
+        if (runState.index >= runState.workout.exercises.length) { showFinishScreen(); return; }
+        renderRun();
+        if (runState.workout.autoStart) setTimeout(() => beginCurrentElementFlow(true), getAutoAdvanceDelay());
+
+        showUndoToast('Упражнение пропущено', () => {
+            if (!runState) { showToast('Тренировка уже завершена'); return; }
+            if (runState.index !== savedIdx + 1) { showToast('Уже перешли дальше'); return; }
+            runState.index = savedIdx;
+            runState.phase = 'ready';
+            runState.exerciseTimes = savedExerciseTimes;
+            runState.setResults = savedSetResults;
+            runState.currentSet = savedCurrentSet;
+            saveRunState();
+            renderRun();
+            showToast('↩ Восстановлено');
+        });
+    } finally {
+        skipExerciseInProgress = false;
+    }
+}
+
+function toggleRestPause() {
+    if (runState.restBannerMode) return;
+    if (runState.restPaused) { unlockAudio(); resumeTimer('rest'); announceResume(); }
+    else { pauseTimer('rest'); announcePause(); }
+    saveRunState(); renderRun();
+}
+
+function adjustRest(d) {
+    if (runState.restBannerMode) return;
+    if (runState.restFinished) {
+        if (d < 0) return;
+        const elapsed = getCurrentElapsed('rest');
+        let newDur = runState.restDuration + d;
+        if (newDur <= elapsed) newDur = elapsed + d;
+        runState.restDuration = newDur;
+        runState.restFinished = false;
+        runState.restOvertime = 0;
+        runState.restBeepPlayed = false;
+        stopRestAlarm();
+    } else {
+        runState.restDuration = Math.max(0, runState.restDuration + d);
+        if (runState.restDuration <= getCurrentElapsed('rest')) {
+            runState.restElapsedBeforePause = 0;
+            runState.restStartTime = Date.now();
+            runState.restDuration = 0;
+            onRestFinished();
+        }
+    }
+    updateTimersUI();
+    renderRun();
+    saveRunState();
+}
+
+function skipRest() {
+    stopRestAlarm();
+    if (runState.restPhase === 'between-sets') {
+        stopTimer('rest');
+        saveRunState();
+        beginBetweenSets();
+        return;
+    }
+    stopTimer('rest');
+    runState.index++;
+    runState.phase = 'ready';
+    runState.restPhase = null;
+    runState.restFinished = false;
+    runState.restOvertime = 0;
+    saveRunState();
+    if (runState.index >= runState.workout.exercises.length) { showFinishScreen(); return; }
+    renderRun();
+    if (runState.workout.autoStart) setTimeout(() => beginCurrentElementFlow(true), getAutoAdvanceDelay());
+}
+
+function beginBetweenSets() {
+    runState.phase = 'work';
+    runState.workPaused = false;
+    runState.restPhase = null;
+    runState.restFinished = false;
+    runState.restOvertime = 0;
+    speak(`Подход ${runState.currentSet}`);
+    startTimer('work', 0);
+    saveRunState(); renderRun();
+}
+
+function confirmRestFinished() {
+    stopRestAlarm();
+    stopTimer('rest');
+    if (runState.restPhase === 'between-sets') {
+        saveRunState();
+        beginBetweenSets();
+        return;
+    }
+    runState.index++;
+    runState.phase = 'ready';
+    runState.restPhase = null;
+    runState.restFinished = false;
+    runState.restOvertime = 0;
+    saveRunState();
+    if (runState.index >= runState.workout.exercises.length) { showFinishScreen(); return; }
+    renderRun();
+    if (runState.workout.autoStart) setTimeout(() => beginCurrentElementFlow(true), getAutoAdvanceDelay());
+}
+
+function confirmBanner() { confirmRestFinished(); }
+
+function onRestFinished() {
+    if (runState.restFinished) return;
+    if (getEffectiveSetting('continuousBeep')) {
+        runState.restFinished = true;
+        runState.restOvertime = 0;
+        startRestAlarm();
+        updateTimersUI();
+        renderRun();
+    } else {
+        playEndBeep();
+        if (isVoiceMode()) {
+            try { speechSynthesis.cancel(); } catch(e) {}
+            speakCritical('отдых закончен');
+        }
+        if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+        confirmRestFinished();
+    }
+}
+
+function toggleRestNote() {
+    const ta = document.getElementById('rest-note-textarea');
+    const btn = document.getElementById('rest-note-toggle');
+    if (!ta || !btn) return;
+    const prevIdx = findPrevExerciseIndex(runState.workout.exercises, runState.index);
+    if (prevIdx < 0) { showToast('Нет предыдущего упражнения'); return; }
+    if (ta.style.display === 'none' || ta.style.display === '') {
+        ta.style.display = 'block';
+        ta.value = runState.exerciseNotes[prevIdx] || '';
+        ta.focus();
+        btn.innerText = '✅ Сохранить заметку';
+    } else {
+        ta.style.display = 'none';
+        runState.exerciseNotes[prevIdx] = ta.value;
+        saveRunState();
+        btn.innerText = runState.exerciseNotes[prevIdx] ? '📝 Редактировать заметку' : '📝 Добавить заметку';
+        showToast('📝 Заметка сохранена');
+    }
+}
+
+function undoLastElement() {
+    stopRestAlarm();
+    if (runState.restPhase === 'between-sets') {
+        stopTimer('rest');
+        const el = runState.workout.exercises[runState.index];
+        if (!el) return;
+        if (runState.setResults[runState.index] && runState.setResults[runState.index].length > 0) runState.setResults[runState.index].pop();
+        runState.currentSet = Math.max(1, runState.currentSet - 1);
+        runState.totalWorkTime = Math.max(0, runState.totalWorkTime - (runState.lastSetElapsed || 0));
+        runState.currentExerciseWorkTime = Math.max(0, (runState.currentExerciseWorkTime || 0) - (runState.lastSetElapsed || 0));
+        runState.lastSetElapsed = 0;
+        runState.phase = 'work';
+        runState.workPaused = false;
+        runState.restPhase = null;
+        runState.restFinished = false;
+        runState.restOvertime = 0;
+        startTimer('work', 0);
+        saveRunState(); renderRun();
+        return;
+    }
+    const prev = findPrevExerciseIndex(runState.workout.exercises, runState.index);
+    if (prev < 0) { showToast('Нечего отменять'); return; }
+    stopTimer('rest');
+    const elapsed = runState.lastFinishedWorkElapsed || 0;
+    runState.totalWorkTime = Math.max(0, runState.totalWorkTime - elapsed);
+    if (runState.exerciseTimes.length > 0) runState.exerciseTimes.pop();
+    runState.setResults[prev] = [];
+    runState.currentExerciseWorkTime = 0;
+    runState.lastSetElapsed = 0;
+    runState.index = prev;
+    runState.phase = 'work';
+    runState.workPaused = false;
+    runState.currentSet = 1;
+    runState.restFinished = false;
+    runState.restOvertime = 0;
+    startTimer('work', 0);
+    saveRunState(); renderRun();
+}
+
+function updateTimersUI() {
+    if (!runState) return;
+    const { phase } = runState;
+
+    if (getEffectiveSetting('minuteBeep') && (phase === 'work' || (phase === 'rest' && !runState.restBannerMode) || phase === 'warmup')) {
+        const paused = runState[`${phase}Paused`];
+        if (!paused && !(phase === 'warmup' && (runState.warmupFinished || runState.warmupMode === 'free'))) {
+            const interval = getEffectiveSetting('minuteBeepInterval') || 60;
+            const isCountdown = (phase === 'rest' || (phase === 'warmup' && runState.warmupMode === 'timer'));
+            const tt = (phase === 'rest') ? getRemainingTime('rest') : (phase === 'warmup' ? getRemainingTime('warmup') : getCurrentElapsed('work'));
+            if (runState.lastBeepTargetTime === undefined) runState.lastBeepTargetTime = tt;
+            let trigger = false;
+            if (isCountdown) {
+                const prevBucket = Math.ceil(runState.lastBeepTargetTime / interval);
+                const currBucket = Math.ceil(tt / interval);
+                if (currBucket < prevBucket && tt > 0) trigger = true;
+            } else {
+                const prevBucket = Math.floor(runState.lastBeepTargetTime / interval);
+                const currBucket = Math.floor(tt / interval);
+                if (currBucket > prevBucket && tt > 0) trigger = true;
+            }
+            if (trigger) {
+                const m = Math.max(1, Math.round(tt / 60));
+                if (isVoiceMode()) { if (isCountdown) speakCritical(remainingMinutesText(m)); else speakCritical(elapsedMinutesText(m)); }
+                else playBeep(1000, 0.15);
+            }
+            runState.lastBeepTargetTime = tt;
+        }
+    }
+
+    if (phase === 'work') {
+        const el = runState.workout.exercises[runState.index];
+        if (!el) return;
+        const t = document.getElementById('work-timer');
+        if (el.type === 'sets' && el.setMode === 'time') {
+            const elapsed = getCurrentElapsed('work');
+            const remaining = Math.max(0, (el.setDuration || 45) - elapsed);
+            if (t) t.innerText = formatTime(remaining);
+            if (remaining <= 0 && !runState.setFinishing && !runState.workPaused && !finishExerciseInProgress) {
+                runState.setFinishing = true;
+                Promise.resolve(finishExercise()).finally(() => { runState.setFinishing = false; });
+            }
+        } else {
+            if (t) t.innerText = formatTime(getCurrentElapsed('work'));
+        }
+    } else if (phase === 'warmup' && !runState.warmupFinished) {
+        const el = document.getElementById('warmup-timer');
+        if (runState.warmupMode === 'free') {
+            if (el) el.innerText = formatTime(getCurrentElapsed('warmup'));
+        } else {
+            const rem = getRemainingTime('warmup');
+            if (el) el.innerText = formatTime(rem);
+            if (rem > 0 && rem <= 3 && !runState.warmupBeepPlayed && !runState.warmupPaused) {
+                runState.warmupBeepPlayed = true;
+                announceFinalCount(rem);
+            }
+            if (rem === 0 && !runState.warmupFinished) onWarmupFinished();
+        }
+    } else if (phase === 'rest' && !runState.restBannerMode) {
+        const rem = getRemainingTime('rest');
+        const el = document.getElementById('rest-timer');
+        if (el) {
+            if (runState.restFinished) el.innerText = formatTime(getOvertime('rest'));
+            else el.innerText = formatTime(rem);
+        }
+        if (rem > 0 && rem <= 3 && !runState.restBeepPlayed && !runState.restPaused && !runState.restFinished) {
+            runState.restBeepPlayed = true;
+            announceFinalCount(rem);
+        }
+        if (rem === 0 && !runState.restFinished && !runState.restPaused) onRestFinished();
+    }
+
+    if (document.visibilityState === 'hidden') return;
+    saveCounter++;
+    if (saveCounter % 20 === 0) saveRunState();
+}
+
+function elapsedMinutesText(n) { if (n === 1) return 'минута'; return n + ' ' + pluralMinutes(n); }
+function remainingMinutesText(n) { if (n === 1) return 'одна минута'; return n + ' ' + pluralMinutes(n); }
+
+/* ===================== RENDER RUN ===================== */
+function renderRun() {
+    const { workout, index, phase } = runState;
+    const elements = workout.exercises;
+    if (index >= elements.length) { showFinishScreen(); return; }
+    const el = elements[index];
+    const phaseLabel = document.getElementById('phase-label');
+    const phaseHeaderEl = document.getElementById('phase-header-el');
+    const currentExEl = document.getElementById('current-exercise');
+    const startDisplay = document.getElementById('start-time-display');
+    const startValue = document.getElementById('start-time-value');
+    const setBadge = document.getElementById('set-badge');
+
+    if (phaseHeaderEl) phaseHeaderEl.style.display = 'flex';
+    if (currentExEl) currentExEl.style.display = 'flex';
+
+    document.getElementById('progress-fill').style.width = calcProgress() + '%';
+
+    hideAllPhases();
+    setBadge.style.display = 'none';
+    currentExEl.style.color = '';
+    phaseLabel.className = 'phase-label';
+
+    if (DB.settings.showStartTime && runState.startTime) {
+        startDisplay.style.display = 'block';
+        startValue.innerText = formatClock(runState.startTime);
+    } else startDisplay.style.display = 'none';
+    phaseLabel.style.display = 'block';
+
+    if (el.kind === 'exercise' && el.type === 'sets' && (phase === 'work' || phase === 'countdown' || phase === 'ready')) {
+        setBadge.style.display = 'block';
+        setBadge.innerHTML = `Подход <span class="set-num">${runState.currentSet}</span> из ${el.setsCount || 3}`;
+    }
+
+    if (phase === 'ready') {
+        if (el.kind === 'warmup') {
+            currentExEl.innerText = 'Разминка';
+            phaseLabel.innerText = 'РАЗМИНКА';
+            phaseLabel.className = 'phase-label';
+            const mode = el.mode === 'free' ? 'free' : 'timer';
+            const infoText = mode === 'timer'
+                ? `⏱ ${formatTime(el.duration || 180)}`
+                : `🕐 Свободно`;
+            document.getElementById('phase-ready').innerHTML = `
+                <p style="text-align:center; color:var(--warn); font-size:1.2rem; font-weight:700; margin-bottom:10px;">${infoText}</p>
+                <p style="text-align:center; color:var(--muted);">Готов?</p>
+                <button class="btn accent" onclick="beginCurrentElementFlow()">▶ Начать</button>
+                <button class="btn ghost" onclick="skipWarmupElement()" style="background:var(--card-2); color:var(--muted); margin-top:8px;">⏭ Пропустить разминку</button>`;
+            document.getElementById('phase-ready').style.display = 'block';
+        } else if (el.kind === 'rest') {
+            const prevIdx = findPrevExerciseIndex(elements, index);
+            const prevEx = prevIdx >= 0 ? elements[prevIdx] : null;
+            currentExEl.innerText = prevEx ? (prevEx.name || 'Упражнение') : 'Отдых';
+            const isWater = el.restType === 'water';
+            phaseLabel.innerText = isWater ? 'НЕОБХОДИМО ПОПИТЬ ВОДЫ' : 'ОТДЫХ';
+            phaseLabel.className = 'phase-label';
+            let info = el.duration === null || el.duration === 0 ? `<p style="text-align:center; color:var(--accent); font-size:1.2rem; font-weight:700; margin-bottom:10px;">Без таймера</p>` : `<p style="text-align:center; color:var(--accent); font-size:1.2rem; font-weight:700; margin-bottom:10px;">${formatTime(el.duration)}</p>`;
+            document.getElementById('phase-ready').innerHTML = `${info}<p style="text-align:center; color:var(--muted);">Готов? Нажми чтобы начать.</p><button class="btn accent" onclick="beginCurrentElementFlow()">▶ Начать</button>`;
+            document.getElementById('phase-ready').style.display = 'block';
+        } else {
+            currentExEl.innerText = el.name || 'Упражнение';
+            const exNum = getExerciseNumber(elements, index);
+            const totalEx = getTotalExerciseCount(elements);
+            phaseLabel.innerText = `УПРАЖНЕНИЕ ${exNum} / ${totalEx}`;
+            phaseLabel.className = 'phase-label';
+            let info = '';
+            if (el.type === 'reps') info = `<p style="text-align:center; color:var(--accent); font-size:1.2rem; font-weight:700; margin-bottom:10px;">🔢 ${el.targetReps || 10} ${pluralReps(el.targetReps || 10)}</p>`;
+            else if (el.type === 'sets') info = `<p style="text-align:center; color:var(--accent); font-size:1.2rem; font-weight:700; margin-bottom:10px;">🔁 ${el.setsCount || 3}× ${el.setMode === 'reps' ? (el.targetReps || 10) + ' повт.' : (el.setDuration || 45) + ' сек'}</p>`;
+            document.getElementById('phase-ready').innerHTML = `${el.notes ? `<p style="text-align:center; color:var(--muted); font-size:0.9rem; margin-bottom:10px;">📝 ${escapeHtml(el.notes)}</p>` : ''}${info}<p style="text-align:center; color:var(--muted);">Готов? Нажми чтобы начать.</p><button class="btn accent" onclick="beginCurrentElementFlow()">▶ Начать</button><button class="btn ghost" onclick="skipExercise()" style="background:var(--card-2); color:var(--muted); margin-top:8px;">⏭ Пропустить</button>`;
+            document.getElementById('phase-ready').style.display = 'block';
+        }
+    } else if (phase === 'countdown') {
+        currentExEl.innerText = el.name || 'Упражнение';
+        const exNum = getExerciseNumber(elements, index);
+        const totalEx = getTotalExerciseCount(elements);
+        phaseLabel.innerText = `УПРАЖНЕНИЕ ${exNum} / ${totalEx}`;
+        phaseLabel.className = 'phase-label';
+        document.getElementById('countdown-timer').innerText = runState.countdownValue;
+        document.getElementById('phase-countdown').style.display = 'block';
+    } else if (phase === 'warmup') {
+        currentExEl.innerText = 'Разминка';
+        const timer = document.getElementById('warmup-timer');
+        const pauseBtn = document.getElementById('warmup-pause-btn');
+        const finishEarlyBtn = document.getElementById('warmup-finish-early-btn');
+        const skipBtn = document.getElementById('warmup-skip-btn');
+        const confirmBtn = document.getElementById('warmup-confirm-btn');
+
+        if (runState.warmupMode === 'free') {
+            phaseLabel.innerText = runState.warmupPaused ? '⏸ ПАУЗА' : 'РАЗМИНКА (СВОБОДНО)';
+            phaseLabel.className = 'phase-label';
+            currentExEl.style.color = '';
+            if (timer) { timer.classList.remove('done', 'overtime'); timer.classList.toggle('paused', !!runState.warmupPaused); }
+            pauseBtn.style.display = 'block';
+            pauseBtn.innerText = runState.warmupPaused ? '▶ Продолжить' : '⏸ Пауза';
+            finishEarlyBtn.style.display = 'none';
+            skipBtn.style.display = 'none';
+            confirmBtn.style.display = 'block';
+            confirmBtn.innerText = '✅ Готов';
+        } else if (runState.warmupFinished) {
+            phaseLabel.innerText = '✅ Разминка завершена';
+            phaseLabel.className = 'phase-label';
+            currentExEl.style.color = 'var(--accent)';
+            if (timer) { timer.classList.remove('overtime', 'paused'); timer.classList.add('done'); timer.innerText = formatTime(0); }
+            pauseBtn.style.display = 'none';
+            finishEarlyBtn.style.display = 'none';
+            skipBtn.style.display = 'none';
+            confirmBtn.style.display = 'block';
+            confirmBtn.innerText = '▶ К упражнению';
+        } else {
+            phaseLabel.innerText = runState.warmupPaused ? '⏸ ПАУЗА' : 'РАЗМИНКА';
+            phaseLabel.className = 'phase-label';
+            currentExEl.style.color = '';
+            if (timer) { timer.classList.remove('overtime', 'done'); timer.classList.toggle('paused', !!runState.warmupPaused); }
+            pauseBtn.style.display = 'block';
+            pauseBtn.innerText = runState.warmupPaused ? '▶ Продолжить' : '⏸ Пауза';
+            finishEarlyBtn.style.display = 'block';
+            skipBtn.style.display = 'block';
+            confirmBtn.style.display = 'none';
+        }
+        document.getElementById('phase-warmup').style.display = 'block';
+    } else if (phase === 'work') {
+        currentExEl.innerText = el.name || 'Упражнение';
+        const exNum = getExerciseNumber(elements, index);
+        const totalEx = getTotalExerciseCount(elements);
+        phaseLabel.innerText = `УПРАЖНЕНИЕ ${exNum} / ${totalEx}`;
+        phaseLabel.className = 'phase-label';
+        const workTimer = document.getElementById('work-timer');
+        const pauseBtn = document.getElementById('work-pause-btn');
+        const finishBtn = document.getElementById('work-finish-btn');
+        const skipBtn = document.getElementById('work-skip-btn');
+        const repsInfo = document.getElementById('work-reps-info');
+        const repsTarget = document.getElementById('work-reps-target');
+        let showReps = false, targetText = '', finishText = '✅ Завершить упражнение';
+        if (el.type === 'reps') { showReps = true; targetText = el.targetReps || 10; }
+        else if (el.type === 'sets') {
+            if (el.setMode === 'reps') { showReps = true; targetText = el.targetReps || 10; }
+            if (el.setMode === 'time') finishText = '✅ Завершить подход';
+            else finishText = `✅ Подход ${runState.currentSet} сделан`;
+            if (runState.currentSet === (el.setsCount || 3) && el.setMode === 'reps') finishText = '✅ Последний подход';
+        }
+        pauseBtn.style.display = 'block';
+        if (skipBtn) skipBtn.style.display = 'block';
+        repsInfo.style.display = showReps ? 'block' : 'none';
+        if (showReps) repsTarget.innerText = targetText;
+        finishBtn.innerText = finishText;
+        if (runState.workPaused) { workTimer.classList.add('paused'); pauseBtn.innerText = '▶ Продолжить'; phaseLabel.innerText = '⏸ ПАУЗА'; }
+        else { workTimer.classList.remove('paused'); pauseBtn.innerText = '⏸ Пауза'; }
+        document.getElementById('phase-work').style.display = 'block';
+    } else if (phase === 'rest') {
+        renderRestElement(el);
+    }
+}
+
+function renderRestElement(el) {
+    const phaseLabel = document.getElementById('phase-label');
+    const isBetween = runState.restPhase === 'between-sets';
+    const isWater = el.restType === 'water';
+    const isBanner = runState.restBannerMode;
+
+    let displayTitle;
+    if (isBetween) displayTitle = el.name || 'Упражнение';
+    else {
+        const prevIdx = findPrevExerciseIndex(runState.workout.exercises, runState.index);
+        const prevEx = prevIdx >= 0 ? runState.workout.exercises[prevIdx] : null;
+        displayTitle = prevEx ? (prevEx.name || 'Упражнение') : 'Отдых';
+    }
+    const currentExerciseEl = document.getElementById('current-exercise');
+    currentExerciseEl.innerText = displayTitle;
+    currentExerciseEl.style.color = runState.restFinished ? 'var(--danger)' : '';
+
+    if (runState.restFinished) { phaseLabel.innerText = '⏰ ВРЕМЯ ВЫШЛО'; phaseLabel.className = 'phase-label finished'; }
+    else if (isBetween) { phaseLabel.innerText = 'ОТДЫХ МЕЖДУ ПОДХОДАМИ'; phaseLabel.className = 'phase-label'; }
+    else if (isWater) { phaseLabel.innerText = 'НЕОБХОДИМО ПОПИТЬ ВОДЫ'; phaseLabel.className = 'phase-label'; }
+    else { phaseLabel.innerText = 'ОТДЫХ'; phaseLabel.className = 'phase-label'; }
+
+    const middleIcon = document.getElementById('rest-middle-icon');
+    if (isWater && !runState.restFinished) middleIcon.style.display = 'flex';
+    else middleIcon.style.display = 'none';
+
+    const timerEl = document.getElementById('rest-timer');
+    if (isBanner) timerEl.style.display = 'none';
+    else {
+        timerEl.style.display = 'flex';
+        if (runState.restFinished) { timerEl.style.color = 'var(--danger)'; timerEl.className = 'big-timer overtime'; }
+        else { timerEl.style.color = ''; timerEl.className = 'big-timer' + (runState.restPaused ? ' paused' : ''); }
+    }
+
+    const nextBlock = document.getElementById('next-exercise-block');
+    if (runState.restFinished) nextBlock.style.display = 'none';
+    else {
+        nextBlock.style.display = 'block';
+        nextBlock.classList.remove('water');
+        const nameEl = document.getElementById('next-exercise-name');
+        const labelEl = document.getElementById('next-exercise-label');
+        nameEl.classList.remove('water', 'finish');
+        if (isBetween) { labelEl.innerText = 'Следующий подход'; nameEl.innerText = `Подход ${runState.currentSet} из ${el.setsCount || 3}`; }
+        else {
+            const next = findNextElement(runState.workout.exercises, runState.index);
+            if (!next) { labelEl.innerText = 'Далее'; nameEl.innerText = 'Это последнее упражнение'; }
+            else {
+                const nx = next.el;
+                labelEl.innerText = 'Далее';
+                if (nx.kind === 'exercise') {
+                    const num = getExerciseNumber(runState.workout.exercises, next.idx);
+                    const info = nx.type === 'sets' ? ` (${nx.setsCount || 3}×)` : nx.type === 'reps' ? ` (${nx.targetReps||10})` : '';
+                    nameEl.innerText = (getEffectiveSetting('announceNumbers') ? `${num}. ` : '') + (nx.name || 'Упражнение') + info;
+                } else if (nx.kind === 'warmup') {
+                    nameEl.innerText = '🔥 Разминка';
+                } else {
+                    const isW = nx.restType === 'water';
+                    nameEl.innerText = isW ? '💧 Необходимо попить воды' : '🛌 Отдых';
+                    if (isW) nameEl.classList.add('water');
+                }
+            }
+        }
+    }
+
+    const noteBlock = document.getElementById('rest-note-block');
+    if (runState.restFinished || isBetween) noteBlock.style.display = 'none';
+    else {
+        noteBlock.style.display = 'block';
+        const toggle = document.getElementById('rest-note-toggle');
+        const prevIdx = findPrevExerciseIndex(runState.workout.exercises, runState.index);
+        const existing = prevIdx >= 0 ? runState.exerciseNotes[prevIdx] : '';
+        if (document.getElementById('rest-note-textarea').style.display === 'none') toggle.innerText = existing ? '📝 Редактировать заметку' : '📝 Добавить заметку';
+    }
+
+    const pauseBtn = document.getElementById('rest-pause-btn');
+    const confirmBtn = document.getElementById('rest-confirm-btn');
+    const skipBtn = document.getElementById('rest-skip-btn');
+    const undoBtn = document.getElementById('rest-undo-btn');
+    const adjustDiv = document.getElementById('rest-adjust');
+    const bannerBtn = document.getElementById('rest-banner-btn');
+
+    if (isBanner) {
+        pauseBtn.style.display = 'none'; skipBtn.style.display = 'none';
+        undoBtn.style.display = (isBetween || findPrevExerciseIndex(runState.workout.exercises, runState.index) >= 0) ? 'block' : 'none';
+        confirmBtn.style.display = 'none'; bannerBtn.style.display = 'block'; adjustDiv.style.display = 'none';
+    } else if (runState.restFinished) {
+        pauseBtn.style.display = 'none'; skipBtn.style.display = 'none';
+        undoBtn.style.display = (isBetween || findPrevExerciseIndex(runState.workout.exercises, runState.index) >= 0) ? 'block' : 'none';
+        confirmBtn.style.display = 'block'; bannerBtn.style.display = 'none'; adjustDiv.style.display = 'none';
+    } else {
+        pauseBtn.style.display = 'block';
+        pauseBtn.innerText = runState.restPaused ? '▶ Продолжить' : '⏸ Пауза';
+        undoBtn.style.display = (isBetween || findPrevExerciseIndex(runState.workout.exercises, runState.index) >= 0) ? 'block' : 'none';
+        skipBtn.style.display = 'block'; confirmBtn.style.display = 'none'; bannerBtn.style.display = 'none'; adjustDiv.style.display = 'flex';
+    }
+
+    document.getElementById('phase-rest').style.display = 'block';
+}
+
+function hideAllPhases() {
+    ['phase-ready','phase-countdown','phase-work','phase-rest','phase-warmup','phase-finish'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+    });
+}
+
+async function confirmExit() {
+    if (!runState || runState.phase === 'finish') { showScreen('screen-workouts'); return true; }
+    const ok = await customConfirm('Выйти из тренировки?\n\nПрогресс сохранится.', { title: 'Выйти из тренировки?', okText: '← Выйти', cancelText: 'Остаться', danger: true });
+    if (!ok) return false;
+    stopTickInterval();
+    if (runState.countdownInterval) clearInterval(runState.countdownInterval);
+    stopRestAlarm();
+    if (runState.phase === 'warmup') stopTimer('warmup');
+    releaseWakeLock();
+    saveRunState();
+    disableExitProtection();
+    runState = null;
+    showScreen('screen-workouts');
+    return true;
+}
+
+function showFinishScreen() {
+    if (runState) runState.phase = 'finish';
+    stopTickInterval();
+    if (runState && runState.countdownInterval) clearInterval(runState.countdownInterval);
+    stopRestAlarm();
+    if (runState) stopTimer('warmup');
+    clearSavedRunState(); disableExitProtection();
+    const endTime = new Date();
+    const totalDuration = Math.floor((endTime - runState.startTime) / 1000);
+    document.getElementById('phase-label').style.display = 'none';
+    const phaseHeaderEl = document.getElementById('phase-header-el');
+    if (phaseHeaderEl) phaseHeaderEl.style.display = 'none';
+    const currentExEl = document.getElementById('current-exercise');
+    currentExEl.innerText = '';
+    currentExEl.style.display = 'none';
+    document.getElementById('start-time-display').style.display = 'none';
+    const sb = document.getElementById('set-badge');
+    if (sb) sb.style.display = 'none';
+    hideAllPhases();
+    playBeep(1000, 0.8);
+    if (navigator.vibrate) navigator.vibrate([300, 100, 300, 100, 300]);
+    speak('Тренировка завершена. Отличная работа!');
+
+    const record = {
+        id: Date.now(),
+        workoutId: runState.workout.id,
+        workoutName: runState.workout.name,
+        startTime: runState.startTime.toISOString(),
+        endTime: endTime.toISOString(),
+        totalDuration,
+        workTime: runState.totalWorkTime,
+        warmupSeconds: runState.warmupSeconds || 0,
+        exercisesCount: getTotalExerciseCount(runState.workout.exercises),
+        exerciseTimes: [...runState.exerciseTimes],
+        exerciseNames: runState.workout.exercises.filter(e => e.kind === 'exercise').map(e => e.name || ''),
+        exerciseNotes: JSON.parse(JSON.stringify(runState.exerciseNotes || {})),
+        workoutNote: runState.workoutNoteDraft || '',
+        setResults: JSON.parse(JSON.stringify(runState.setResults || {}))
+    };
+    DB.history.push(record);
+    const removed = pruneHistory(HISTORY_PRUNE_LIMIT);
+    if (removed > 0) setTimeout(() => showToast(`📜 История обрезана до ${HISTORY_PRUNE_LIMIT} записей`), 800);
+    saveDB('history');
+
+    const noteItems = [];
+    runState.workout.exercises.forEach((el, i) => {
+        if (el.kind === 'exercise' && runState.exerciseNotes[i]) {
+            noteItems.push(`<div style="padding:8px 0; border-bottom:1px solid var(--card-2);"><div style="font-size:0.9rem; color:var(--muted);">${escapeHtml(el.name)}</div><div style="color:var(--text); font-size:0.9rem; margin-top:2px;">${escapeHtml(runState.exerciseNotes[i])}</div></div>`);
+        }
+    });
+
+    let exListHtml = '';
+    if ((runState.warmupSeconds || 0) > 0) {
+        exListHtml += `<div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--card-2);"><span style="color:var(--warn); font-size:0.9rem;">🔥 Разминка</span><span style="color:var(--warn); font-weight:700;">${formatTime(runState.warmupSeconds)}</span></div>`;
+    }
+    let exCounter = 0;
+    runState.workout.exercises.forEach((el, i) => {
+        if (el.kind !== 'exercise') return;
+        exCounter++;
+        const t = runState.exerciseTimes[exCounter - 1];
+        const sets = runState.setResults[i];
+        const isSkipped = t !== undefined && t !== null && t < 0;
+        let setsInfo = '';
+        if (Array.isArray(sets) && sets.length) setsInfo = ` · подходы: ${sets.join('/')}`;
+        else if (sets === 'skipped') setsInfo = '';
+        exListHtml += `<div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--card-2);"><span style="color:var(--muted); font-size:0.9rem;">${exCounter}. ${escapeHtml(el.name || 'Упражнение')}${setsInfo}</span><span style="color:${isSkipped ? 'var(--muted)' : 'var(--accent)'}; font-weight:700;">${isSkipped ? '⏭ пропущено' : formatTime(t || 0)}</span></div>`;
+    });
+
+    document.getElementById('phase-finish').innerHTML = `
+        <div class="finish-card" style="margin-top:0;">
+            <div class="finish-title">🎉 Готово!</div>
+            <div class="stats-grid">
+                <div class="stat-row"><div class="stat-label">🕐 Начало</div><div class="stat-value">${formatClock(runState.startTime)}</div></div>
+                <div class="stat-row"><div class="stat-label">🏁 Конец</div><div class="stat-value">${formatClock(endTime)}</div></div>
+                <div class="stat-row"><div class="stat-label">⏱ Длительность</div><div class="stat-value">${formatTime(totalDuration)}</div></div>
+                <div class="stat-row"><div class="stat-label">💪 Работа</div><div class="stat-value highlight">${formatTime(runState.totalWorkTime)}</div></div>
+                ${(runState.warmupSeconds || 0) > 0 ? `<div class="stat-row"><div class="stat-label">🔥 Разминка</div><div class="stat-value">${formatTime(runState.warmupSeconds)}</div></div>` : ''}
+            </div>
+        </div>
+        ${noteItems.length ? `<details open style="margin-top:12px; background:var(--card); border-radius:14px; border:1px solid var(--border);"><summary style="padding:14px 16px; font-weight:600;">📝 Заметки по упражнениям</summary><div style="padding:0 16px 16px;">${noteItems.join('')}</div></details>` : ''}
+        <div class="card" style="margin-top:12px;" id="finish-note-card">
+            <button id="finish-note-toggle" class="btn ghost small" style="width:100%; padding:10px; font-size:0.85rem;" onclick="toggleFinishNote()">📝 Добавить заметку к тренировке</button>
+            <div id="finish-note-block" style="display:none; margin-top:8px;">
+                <textarea id="finish-note" class="input" placeholder="Как самочувствие?" style="min-height:70px;">${escapeHtml(runState.workoutNoteDraft || '')}</textarea>
+                <button class="btn small accent" onclick="saveWorkoutNote(${record.id})">💾 Сохранить</button>
+            </div>
+        </div>
+        <details style="margin-top:12px; background:var(--card); border-radius:14px; border:1px solid var(--border);"><summary style="padding:14px 16px; font-weight:600;">📊 Время по упражнениям</summary><div style="padding:0 16px 16px;">${exListHtml}</div></details>
+        <button class="btn accent" onclick="shareResult(${record.id})" style="margin-top:16px;">📤 Поделиться</button>
+        <button class="btn ghost" onclick="saveCurrentRunAsTemplate()" style="margin-top:8px;">💾 Сохранить как шаблон</button>
+        <button class="btn" onclick="repeatLastWorkout(${runState.workout.id})" style="margin-top:8px;">🔁 Повторить</button>
+        <button class="btn ghost" onclick="showScreen('screen-workouts')">← К тренировкам</button>
+    `;
+    document.getElementById('phase-finish').style.display = 'block';
+    releaseWakeLock();
+}
+
+function toggleFinishNote() {
+    const block = document.getElementById('finish-note-block');
+    const toggle = document.getElementById('finish-note-toggle');
+    if (!block || !toggle) return;
+    if (block.style.display === 'none') { block.style.display = 'block'; toggle.style.display = 'none'; }
+    else { block.style.display = 'none'; toggle.style.display = 'block'; }
+}
+
+function saveWorkoutNote(recordId) {
+    const ta = document.getElementById('finish-note');
+    if (!ta) return;
+    const r = DB.history.find(x => x.id === recordId);
+    if (r) {
+        r.workoutNote = ta.value;
+        saveDB('history');
+        showToast('📝 Заметка сохранена');
+        const block = document.getElementById('finish-note-block');
+        const toggle = document.getElementById('finish-note-toggle');
+        if (block) block.style.display = 'none';
+        if (toggle) { toggle.style.display = 'block'; toggle.innerText = '📝 Редактировать заметку к тренировке'; }
+    }
+}
+function repeatLastWorkout(workoutId) { runState = null; startWorkout(workoutId); }
+
+/* ===================== HISTORY ===================== */
+function renderHistory() { renderHistoryList(); renderHistoryStats(); renderHistoryRecords(); }
+function switchHistoryTab(tab, el) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    ['list','stats','records'].forEach(t => { document.getElementById('history-tab-' + t).style.display = (t === tab) ? 'block' : 'none'; });
+}
+
+function getFilteredHistory() {
+    const searchEl = document.getElementById('history-search');
+    const periodEl = document.getElementById('history-period');
+    const q = searchEl ? searchEl.value.toLowerCase().trim() : '';
+    const period = periodEl ? periodEl.value : 'all';
+    let items = [...DB.history];
+    if (period !== 'all') {
+        const days = parseInt(period) || 0;
+        if (days > 0) {
+            const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+            items = items.filter(r => { try { return new Date(r.startTime).getTime() >= cutoff; } catch(e) { return false; } });
+        }
+    }
+    if (q) {
+        items = items.filter(r => {
+            const nameMatch = (r.workoutName || '').toLowerCase().includes(q);
+            const noteMatch = (r.workoutNote || '').toLowerCase().includes(q);
+            const exMatch = Array.isArray(r.exerciseNames) && r.exerciseNames.some(n => (n || '').toLowerCase().includes(q));
+            return nameMatch || noteMatch || exMatch;
+        });
+    }
+    return items;
+}
+
+function renderHistoryList() {
+    const c = document.getElementById('history-tab-list');
+    if (!c) return;
+    const items = getFilteredHistory();
+    if (DB.history.length === 0) { c.innerHTML = '<div class="empty-state">История пуста</div>'; return; }
+
+    const totalWork = items.reduce((s, r) => s + (r.workTime || 0), 0);
+    const totalDuration = items.reduce((s, r) => s + (r.totalDuration || 0), 0);
+    const totalWarmup = items.reduce((s, r) => s + (r.warmupSeconds || 0), 0);
+
+    const summaryHtml = `<div class="history-summary-card">
+        <div class="history-summary-title">Найдено</div>
+        <div class="history-summary-big">${items.length}</div>
+        <div class="history-summary-big-sub">${pluralWorkouts(items.length)}</div>
+        <div class="history-summary-row">
+            <div class="history-summary-item"><div class="val">${formatTime(Math.floor(totalDuration))}</div><div class="lbl">⏱ общее</div></div>
+            <div class="history-summary-item"><div class="val">${formatTime(Math.floor(totalWork))}</div><div class="lbl">💪 работа</div></div>
+            ${totalWarmup > 0 ? `<div class="history-summary-item"><div class="val">${formatTime(Math.floor(totalWarmup))}</div><div class="lbl">🔥 разминка</div></div>` : ''}
+        </div>
+    </div>`;
+
+    if (items.length === 0) { c.innerHTML = summaryHtml + '<div class="empty-state">Ничего не найдено</div>'; return; }
+    const sorted = [...items].sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
+
+    c.innerHTML = summaryHtml + sorted.map(r => {
+        const wExists = r.workoutId && DB.workouts.find(w => w.id === r.workoutId);
+        const notes = r.exerciseNotes || {};
+        const hasNotes = Object.values(notes).some(n => n) || r.workoutNote;
+        const hasWarmup = (r.warmupSeconds || 0) > 0;
+        return `<div class="swipe-container" data-history-id="${r.id}">
+            <button class="swipe-delete-btn" data-delete-id="${r.id}">🗑 Удалить</button>
+            <div class="history-card">
+                <div class="history-top">
+                    <div class="history-info">
+                        <div class="name">${escapeHtml(r.workoutName)}</div>
+                        <div class="stats">${formatDate(new Date(r.startTime))} · ${formatTime(r.totalDuration)} · 💪 ${formatTime(r.workTime)}${hasWarmup ? ' · 🔥 ' + formatTime(r.warmupSeconds) : ''}</div>
+                    </div>
+                    <div class="history-actions">
+                        ${wExists ? `<button class="icon-btn" onclick="repeatLastWorkout(${r.workoutId})" title="Повторить" aria-label="Повторить">▶</button>` : ''}
+                        <button class="icon-btn" onclick="shareResult(${r.id})" title="Поделиться" aria-label="Поделиться">📤</button>
+                        <button class="icon-btn delete" onclick="deleteHistoryRecord(${r.id})" title="Удалить" aria-label="Удалить">🗑</button>
+                    </div>
+                </div>
+                ${r.workoutNote ? `<div style="background:var(--primary-soft); border-left:3px solid var(--primary); border-radius:10px; padding:10px 12px; font-size:0.85rem;">📝 ${escapeHtml(r.workoutNote)}</div>` : ''}
+                ${((r.exerciseNames && r.exerciseNames.length > 0) || hasWarmup) ? `<details style="background:var(--card-2); border-radius:10px;">
+                    <summary style="padding:10px 12px; font-size:0.85rem; color:var(--muted);">📊 Упражнения${hasNotes ? ' и заметки' : ''}</summary>
+                    <div style="padding:0 12px 12px; display:flex; flex-direction:column; gap:6px;">
+                        ${hasWarmup ? `<div style="padding:6px 0; border-bottom:1px solid var(--card-2);"><div style="display:flex; justify-content:space-between; font-size:0.85rem; gap:8px;"><span style="flex:1; min-width:0; color:var(--warn);">🔥 Разминка</span><span style="color:var(--warn); font-weight:600; flex-shrink:0;">${formatTime(r.warmupSeconds)}</span></div></div>` : ''}
+                        ${(r.exerciseNames || []).map((name, i) => {
+                            const note = (r.exerciseNotes || {})[i];
+                            const sets = (r.setResults || {})[i];
+                            const t = (r.exerciseTimes || [])[i];
+                            const isSkipped = t !== undefined && t !== null && t < 0;
+                            return `<div style="padding:6px 0; border-bottom:1px solid var(--card-2);">
+                                <div style="display:flex; justify-content:space-between; font-size:0.85rem; gap:8px;">
+                                    <span style="flex:1; min-width:0; word-break:break-word;">${i+1}. ${escapeHtml(name || 'Упражнение')}</span>
+                                    <span style="color:${isSkipped ? 'var(--muted)' : 'var(--accent)'}; font-weight:600; flex-shrink:0;">${isSkipped ? '⏭ пропущено' : formatTime(t || 0)}</span>
+                                </div>
+                                ${sets && Array.isArray(sets) && sets.length ? `<div style="color:var(--muted); font-size:0.8rem; margin-top:2px;">🔁 подходы: ${sets.join(' / ')}</div>` : (sets === 'skipped' ? `<div style="color:var(--muted); font-size:0.8rem; margin-top:2px;">⏭ пропущено</div>` : '')}
+                                ${note ? `<div style="color:var(--accent); font-size:0.8rem; margin-top:4px; font-style:italic;">📝 ${escapeHtml(note)}</div>` : ''}
+                            </div>`;
+                        }).join('')}
+                    </div>
+                </details>` : ''}
+            </div>
+        </div>`;
+    }).join('');
+
+    c.querySelectorAll('.swipe-container').forEach(container => {
+        const id = parseInt(container.dataset.historyId);
+        initSwipeDelete(container, () => {
+            const card = container.querySelector('.history-card');
+            if (card) card.style.transform = '';
+            deleteHistoryRecord(id);
+        });
+    });
+}
+async function deleteHistoryRecord(id) {
+    if (!await customConfirm('Удалить запись?', { danger: true, okText: '🗑 Удалить' })) return;
+    const idx = DB.history.findIndex(r => r.id === id);
+    if (idx < 0) return;
+    const removed = DB.history[idx];
+    DB.history.splice(idx, 1);
+    saveDB('history');
+    renderHistory();
+    showUndoToast('Запись удалена', () => {
+        DB.history.splice(idx, 0, removed);
+        saveDB('history');
+        renderHistory();
+        showToast('Восстановлено');
+    });
+}
+function renderHistoryStats() {
+    const c = document.getElementById('history-tab-stats');
+    if (!c) return;
+    const items = getFilteredHistory();
+    if (DB.history.length === 0) { c.innerHTML = '<div class="empty-state">Нет данных</div>'; return; }
+    if (items.length === 0) { c.innerHTML = '<div class="empty-state">Ничего не найдено</div>'; return; }
+    const now = new Date();
+    const week = items.filter(r => new Date(r.startTime) >= new Date(now.getTime() - 7*24*60*60*1000));
+    const month = items.filter(r => new Date(r.startTime) >= new Date(now.getTime() - 30*24*60*60*1000));
+    const totalTime = items.reduce((s, r) => s + r.totalDuration, 0);
+    const totalWork = items.reduce((s, r) => s + r.workTime, 0);
+    const totalWarmup = items.reduce((s, r) => s + (r.warmupSeconds || 0), 0);
+    const avgDuration = items.length > 0 ? Math.floor(totalTime / items.length) : 0;
+    const avgWork = items.length > 0 ? Math.floor(totalWork / items.length) : 0;
+
+    const exMap = {};
+    items.forEach(r => {
+        (r.exerciseNames || []).forEach((name, i) => {
+            const t = (r.exerciseTimes || [])[i] || 0;
+            if (t > 0) {
+                const key = name || 'Упражнение';
+                exMap[key] = (exMap[key] || 0) + t;
+            }
+        });
+    });
+    const top3 = Object.entries(exMap).sort((a, b) => b[1] - a[1]).slice(0, 3);
+
+    let top3Html = '';
+    if (top3.length > 0) {
+        top3Html = `<div class="card" style="margin-top:12px;"><div style="font-weight:700; margin-bottom:8px;">🏆 Топ-3 упражнения по времени</div>`;
+        top3.forEach(([name, t], i) => {
+            const medal = ['🥇', '🥈', '🥉'][i] || '•';
+            top3Html += `<div class="stat-row" style="margin-top:6px;"><div class="stat-label">${medal} ${escapeHtml(name)}</div><div class="stat-value">${formatTime(Math.floor(t))}</div></div>`;
+        });
+        top3Html += `</div>`;
+    }
+
+    c.innerHTML = `<div class="card">
+        <div class="stat-row"><div class="stat-label">📅 Эта неделя</div><div class="stat-value">${week.length} трен.</div></div>
+        <div class="stat-row" style="margin-top:8px;"><div class="stat-label">📅 Этот месяц</div><div class="stat-value">${month.length} трен.</div></div>
+        <div class="stat-row" style="margin-top:8px;"><div class="stat-label">🏆 Найдено</div><div class="stat-value highlight">${items.length}</div></div>
+        <div class="stat-row" style="margin-top:8px;"><div class="stat-label">⏱ Общее время</div><div class="stat-value">${formatTime(Math.floor(totalTime))}</div></div>
+        <div class="stat-row" style="margin-top:8px;"><div class="stat-label">💪 Чистое время</div><div class="stat-value">${formatTime(Math.floor(totalWork))}</div></div>
+        ${totalWarmup > 0 ? `<div class="stat-row" style="margin-top:8px;"><div class="stat-label">🔥 Разминка</div><div class="stat-value">${formatTime(Math.floor(totalWarmup))}</div></div>` : ''}
+    </div>
+    <div class="card" style="margin-top:12px;">
+        <div style="font-weight:700; margin-bottom:8px;">📊 В среднем</div>
+        <div class="stat-row"><div class="stat-label">⏱ Длительность</div><div class="stat-value">${formatTime(avgDuration)}</div></div>
+        <div class="stat-row" style="margin-top:8px;"><div class="stat-label">💪 Работа</div><div class="stat-value">${formatTime(avgWork)}</div></div>
+    </div>
+    ${top3Html}`;
+}
+function renderHistoryRecords() {
+    const c = document.getElementById('history-tab-records');
+    if (!c) return;
+    const items = getFilteredHistory();
+    if (DB.history.length === 0) { c.innerHTML = '<div class="empty-state">Нет данных</div>'; return; }
+    if (items.length === 0) { c.innerHTML = '<div class="empty-state">Ничего не найдено</div>'; return; }
+    const longest = items.reduce((a, b) => a.totalDuration > b.totalDuration ? a : b);
+    const mostWork = items.reduce((a, b) => a.workTime > b.workTime ? a : b);
+    c.innerHTML = `<div class="record-item"><div class="label">🏅 Самая длинная</div><div class="value">${formatTime(longest.totalDuration)}</div></div>
+    <div style="color:var(--muted); font-size:0.8rem; margin:-4px 0 12px 4px;">${escapeHtml(longest.workoutName)}</div>
+    <div class="record-item"><div class="label">💪 Больше работы</div><div class="value">${formatTime(mostWork.workTime)}</div></div>
+    <div style="color:var(--muted); font-size:0.8rem; margin:-4px 0 12px 4px;">${escapeHtml(mostWork.workoutName)}</div>`;
+}
+function shareResult(id) {
+    const r = DB.history.find(x => x.id === id);
+    if (!r) return;
+    let text = `💪 Тренировка: ${r.workoutName}\n📅 ${formatDate(new Date(r.startTime))}\n⏱ ${formatTime(r.totalDuration)}\n💪 ${formatTime(r.workTime)}`;
+    if ((r.warmupSeconds || 0) > 0) text += `\n🔥 Разминка: ${formatTime(r.warmupSeconds)}`;
+    text += `\n\n#FitTrainer`;
+    if (navigator.share) navigator.share({ title: 'Тренировка', text }).catch(() => showShareFallback(text));
+    else if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(() => showToast('📋 Скопировано')).catch(() => showShareFallback(text));
+    else showShareFallback(text);
+}
+async function clearHistory() {
+    if (!await customConfirm('Удалить всю историю?', { danger: true, okText: '🗑 Удалить всё' })) return;
+    const backup = [...DB.history];
+    DB.history = [];
+    saveDB('history');
+    renderHistory();
+    showUndoToast('История очищена', () => {
+        DB.history = backup;
+        saveDB('history');
+        renderHistory();
+        showToast('Восстановлено');
+    });
+}
+
+/* ===================== CSV EXPORT ===================== */
+function csvEscape(v) {
+    const s = String(v === undefined || v === null ? '' : v);
+    if (s.indexOf(',') >= 0 || s.indexOf('"') >= 0 || s.indexOf('\n') >= 0) return '"' + s.replace(/"/g, '""') + '"';
+    return s;
+}
+function exportCSV() {
+    if (!DB.history.length) { showToast('История пуста'); return; }
+    const headers = ['Дата', 'Начало', 'Конец', 'Тренировка', 'Длительность', 'Длительность_сек', 'Работа', 'Работа_сек', 'Разминка_сек', 'Упражнений', 'Заметка'];
+    const rows = DB.history.map(r => {
+        const start = new Date(r.startTime);
+        const end = r.endTime ? new Date(r.endTime) : new Date(start.getTime() + (r.totalDuration || 0) * 1000);
+        return [formatDateKey(start), formatClock(start), formatClock(end), r.workoutName || '', formatTime(r.totalDuration || 0), r.totalDuration || 0, formatTime(r.workTime || 0), r.workTime || 0, r.warmupSeconds || 0, r.exercisesCount || (r.exerciseNames || []).length, r.workoutNote || ''];
+    });
+    const csv = [headers, ...rows].map(row => row.map(csvEscape).join(',')).join('\n');
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `fit-trainer-history-${new Date().toISOString().slice(0,10)}.csv`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('📥 CSV экспортирован');
+}
+
+/* ===================== SETTINGS ===================== */
+function renderSettings() {
+    document.getElementById('set-wakelock').checked = DB.settings.wakeLock;
+    document.getElementById('set-countdown').checked = DB.settings.countdown;
+    document.getElementById('set-default-auto').checked = DB.settings.defaultAutoStart;
+    document.getElementById('set-continuous-beep').checked = DB.settings.continuousBeep;
+    document.getElementById('set-minute-beep').checked = DB.settings.minuteBeep;
+    document.getElementById('set-announce-numbers').checked = DB.settings.announceNumbers;
+    document.getElementById('set-show-start-time').checked = DB.settings.showStartTime;
+    document.getElementById('set-announce-buttons').checked = DB.settings.announceButtons;
+    document.getElementById('set-notify-scheduled').checked = DB.settings.notifyScheduledWorkouts;
+    document.getElementById('set-notify-show-completed').checked = DB.settings.notifyShowCompleted;
+    const showActivityEl = document.getElementById('set-show-activity');
+    if (showActivityEl) showActivityEl.checked = DB.settings.showActivityCalendar !== false;
+    const askRepsEl = document.getElementById('set-ask-reps');
+    if (askRepsEl) askRepsEl.checked = DB.settings.askReps;
+    const backupChk = document.getElementById('set-auto-backup');
+    if (backupChk) backupChk.checked = DB.settings.autoBackupReminder;
+    const vib = document.getElementById('vibration-warning');
+    if (vib) vib.style.display = (typeof navigator.vibrate === 'function') ? 'none' : 'flex';
+
+    // Home screen visibility checkboxes
+    const hideMapInit = {
+        'set-hide-templates': 'templates',
+        'set-hide-programs': 'programs',
+        'set-hide-activity': 'activity',
+        'set-hide-history': 'history'
+    };
+    Object.keys(hideMapInit).forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.checked = DB.settings.hiddenMenuItems.includes(hideMapInit[id]);
+        el.onchange = () => {
+            const key = hideMapInit[id];
+            if (el.checked) {
+                if (!DB.settings.hiddenMenuItems.includes(key)) DB.settings.hiddenMenuItems.push(key);
+            } else {
+                DB.settings.hiddenMenuItems = DB.settings.hiddenMenuItems.filter(k => k !== key);
+            }
+            saveDB('settings');
+            applyHomeMenuVisibility();
+        };
+    });
+
+    renderThemeModeOptions();
+    renderSoundModeOptions();
+    renderSoundOptions();
+    renderVoiceOptions();
+    renderVoiceRateOptions();
+    renderMinuteBeepOptions();
+    renderCountdownIntervals();
+    updateAnnounceVisibility();
+    updateBackupInfo();
+
+    document.querySelectorAll('#screen-settings .settings-group').forEach(group => {
+        const key = group.dataset.group;
+        if (!key) return;
+        if (DB.settings.accordions && DB.settings.accordions[key] !== undefined) {
+            group.open = DB.settings.accordions[key];
+        }
+        if (group.dataset.accBound === '1') return;
+        group.dataset.accBound = '1';
+        group.addEventListener('toggle', () => {
+            DB.settings.accordions = DB.settings.accordions || {};
+            DB.settings.accordions[key] = group.open;
+            Storage.set('ft_settings', DB.settings);
+        });
+    });
+
+    const map = {
+        'set-wakelock': 'wakeLock', 'set-countdown': 'countdown', 'set-default-auto': 'defaultAutoStart',
+        'set-continuous-beep': 'continuousBeep', 'set-minute-beep': 'minuteBeep',
+        'set-announce-numbers': 'announceNumbers', 'set-show-start-time': 'showStartTime',
+        'set-announce-buttons': 'announceButtons',
+        'set-notify-scheduled': 'notifyScheduledWorkouts', 'set-notify-show-completed': 'notifyShowCompleted',
+        'set-show-activity': 'showActivityCalendar',
+        'set-auto-backup': 'autoBackupReminder', 'set-ask-reps': 'askReps'
+    };
+    Object.keys(map).forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.onchange = () => {
+            DB.settings[map[id]] = el.checked;
+            saveDB('settings');
+            if (id === 'set-continuous-beep') renderSoundOptions();
+            if (id === 'set-minute-beep') renderMinuteBeepOptions();
+            if (id === 'set-countdown') renderCountdownIntervals();
+            if (id === 'set-show-activity') renderStreakBanner();
+            if (id === 'set-wakelock') {
+                if (DB.settings.wakeLock) { if (runState && runState.phase !== 'finish') acquireWakeLock(); }
+                else releaseWakeLock();
+            }
+        };
+    });
+}
+function updateBackupInfo() {
+    const el = document.getElementById('last-backup-info');
+    if (!el) return;
+    if (DB.settings.lastBackupAt) { el.textContent = `Последний: ${formatDate(new Date(DB.settings.lastBackupAt))}`; }
+    else { el.textContent = 'Ещё не делался'; }
+}
+function updateAnnounceVisibility() {
+    const el = document.getElementById('announce-buttons-row');
+    if (!el) return;
+    el.classList.toggle('disabled', !isVoiceMode());
+}
+function renderSoundModeOptions() {
+    const c = document.getElementById('sound-mode-options');
+    if (!c) return;
+    const modes = [{ v: 'voice', name: '🗣 Озвучивать', desc: 'Голосом' }, { v: 'beep', name: '🔔 Пикать', desc: 'Короткие сигналы' }];
+    c.innerHTML = modes.map(m => {
+        const sel = DB.settings.soundMode === m.v;
+        return `<div class="sound-option ${sel ? 'selected' : ''}" onclick="selectSoundMode('${m.v}')"><div class="radio"></div><div class="sound-info"><div class="sound-name">${m.name}</div><div class="sound-desc">${m.desc}</div></div></div>`;
+    }).join('');
+    updateAnnounceVisibility();
+}
+function selectSoundMode(mode) {
+    if (!['voice','beep'].includes(mode)) return;
+    DB.settings.soundMode = mode;
+    saveDB('settings'); renderSoundModeOptions();
+}
+function renderSoundOptions() {
+    const c = document.getElementById('sound-options');
+    c.innerHTML = Object.keys(ALARM_SOUNDS).map(k => {
+        const s = ALARM_SOUNDS[k];
+        const sel = DB.settings.alarmSound === k;
+        return `<div class="sound-option ${sel ? 'selected' : ''}" onclick="selectAlarmSound('${k}')"><div class="radio"></div><div class="sound-info"><div class="sound-name">${s.name}</div><div class="sound-desc">${s.desc}</div></div><button class="preview-btn" onclick="event.stopPropagation(); previewAlarmSound('${k}')" aria-label="Прослушать">▶</button></div>`;
+    }).join('');
+}
+function selectAlarmSound(k) { DB.settings.alarmSound = k; saveDB('settings'); renderSoundOptions(); }
+function renderMinuteBeepOptions() {
+    const c = document.getElementById('minute-beep-options');
+    c.style.display = DB.settings.minuteBeep ? 'block' : 'none';
+    document.getElementById('minute-beep-interval-options').innerHTML = MINUTE_BEEP_INTERVALS.map(o => {
+        const sel = DB.settings.minuteBeepInterval === o.v;
+        return `<div class="sound-option ${sel ? 'selected' : ''}" onclick="selectMinuteBeepInterval(${o.v})"><div class="radio"></div><div class="sound-info"><div class="sound-name">${o.t}</div></div></div>`;
+    }).join('');
+}
+function selectMinuteBeepInterval(v) { DB.settings.minuteBeepInterval = v; saveDB('settings'); renderMinuteBeepOptions(); }
+function renderCountdownIntervals() {
+    const c = document.getElementById('countdown-interval-options');
+    c.style.display = DB.settings.countdown ? 'block' : 'none';
+    document.getElementById('countdown-interval-list').innerHTML = COUNTDOWN_INTERVALS.map(o => {
+        const sel = DB.settings.countdownDuration === o.v;
+        return `<div class="sound-option ${sel ? 'selected' : ''}" onclick="selectCountdownInterval(${o.v})"><div class="radio"></div><div class="sound-info"><div class="sound-name">${o.t}</div></div></div>`;
+    }).join('');
+}
+function selectCountdownInterval(v) { DB.settings.countdownDuration = v; saveDB('settings'); renderCountdownIntervals(); }
+
+function exportData() {
+    const data = { workouts: DB.workouts, templates: DB.templates, programs: DB.programs, history: DB.history, settings: DB.settings, exportedAt: new Date().toISOString() };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `fit-trainer-backup-${new Date().toISOString().slice(0,10)}.json`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    DB.settings.lastBackupAt = Date.now();
+    DB.settings.lastBackupRecordCount = DB.history.length;
+    saveDB('settings');
+    try { updateBackupInfo(); } catch(e) {}
+    showToast('💾 Бэкап сохранён');
+}
+function importData(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async e => {
+        try {
+            const data = JSON.parse(e.target.result);
+            const ok = await customConfirm(`Импортировать данные?\nТренировок: ${data.workouts?.length || 0}\nШаблонов: ${data.templates?.length || 0}\nПрограмм: ${data.programs?.length || 0}\nЗаписей: ${data.history?.length || 0}\n\nТекущие данные будут ЗАМЕНЕНЫ.`, { title: 'Импорт данных', okText: '📥 Импортировать', danger: true });
+            if (!ok) return;
+            if (data.workouts) DB.workouts = data.workouts;
+            if (data.templates) DB.templates = data.templates;
+            if (data.programs) DB.programs = data.programs;
+            if (data.history) DB.history = data.history;
+            if (data.settings) {
+                DB.settings = Object.assign(DB.settings, data.settings);
+                if ('announceConfirm' in DB.settings) delete DB.settings.announceConfirm;
+            }
+            if (!Array.isArray(DB.settings.hiddenBuiltins)) DB.settings.hiddenBuiltins = [];
+            if (DB.settings.soundMode !== 'voice' && DB.settings.soundMode !== 'beep') DB.settings.soundMode = 'beep';
+            if ('voice' in DB.settings) delete DB.settings.voice;
+            if (!['auto','light','dark'].includes(DB.settings.themeMode)) DB.settings.themeMode = 'auto';
+            if (![0.8,1,1.3].includes(DB.settings.voiceRate)) DB.settings.voiceRate = 1;
+            if (typeof DB.settings.autoBackupReminder !== 'boolean') DB.settings.autoBackupReminder = true;
+            if (typeof DB.settings.lastBackupAt !== 'number') DB.settings.lastBackupAt = 0;
+            if (typeof DB.settings.lastBackupRecordCount !== 'number') DB.settings.lastBackupRecordCount = 0;
+            if (typeof DB.settings.askReps !== 'boolean') DB.settings.askReps = true;
+            if (typeof DB.settings.showActivityCalendar !== 'boolean') DB.settings.showActivityCalendar = true;
+            if (!DB.settings.accordions || typeof DB.settings.accordions !== 'object') DB.settings.accordions = {};
+            if (!Array.isArray(DB.settings.hiddenMenuItems)) DB.settings.hiddenMenuItems = [];
+            DB.settings.hiddenMenuItems = DB.settings.hiddenMenuItems.filter(k => HIDEABLE_MENU_KEYS.includes(k));
+            saveDB('workouts'); saveDB('templates'); saveDB('programs'); saveDB('history'); saveDB('settings');
+            validateAndMigrateDB();
+            applyTheme();
+            applyHomeMenuVisibility();
+            showToast('Импорт успешен');
+            showScreen('screen-home');
+        } catch(err) { showToast('Ошибка: ' + err.message); }
+    };
+    reader.readAsText(file);
+    event.target.value = '';
+}
+
+/* ===================== AUTO BACKUP ===================== */
+function checkAutoBackupReminder() {
+    if (!DB.settings.autoBackupReminder) return;
+    if (!DB.history.length) return;
+    if (loadSavedRunState()) return;
+    if (runState) return;
+    const lastAt = DB.settings.lastBackupAt || 0;
+    const lastCount = DB.settings.lastBackupRecordCount || 0;
+    const sinceCount = DB.history.length - lastCount;
+    const sinceDays = lastAt > 0 ? (Date.now() - lastAt) / (1000 * 60 * 60 * 24) : 0;
+    let reason = '', due = false;
+    if (lastAt === 0) {
+        if (DB.history.length >= 5) { due = true; reason = `${DB.history.length} тренировок, ни одного бэкапа`; }
+    } else {
+        if (sinceCount >= 20) { due = true; reason = `${sinceCount} новых тренировок`; }
+        else if (sinceDays >= 7) { due = true; reason = `${Math.floor(sinceDays)} дней`; }
+    }
+    if (!due) return;
+    setTimeout(() => showBackupReminder(reason), 2500);
+}
+function showBackupReminder(reason) {
+    if (!DB.settings.autoBackupReminder) return;
+    if (document.getElementById('backup-reminder-overlay')) return;
+    if (hasOpenOverlay()) return;
+    const ov = document.createElement('div');
+    ov.className = 'bottom-sheet-overlay';
+    ov.id = 'backup-reminder-overlay';
+    ov.innerHTML = `<div class="bottom-sheet">
+        <div class="sheet-grip"></div>
+        <div class="sheet-icon">💾</div>
+        <h2 class="sheet-title">Пора сделать бэкап</h2>
+        <div class="sheet-info"><div class="sheet-info-name">Прошло: ${escapeHtml(reason)}</div><div class="sheet-info-details">Сохраните данные, чтобы не потерять прогресс.</div></div>
+        <button class="btn accent" onclick="doBackupAndClose(this)">💾 Сделать бэкап</button>
+        <button class="btn ghost" onclick="snoozeBackup(this)">Позже</button>
+        <button class="btn notif-dismiss" style="background:transparent;color:var(--muted);font-size:0.85rem;" onclick="disableBackupReminder(this)">Отключить напоминания</button>
+    </div>`;
+    document.body.appendChild(ov);
+    ov.addEventListener('click', (e) => { if (e.target === ov) ov.remove(); });
+}
+function doBackupAndClose(btn) {
+    try { exportData(); } catch(e) { console.error(e); }
+    const ov = btn.closest('.bottom-sheet-overlay');
+    if (ov) ov.remove();
+}
+function snoozeBackup(btn) {
+    DB.settings.lastBackupAt = Date.now() - (4 * 24 * 60 * 60 * 1000);
+    DB.settings.lastBackupRecordCount = DB.history.length - 5;
+    saveDB('settings');
+    try { updateBackupInfo(); } catch(e) {}
+    const ov = btn.closest('.bottom-sheet-overlay');
+    if (ov) ov.remove();
+    showToast('Напомним позже');
+}
+function disableBackupReminder(btn) {
+    DB.settings.autoBackupReminder = false;
+    saveDB('settings');
+    const ov = btn.closest('.bottom-sheet-overlay');
+    if (ov) ov.remove();
+    try { renderSettings(); } catch(e) {}
+    showToast('Напоминания отключены');
+}
+
+/* ===================== NOTIFICATIONS ===================== */
+const NOTIF_DISMISSED_KEY = 'ft_notif_dismissed';
+
+function checkScheduledNotifications() {
+    if (!DB.settings.notifyScheduledWorkouts) return;
+    if (runState) return;
+    if (loadSavedRunState()) return;
+    if (hasOpenOverlay()) return;
+    const todayDate = new Date(), todayKey = formatDateKey(todayDate);
+    try { if (localStorage.getItem(NOTIF_DISMISSED_KEY) === todayKey) return; } catch(e) {}
+    const dayKey = getTodayKey();
+    const todays = [];
+    DB.programs.forEach(p => {
+        const week = getActiveWeek(p, todayDate);
+        if (!week) return;
+        (week.days[dayKey] || []).forEach(wid => {
+            const w = DB.workouts.find(x => x.id === wid);
+            if (w) todays.push({ workout: w, program: p });
+        });
+    });
+    if (todays.length === 0) return;
+    const todayHistory = DB.history.filter(r => formatDateKey(new Date(r.startTime)) === todayKey);
+    const completedIds = new Set(todayHistory.map(r => r.workoutId));
+    const pending = todays.filter(t => !completedIds.has(t.workout.id));
+    if (pending.length === 0) {
+        try { if (localStorage.getItem('ft_notif_alldone_' + todayKey)) return; } catch(e) {}
+        showAllDoneNotification(todays, todayKey);
+        return;
+    }
+    showScheduledNotificationModal(todays, completedIds, pending, todayKey);
+}
+
+function showAllDoneNotification(items, todayKey) {
+    if (hasOpenOverlay()) return;
+    const ov = document.createElement('div');
+    ov.className = 'bottom-sheet-overlay';
+    ov.innerHTML = `<div class="bottom-sheet"><div class="sheet-grip"></div><div class="sheet-icon">🎉</div><h2 class="sheet-title">Всё по плану!</h2><div class="sheet-info"><div class="sheet-info-details">${items.length} тренировок выполнено</div></div><button class="btn accent" onclick="markAllDoneAndClose(this, 'ft_notif_alldone_${todayKey}')">Отлично</button></div>`;
+    document.body.appendChild(ov);
+}
+function markAllDoneAndClose(btn, key) {
+    try { localStorage.setItem(key, '1'); } catch(e) {}
+    const ov = btn.closest('.bottom-sheet-overlay');
+    if (ov) ov.remove();
+}
+
+function showScheduledNotificationModal(items, completedIds, pending, todayKey) {
+    if (hasOpenOverlay()) return;
+    const showCompleted = DB.settings.notifyShowCompleted;
+    const ov = document.createElement('div');
+    ov.className = 'bottom-sheet-overlay';
+    let itemsHtml = '';
+    items.forEach(t => {
+        const done = completedIds.has(t.workout.id);
+        if (done && !showCompleted) return;
+        const histRec = done ? DB.history.find(r => r.workoutId === t.workout.id && formatDateKey(new Date(r.startTime)) === todayKey) : null;
+        const sub = done ? `✅ Выполнено ${histRec ? formatClock(new Date(histRec.startTime)) : ''}` : `📅 ${escapeHtml(t.program.name)}`;
+        itemsHtml += `<div class="notif-item ${done ? 'done' : ''}"><div class="notif-status">${done ? '✅' : '⏳'}</div><div class="notif-body"><div class="notif-name">${escapeHtml(t.workout.name)}</div><div class="notif-sub">${sub}</div></div>${!done ? `<button class="icon-btn" onclick="notifStart(${t.workout.id}, this)" aria-label="Начать" style="background:var(--accent); color:#000; width:38px; height:38px; border-radius:10px; font-weight:700;">▶</button>` : ''}</div>`;
+    });
+    if (!itemsHtml) { ov.remove(); return; }
+    ov.innerHTML = `<div class="bottom-sheet">
+        <div class="sheet-grip"></div>
+        <div class="sheet-icon">📅</div>
+        <h2 class="sheet-title">Сегодня по плану</h2>
+        <div class="sheet-info"><div class="sheet-info-details">${pending.length} из ${items.length} осталось</div></div>
+        <div style="display:flex; flex-direction:column; gap:8px;">${itemsHtml}</div>
+        ${pending.length > 0 ? `<button class="btn accent" onclick="notifStart(${pending[0].workout.id}, this)" style="margin-top:8px;">▶ Начать «${escapeHtml(pending[0].workout.name)}»</button>` : ''}
+        <button class="btn ghost notif-later">Позже</button>
+        <button class="btn notif-dismiss" style="background:transparent; color:var(--muted); font-size:0.85rem;">Не напоминать сегодня</button>
+    </div>`;
+    document.body.appendChild(ov);
+    ov.querySelector('.notif-later').onclick = () => ov.remove();
+    ov.querySelector('.notif-dismiss').onclick = () => {
+        try { localStorage.setItem(NOTIF_DISMISSED_KEY, todayKey); } catch(e) {}
+        ov.remove();
+    };
+    ov.addEventListener('click', (e) => { if (e.target === ov) ov.remove(); });
+}
+function notifStart(id, btn) {
+    const ov = btn.closest('.bottom-sheet-overlay');
+    if (ov) ov.remove();
+    startWorkout(id);
+}
+
+/* ===================== START ===================== */
+document.addEventListener('click', unlockAudio, { capture: true });
+document.addEventListener('touchstart', unlockAudio, { capture: true, passive: true });
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+        hiddenAt = 0;
+        if ((DB.settings.themeMode || 'auto') === 'auto') applyTheme();
+        if (DB.settings.wakeLock && runState && runState.phase !== 'finish') {
+            acquireWakeLock();
+            if (runState.tickInterval) updateTimersUI();
+        }
+        if (runState && runState.phase !== 'finish') saveRunState();
+    } else {
+        hiddenAt = Date.now();
+        if (runState && runState.phase !== 'finish') saveRunState();
+    }
 });
 
-self.addEventListener('message', (event) => {
-    if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
+if ('speechSynthesis' in window) {
+    try { refreshVoices(); if (speechSynthesis.onvoiceschanged !== undefined) speechSynthesis.onvoiceschanged = () => refreshVoices(); } catch(e) {}
+}
+try {
+    applyTheme();
+    try {
+        const mq = window.matchMedia('(prefers-color-scheme: light)');
+        if (mq && mq.addEventListener) mq.addEventListener('change', () => { if ((DB.settings.themeMode || 'auto') === 'auto') applyTheme(); });
+    } catch(e) {}
+} catch(e) {}
+
+window.addEventListener('load', () => {
+    setTimeout(async () => {
+        try { renderStreakBanner(); renderHomeTodayBanner(); applyHomeMenuVisibility(); } catch(e) {}
+        try { await offerResumeSavedSession(); } catch(e) { console.error(e); }
+        setTimeout(() => {
+            try { checkScheduledNotifications(); } catch(e) { console.error('[notif]', e); }
+            setTimeout(() => {
+                try { checkAutoBackupReminder(); } catch(e) { console.error('[backup]', e); }
+            }, 1500);
+        }, 500);
+    }, 200);
 });
+</script>
+</body>
+</html>
