@@ -22,6 +22,7 @@
     --primary-soft: rgba(187, 134, 252, 0.1);
     --accent-soft: rgba(3, 218, 198, 0.1);
     --water-soft: rgba(79, 195, 247, 0.1);
+    --warn-soft: rgba(255, 152, 0, 0.1);
     --sat: env(safe-area-inset-top, 20px);
     --sab: env(safe-area-inset-bottom, 0px);
 }
@@ -36,6 +37,7 @@ body.light {
     --primary-soft: rgba(124, 77, 255, 0.1);
     --accent-soft: rgba(0, 191, 165, 0.1);
     --water-soft: rgba(2, 136, 209, 0.1);
+    --warn-soft: rgba(230, 126, 0, 0.1);
 }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; }
 html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; }
@@ -71,14 +73,14 @@ h2 { color: var(--primary); margin: 24px 0 12px; font-size: 1.15rem; font-weight
 .btn.water { background: var(--water); color: #000; }
 .btn.small { padding: 10px 14px; font-size: 0.9rem; min-height: 40px; width: auto; margin: 4px; }
 .btn:disabled { opacity: 0.4; pointer-events: none; }
-#phase-work .btn, #phase-rest .rest-buttons .btn { font-size: 1.3rem; padding: 20px 22px; min-height: 64px; letter-spacing: 0.3px; }
+#phase-work .btn, #phase-rest .rest-buttons .btn, #phase-warmup .btn { font-size: 1.3rem; padding: 20px 22px; min-height: 64px; letter-spacing: 0.3px; }
 
 .menu-btn { background: var(--card); border: 2px solid var(--primary); color: var(--text); padding: 22px 18px; width: 100%; margin: 10px 0; border-radius: 18px; font-size: 1.15rem; font-weight: 600; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 14px; min-height: 76px; }
 .menu-btn:active { transform: scale(0.98); }
 .menu-btn .icon { font-size: 1.8rem; }
 .menu-btn .sub { font-size: 0.8rem; color: var(--muted); margin-top: 2px; font-weight: 400; }
 
-.workout-item { background: var(--card); border-radius: 16px; padding: 16px; margin-bottom: 12px; position: relative; z-index: 1; }
+.workout-item { background: var(--card); border-radius: 16px; padding: 16px; margin-bottom: 12px; position: relative; z-index: 1; content-visibility: auto; contain-intrinsic-size: auto 130px; }
 .workout-item.dragging { opacity: 0.9; z-index: 9999; box-shadow: 0 20px 40px rgba(0,0,0,0.7); background: var(--card-2); border: 1px solid var(--primary); pointer-events: none; position: fixed !important; width: calc(100% - 40px) !important; left: 20px !important; top: 0 !important; margin: 0 !important; }
 .drag-placeholder { background: transparent; border: 2px dashed var(--muted); border-radius: 16px; height: 100px; margin-bottom: 12px; opacity: 0.5; }
 body.no-scroll { overflow: hidden !important; position: fixed !important; width: 100%; height: 100%; touch-action: none !important; }
@@ -90,6 +92,7 @@ body.no-scroll { overflow: hidden !important; position: fixed !important; width:
 .workout-actions { display: flex; gap: 8px; flex-shrink: 0; }
 .workout-actions .icon-btn { background: var(--card-2); border: none; color: var(--text); width: 44px; height: 44px; border-radius: 12px; cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; }
 .workout-actions .icon-btn:active { background: var(--border); }
+.workout-actions .icon-btn.delete { color: var(--danger); }
 .btn-start-workout { width: 100%; margin: 0; padding: 16px; font-size: 1.1rem; }
 
 .input, .select { background: var(--card-2); border: 1px solid var(--border); color: var(--text); padding: 12px; border-radius: 10px; font-size: 1rem; width: 100%; margin-bottom: 8px; -webkit-appearance: none; appearance: none; }
@@ -100,11 +103,14 @@ textarea.input { min-height: 60px; resize: vertical; font-family: inherit; }
 .exercise-block { background: var(--card-2); border-radius: 14px; padding: 12px; margin-bottom: 10px; border-left: 3px solid var(--primary); }
 .exercise-block.rest-block { border-left-color: var(--rest); background: rgba(138,138,149,0.05); }
 .exercise-block.rest-block.water-type { border-left-color: var(--water); background: var(--water-soft); }
+.exercise-block.warmup-block { border-left-color: var(--warn); background: var(--warn-soft); }
 .exercise-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
 .exercise-number { background: var(--primary); color: #000; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; flex-shrink: 0; }
 .exercise-block.rest-block .exercise-number { background: var(--rest); font-size: 1rem; }
 .exercise-block.rest-block.water-type .exercise-number { background: var(--water); }
+.exercise-block.warmup-block .exercise-number { background: var(--warn); }
 .exercise-name-input { margin: 0; flex: 1; padding: 8px; background: var(--card); border: 1px solid var(--border); color: var(--text); border-radius: 8px; font-size: 0.95rem; min-width: 0; }
+.exercise-name-input:disabled { background: var(--card-2); color: var(--muted); }
 .exercise-controls { display: flex; gap: 6px; margin-left: auto; flex-shrink: 0; }
 .exercise-controls .icon-btn { width: 36px; height: 36px; background: var(--card); border: 1px solid var(--border); border-radius: 10px; color: var(--text); display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
 .exercise-controls .icon-btn:active { background: var(--primary); color: #000; transform: scale(0.95); }
@@ -148,32 +154,26 @@ textarea.input { min-height: 60px; resize: vertical; font-family: inherit; }
 .sound-option .sound-desc { color: var(--muted); font-size: 0.8rem; margin-top: 2px; }
 .sound-option .preview-btn { background: var(--card); border: 1px solid var(--border); color: var(--accent); width: 38px; height: 38px; border-radius: 50%; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
 
-.big-timer { 
-    font-size: 4.5rem; 
-    font-weight: 700; 
-    text-align: center; 
-    margin: 0;
-    font-variant-numeric: tabular-nums; 
-    letter-spacing: -2px; 
-    height: 6rem; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center;
-}
+.settings-group { background: var(--card); border-radius: 16px; margin-bottom: 12px; overflow: hidden; }
+.settings-group summary { padding: 16px 18px; font-weight: 700; font-size: 1.05rem; cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; color: var(--primary); }
+.settings-group summary::-webkit-details-marker { display: none; }
+.settings-group summary::after { content: '▾'; font-size: 0.9rem; color: var(--muted); transition: transform 0.2s; }
+.settings-group[open] summary::after { transform: rotate(180deg); }
+.settings-group .group-body { padding: 0 14px 14px; }
+.settings-group .group-body .checkbox-row { margin-bottom: 8px; }
+.settings-group .group-body .checkbox-row:last-child { margin-bottom: 0; }
+.settings-group .group-body .sound-section { background: var(--card-2); margin-bottom: 8px; }
+.settings-group .group-body .btn { margin-top: 8px; }
+
+.big-timer { font-size: 4.5rem; font-weight: 700; text-align: center; margin: 0; font-variant-numeric: tabular-nums; letter-spacing: -2px; height: 6rem; display: flex; align-items: center; justify-content: center; }
 .big-timer.paused { color: var(--muted); }
 .big-timer.countdown { color: var(--warn); font-size: 7rem; height: 8rem; }
 .big-timer.overtime { color: var(--danger); font-size: 4.5rem; }
 .big-timer.water { color: var(--water); }
+.big-timer.warmup { color: var(--warn); }
+.big-timer.warmup.done { color: var(--accent); }
 
-.rest-icon-display { 
-    display: flex; 
-    justify-content: center; 
-    align-items: center; 
-    height: 5rem; 
-    font-size: 4.5rem; 
-    margin: 10px 0; 
-    animation: waterPulse 2s ease-in-out infinite; 
-}
+.rest-icon-display { display: flex; justify-content: center; align-items: center; height: 5rem; font-size: 4.5rem; margin: 10px 0; animation: waterPulse 2s ease-in-out infinite; }
 @keyframes waterPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
 
 .phase-header { width: 100%; min-height: 1rem; margin: 4px 0; display: flex; align-items: center; justify-content: center; }
@@ -186,19 +186,7 @@ textarea.input { min-height: 60px; resize: vertical; font-family: inherit; }
 
 .start-time-display { position: relative; right: 10px; text-align: right; font-size: 0.85rem; font-weight: 600; white-space: nowrap; color: var(--muted) !important; }
 
-.current-exercise { 
-    text-align: center; 
-    font-size: 3rem; 
-    font-weight: 700; 
-    margin: 6px 0; 
-    letter-spacing: -0.5px; 
-    word-break: break-word; 
-    line-height: 1.2; 
-    min-height: 3.6rem; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center;
-}
+.current-exercise { text-align: center; font-size: 3rem; font-weight: 700; margin: 6px 0; letter-spacing: -0.5px; word-break: break-word; line-height: 1.2; min-height: 3.6rem; display: flex; align-items: center; justify-content: center; }
 
 .finished-subtitle { text-align: center; color: var(--muted); font-size: 0.95rem; margin: 4px 0 12px; font-weight: 500; }
 
@@ -227,13 +215,13 @@ details summary { cursor: pointer; outline: none; list-style: none; display: fle
 details summary::-webkit-details-marker { display: none; }
 details summary::after { content: '▼'; font-size: 0.8rem; color: var(--muted); }
 details[open] summary::after { transform: rotate(180deg); }
+.settings-group summary::after { content: '▾'; }
 
-.history-card {
-    background: var(--card); border-radius: 14px; padding: 14px; margin-bottom: 10px;
-    display: flex; flex-direction: column; gap: 10px;
-    content-visibility: auto;
-    contain-intrinsic-size: auto 200px;
-}
+.swipe-container { position: relative; overflow: hidden; margin-bottom: 10px; border-radius: 14px; }
+.swipe-delete-btn { position: absolute; right: 0; top: 0; bottom: 0; width: 100px; background: var(--danger); color: #fff; border: none; font-weight: 600; font-size: 0.85rem; z-index: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.swipe-container .history-card { position: relative; z-index: 1; transition: transform 0.2s; margin-bottom: 0 !important; will-change: transform; }
+
+.history-card { background: var(--card); border-radius: 14px; padding: 14px; margin-bottom: 10px; display: flex; flex-direction: column; gap: 10px; content-visibility: auto; contain-intrinsic-size: auto 200px; }
 .history-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
 .history-info { flex: 1; min-width: 0; }
 .history-info .name { font-weight: 600; font-size: 1rem; word-break: break-word; }
@@ -242,12 +230,23 @@ details[open] summary::after { transform: rotate(180deg); }
 .history-actions .icon-btn { background: var(--card-2); border: none; color: var(--text); width: 38px; height: 38px; border-radius: 10px; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; }
 .history-actions .icon-btn.delete { color: var(--danger); }
 
+.history-summary-card { background: linear-gradient(135deg, var(--primary-soft), var(--accent-soft)); border: 1px solid var(--primary); border-radius: 16px; padding: 18px 16px; margin-bottom: 14px; text-align: center; }
+.history-summary-title { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); font-weight: 600; margin-bottom: 8px; }
+.history-summary-big { font-size: 2.2rem; font-weight: 800; color: var(--primary); line-height: 1; }
+.history-summary-big-sub { color: var(--muted); font-size: 0.8rem; margin-top: 4px; }
+.history-summary-row { display: flex; justify-content: space-around; margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(187,134,252,0.3); }
+.history-summary-item { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.history-summary-item .val { font-size: 1.15rem; font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; }
+.history-summary-item .lbl { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+
 .preview-exercise { background: var(--card-2); border-radius: 10px; padding: 12px; margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
 .preview-exercise.rest { background: rgba(138,138,149,0.1); border-left: 3px solid var(--rest); }
 .preview-exercise.water { background: var(--water-soft); border-left: 3px solid var(--water); }
+.preview-exercise.warmup { background: var(--warn-soft); border-left: 3px solid var(--warn); }
 .preview-exercise .num { background: var(--primary); color: #000; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; flex-shrink: 0; }
 .preview-exercise.rest .num { background: var(--rest); }
 .preview-exercise.water .num { background: var(--water); }
+.preview-exercise.warmup .num { background: var(--warn); }
 .preview-exercise .info { flex: 1; min-width: 0; }
 .preview-exercise .name { font-weight: 500; word-break: break-word; }
 .preview-exercise .rest-info { color: var(--muted); font-size: 0.8rem; }
@@ -259,7 +258,7 @@ details[open] summary::after { transform: rotate(180deg); }
 .tab { flex: 1; padding: 10px; text-align: center; background: var(--card-2); border-radius: 10px; font-size: 0.9rem; cursor: pointer; }
 .tab.active { background: var(--primary); color: #000; font-weight: 600; }
 
-.template-card { background: var(--card-2); border-radius: 12px; padding: 14px; margin-bottom: 10px; }
+.template-card { background: var(--card-2); border-radius: 12px; padding: 14px; margin-bottom: 10px; content-visibility: auto; contain-intrinsic-size: auto 100px; }
 .template-card-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
 .template-card-info { flex: 1; min-width: 0; cursor: pointer; }
 .template-card-info .name { font-weight: 600; margin-bottom: 4px; word-break: break-word; }
@@ -323,6 +322,15 @@ details[open] summary::after { transform: rotate(180deg); }
 .heatmap-legend { display: flex; gap: 8px; align-items: center; justify-content: flex-end; font-size: 0.75rem; color: var(--muted); margin-top: 8px; }
 .heatmap-legend-box { width: 12px; height: 12px; border-radius: 2px; }
 
+.week-graph { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-top: 12px; }
+.week-graph-day { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.week-graph-bar { width: 100%; min-height: 40px; max-height: 80px; background: var(--card-2); border-radius: 6px; position: relative; overflow: hidden; display: flex; align-items: flex-end; }
+.week-graph-fill { width: 100%; background: var(--primary); transition: height 0.3s; border-radius: 6px; }
+.week-graph-fill.empty { background: transparent; }
+.week-graph-label { font-size: 0.7rem; color: var(--muted); font-weight: 600; }
+.week-graph-day.today .week-graph-label { color: var(--accent); font-weight: 700; }
+.week-graph-day.today .week-graph-bar { outline: 1px solid var(--accent); }
+
 .notif-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--card-2); border-radius: 12px; margin-bottom: 8px; }
 .notif-item.done { opacity: 0.55; }
 .notif-item .notif-status { font-size: 1.2rem; flex-shrink: 0; }
@@ -333,6 +341,17 @@ details[open] summary::after { transform: rotate(180deg); }
 .workout-search-row { display: flex; gap: 8px; margin-bottom: 12px; }
 .workout-search-row .input { margin: 0; flex: 1; }
 .workout-search-row .select { margin: 0; width: auto; min-width: 130px; }
+
+.reps-input-row { display: flex; gap: 8px; align-items: center; justify-content: center; }
+.reps-input-row .input { width: 110px; text-align: center; font-size: 1.6rem; font-weight: 700; margin: 0; padding: 14px 12px; }
+.reps-stepper { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
+.reps-stepper button { width: 48px; height: 48px; padding: 0; min-height: 48px; font-size: 1rem; }
+
+.fab { position: fixed; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); right: 20px; width: 60px; height: 60px; border-radius: 50%; background: var(--primary); color: #000; border: none; font-size: 2rem; font-weight: 700; box-shadow: 0 4px 16px rgba(0,0,0,0.4); cursor: pointer; z-index: 100; display: none; align-items: center; justify-content: center; line-height: 1; }
+.fab.visible { display: flex; }
+.fab:active { transform: scale(0.95); }
+
+.share-textarea { min-height: 140px !important; font-size: 0.85rem !important; font-family: inherit; }
 
 @media (max-height: 700px) {
     .big-timer { font-size: 3.5rem; height: 5rem; }
@@ -396,6 +415,8 @@ details[open] summary::after { transform: rotate(180deg); }
     <input type="file" id="import-workout-file" accept=".json" style="display:none" onchange="importWorkout(event)">
 </div>
 
+<button class="fab" id="fab-create-workout" onclick="openEditor(null, false)" aria-label="Создать тренировку">+</button>
+
 <div id="screen-templates" class="screen">
     <div class="top-bar">
         <button class="back-btn" onclick="showScreen('screen-home')">←</button>
@@ -443,13 +464,13 @@ details[open] summary::after { transform: rotate(180deg); }
         <label style="color:var(--muted); font-size:0.85rem;">Название</label>
         <input type="text" id="workout-name" class="input" placeholder="Например: Пресс">
     </div>
-    <div class="checkbox-row">
-        <input type="checkbox" id="auto-start">
-        <label for="auto-start">🔄 Автозапуск упражнений</label>
-    </div>
 
     <h2>⚙️ Настройки тренировки</h2>
     <div class="editor-settings-card">
+        <div class="checkbox-row">
+            <input type="checkbox" id="auto-start">
+            <label for="auto-start">🔄 Автозапуск упражнения</label>
+        </div>
         <div class="checkbox-row">
             <input type="checkbox" id="workout-countdown">
             <label for="workout-countdown">⏱ Обратный отсчёт перед упражнением</label>
@@ -484,12 +505,21 @@ details[open] summary::after { transform: rotate(180deg); }
             <input type="checkbox" id="workout-continuous-beep">
             <label for="workout-continuous-beep">🔁 Непрерывно повторять звук окончания отдыха</label>
         </div>
+        <div class="checkbox-row">
+            <input type="checkbox" id="workout-ask-reps">
+            <label for="workout-ask-reps">🔢 Спрашивать количество повторов после подхода</label>
+        </div>
+        <div class="checkbox-row">
+            <input type="checkbox" id="workout-skip-warmup">
+            <label for="workout-skip-warmup">⏭ Пропускать разминку при запуске</label>
+        </div>
     </div>
     <button class="btn ghost small" onclick="resetWorkoutSettingsToGlobal()" style="width:100%; margin-bottom:16px;">↺ Сбросить к глобальным настройкам</button>
 
     <h2>Содержание</h2>
     <div id="exercises-list"></div>
     <button class="btn ghost" onclick="addExercise()">+ Добавить упражнение</button>
+    <button class="btn ghost" onclick="addWarmup()" style="margin-top:6px; border:1px solid var(--warn); color:var(--warn);">🔥 Добавить разминку</button>
     <button class="btn ghost" onclick="addRest()" style="margin-top:6px; border:1px solid var(--rest); color:var(--muted);">🛌 Добавить отдых / 💧 Воду</button>
     <div style="margin-top: 16px;">
         <button class="btn accent" onclick="saveWorkout()">💾 Сохранить</button>
@@ -527,11 +557,19 @@ details[open] summary::after { transform: rotate(180deg); }
         <div class="big-timer countdown" id="countdown-timer">3</div>
         <p style="text-align:center; color:var(--muted);">Приготовься...</p>
     </div>
+    <div id="phase-warmup" style="display:none;">
+        <div class="big-timer warmup" id="warmup-timer">00:00</div>
+        <button class="btn warn" id="warmup-pause-btn" onclick="toggleWarmupPause()">⏸ Пауза</button>
+        <button class="btn accent" id="warmup-finish-early-btn" onclick="finishWarmupEarly()">✅ Закончить разминку</button>
+        <button class="btn ghost" id="warmup-skip-btn" onclick="skipWarmup()" style="background:var(--card-2); color:var(--muted);">⏭ Пропустить разминку</button>
+        <button class="btn accent" id="warmup-confirm-btn" onclick="confirmWarmupFinished()" style="display:none;">▶ К упражнению</button>
+    </div>
     <div id="phase-work" style="display:none;">
         <div class="big-timer" id="work-timer">00:00</div>
         <div id="work-reps-info" style="text-align:center; color:var(--accent); font-size:1.2rem; font-weight:700; margin-bottom:12px; display:none;">Цель: <span id="work-reps-target">10</span> повторов</div>
         <button class="btn warn" id="work-pause-btn" onclick="toggleWorkPause()">⏸ Пауза</button>
         <button class="btn danger" id="work-finish-btn" onclick="finishExercise()">✅ Завершить упражнение</button>
+        <button class="btn ghost" id="work-skip-btn" onclick="skipExercise()" style="background:var(--card-2); color:var(--muted);">⏭ Пропустить упражнение</button>
     </div>
     <div id="phase-rest" style="display:none;">
         <div id="rest-middle-icon" class="rest-icon-display" style="display:none;">💧</div>
@@ -576,6 +614,15 @@ details[open] summary::after { transform: rotate(180deg); }
         <h1>История</h1>
         <div class="spacer"></div>
     </div>
+    <div class="workout-search-row">
+        <input type="text" id="history-search" class="input" placeholder="🔍 Поиск по названию, заметке, упражнению..." oninput="renderHistory()">
+        <select id="history-period" class="select" onchange="renderHistory()">
+            <option value="all">Всё время</option>
+            <option value="7">7 дней</option>
+            <option value="30">30 дней</option>
+            <option value="90">90 дней</option>
+        </select>
+    </div>
     <div class="tabs">
         <div class="tab active" onclick="switchHistoryTab('list', this)">Записи</div>
         <div class="tab" onclick="switchHistoryTab('stats', this)">Статистика</div>
@@ -592,43 +639,81 @@ details[open] summary::after { transform: rotate(180deg); }
         <h1>Настройки</h1>
         <div class="spacer"></div>
     </div>
-    <h2>🎨 Внешний вид</h2>
-    <div class="sound-section"><div class="sound-section-title">Тема</div><div class="sound-options" id="theme-mode-options"></div></div>
-    <h2>🔊 Звук и голос</h2>
-    <div class="sound-section"><div class="sound-section-title">Режим звука</div><div class="sound-options" id="sound-mode-options"></div></div>
-    <div class="sound-section"><div class="sound-section-title">Голос</div><div class="sound-options" id="voice-options"></div></div>
-    <div class="sound-section"><div class="sound-section-title">Скорость речи</div><div class="sound-options" id="voice-rate-options"></div></div>
-    <div class="checkbox-row" id="announce-buttons-row"><input type="checkbox" id="set-announce-buttons"><label for="set-announce-buttons">👆 Озвучивать кнопки (в тренировке)</label></div>
-    <div class="checkbox-row" id="announce-confirm-row"><input type="checkbox" id="set-announce-confirm"><label for="set-announce-confirm">✅ Озвучивать подтверждения</label></div>
-    <div class="checkbox-row"><input type="checkbox" id="set-announce-numbers"><label for="set-announce-numbers">🔢 Озвучивать номер упражнения</label></div>
-    <div class="checkbox-row"><input type="checkbox" id="set-minute-beep"><label for="set-minute-beep">⏱ Пикать каждую минуту</label></div>
-    <div id="minute-beep-options" style="display:none;"><div class="sound-section"><div class="sound-section-title">Интервал пиканья</div><div class="sound-options" id="minute-beep-interval-options"></div></div></div>
-    <div class="sound-section"><div class="sound-section-title">Звук окончания отдыха</div><div class="sound-options" id="sound-options"></div></div>
-    <div class="checkbox-row"><input type="checkbox" id="set-continuous-beep"><label for="set-continuous-beep">🔁 Непрерывно повторять</label></div>
-    <h2>🔔 Уведомления</h2>
-    <div class="checkbox-row"><input type="checkbox" id="set-notify-scheduled"><label for="set-notify-scheduled">📅 Напоминать о тренировках по программе</label></div>
-    <div class="checkbox-row"><input type="checkbox" id="set-notify-show-completed"><label for="set-notify-show-completed">✅ Показывать выполненные</label></div>
-    <h2>⏱ Таймеры</h2>
-    <div class="checkbox-row"><input type="checkbox" id="set-countdown"><label for="set-countdown">⏱ Обратный отсчёт</label></div>
-    <div id="countdown-interval-options" style="display:none;"><div class="sound-section"><div class="sound-section-title">Интервал отсчёта</div><div class="sound-options" id="countdown-interval-list"></div></div></div>
-    <div class="checkbox-row"><input type="checkbox" id="set-default-auto"><label for="set-default-auto">🔄 Автозапуск по умолчанию</label></div>
-    <div class="checkbox-row"><input type="checkbox" id="set-show-start-time"><label for="set-show-start-time">🕐 Показывать время старта</label></div>
-    <h2>📱 Поведение</h2>
-    <div class="checkbox-row"><input type="checkbox" id="set-wakelock"><label for="set-wakelock">🔒 Не гасить экран</label></div>
-    <div id="vibration-warning" class="checkbox-row disabled" style="display:none;"><label>📳 Вибро не поддерживается</label></div>
-    <h2>💾 Данные</h2>
-    <div class="checkbox-row"><input type="checkbox" id="set-auto-backup"><label for="set-auto-backup">💾 Напоминать о бэкапе<span class="hint">Раз в 20 тренировок или 7 дней · <span id="last-backup-info">—</span></span></label></div>
-    <button class="btn ghost" onclick="exportData()">💾 Сделать бэкап сейчас</button>
-    <button class="btn ghost" onclick="document.getElementById('import-file').click()">📥 Импорт</button>
-    <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)">
-    <button class="btn danger" onclick="clearHistory()">🗑 Очистить историю</button>
-    <button class="btn ghost" onclick="restoreBuiltins()">🔄 Восстановить шаблоны</button>
-    <h2>ℹ️ О приложении</h2>
-    <div class="card" style="color:var(--muted); font-size:0.85rem; line-height:1.6;">
-        <strong style="color:var(--text);">Fit Trainer Pro v1.5</strong><br>
-        Работает офлайн через Service Worker.<br>
-        Данные хранятся локально.
-    </div>
+
+    <details class="settings-group" open data-group="appearance">
+        <summary>🎨 Внешний вид</summary>
+        <div class="group-body">
+            <div class="sound-section"><div class="sound-section-title">Тема</div><div class="sound-options" id="theme-mode-options"></div></div>
+        </div>
+    </details>
+
+    <details class="settings-group" open data-group="sound">
+        <summary>🔊 Звук и голос</summary>
+        <div class="group-body">
+            <div class="sound-section"><div class="sound-section-title">Режим звука</div><div class="sound-options" id="sound-mode-options"></div></div>
+            <div class="sound-section"><div class="sound-section-title">Голос</div><div class="sound-options" id="voice-options"></div></div>
+            <div class="sound-section"><div class="sound-section-title">Скорость речи</div><div class="sound-options" id="voice-rate-options"></div></div>
+            <div class="checkbox-row" id="announce-buttons-row"><input type="checkbox" id="set-announce-buttons"><label for="set-announce-buttons">👆 Озвучивать кнопки</label></div>
+            <div class="checkbox-row" id="announce-confirm-row"><input type="checkbox" id="set-announce-confirm"><label for="set-announce-confirm">✅ Озвучивать подтверждения</label></div>
+            <div class="checkbox-row"><input type="checkbox" id="set-announce-numbers"><label for="set-announce-numbers">🔢 Озвучивать номер упражнения</label></div>
+            <div class="checkbox-row"><input type="checkbox" id="set-ask-reps"><label for="set-ask-reps">🔢 Спрашивать количество повторов</label></div>
+            <div class="checkbox-row"><input type="checkbox" id="set-minute-beep"><label for="set-minute-beep">⏱ Пикать каждую минуту</label></div>
+            <div id="minute-beep-options" style="display:none;"><div class="sound-section"><div class="sound-section-title">Интервал пиканья</div><div class="sound-options" id="minute-beep-interval-options"></div></div></div>
+            <div class="sound-section"><div class="sound-section-title">Звук окончания отдыха</div><div class="sound-options" id="sound-options"></div></div>
+            <div class="checkbox-row"><input type="checkbox" id="set-continuous-beep"><label for="set-continuous-beep">🔁 Непрерывно повторять</label></div>
+        </div>
+    </details>
+
+    <details class="settings-group" open data-group="notify">
+        <summary>🔔 Уведомления</summary>
+        <div class="group-body">
+            <div class="checkbox-row"><input type="checkbox" id="set-notify-scheduled"><label for="set-notify-scheduled">📅 Напоминать о тренировках</label></div>
+            <div class="checkbox-row"><input type="checkbox" id="set-notify-show-completed"><label for="set-notify-show-completed">✅ Показывать выполненные</label></div>
+            <div class="checkbox-row"><input type="checkbox" id="set-show-activity"><label for="set-show-activity">🔥 Календарь активностей на главной</label></div>
+        </div>
+    </details>
+
+    <details class="settings-group" open data-group="timers">
+        <summary>⏱ Таймеры</summary>
+        <div class="group-body">
+            <div class="checkbox-row"><input type="checkbox" id="set-countdown"><label for="set-countdown">⏱ Обратный отсчёт</label></div>
+            <div id="countdown-interval-options" style="display:none;"><div class="sound-section"><div class="sound-section-title">Интервал отсчёта</div><div class="sound-options" id="countdown-interval-list"></div></div></div>
+            <div class="checkbox-row"><input type="checkbox" id="set-default-auto"><label for="set-default-auto">🔄 Автозапуск по умолчанию</label></div>
+            <div class="checkbox-row"><input type="checkbox" id="set-show-start-time"><label for="set-show-start-time">🕐 Показывать время старта</label></div>
+        </div>
+    </details>
+
+    <details class="settings-group" open data-group="behavior">
+        <summary>📱 Поведение</summary>
+        <div class="group-body">
+            <div class="checkbox-row"><input type="checkbox" id="set-wakelock"><label for="set-wakelock">🔒 Не гасить экран</label></div>
+            <div id="vibration-warning" class="checkbox-row disabled" style="display:none;"><label>📳 Вибро не поддерживается</label></div>
+        </div>
+    </details>
+
+    <details class="settings-group" open data-group="data">
+        <summary>💾 Данные</summary>
+        <div class="group-body">
+            <div class="checkbox-row"><input type="checkbox" id="set-auto-backup"><label for="set-auto-backup">💾 Напоминать о бэкапе<span class="hint">Раз в 20 тренировок или 7 дней · <span id="last-backup-info">—</span></span></label></div>
+            <button class="btn ghost" onclick="exportData()">💾 Сделать бэкап (JSON)</button>
+            <button class="btn ghost" onclick="exportCSV()">📥 Экспорт истории (CSV)</button>
+            <button class="btn ghost" onclick="document.getElementById('import-file').click()">📥 Импорт</button>
+            <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)">
+            <button class="btn danger" onclick="clearHistory()">🗑 Очистить историю</button>
+            <button class="btn ghost" onclick="restoreBuiltins()">🔄 Восстановить шаблоны</button>
+        </div>
+    </details>
+
+    <details class="settings-group" data-group="about">
+        <summary>ℹ️ О приложении</summary>
+        <div class="group-body">
+            <div class="card" style="color:var(--muted); font-size:0.85rem; line-height:1.6;">
+                <strong style="color:var(--text);">Fit Trainer Pro v1.5</strong><br>
+                Работает офлайн через Service Worker.<br>
+                Данные хранятся локально.
+            </div>
+        </div>
+    </details>
 </div>
 
 </div>
@@ -679,8 +764,16 @@ const Storage = {
     }
 };
 
-(function() {
-    try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {}); } catch(e) {}
+let storagePersistGranted = null;
+(async function() {
+    try {
+        if (navigator.storage && navigator.storage.persist) {
+            storagePersistGranted = await navigator.storage.persist();
+            if (!storagePersistGranted) {
+                setTimeout(() => showToast('⚠️ Браузер может удалить данные при очистке кэша', 5000), 8000);
+            }
+        }
+    } catch(e) {}
 })();
 
 const DB = {
@@ -700,7 +793,10 @@ DB.settings = Object.assign({
     themeMode: 'auto', voiceRate: 1, voiceURI: null,
     announceButtons: false, announceConfirm: false,
     notifyScheduledWorkouts: true, notifyShowCompleted: true,
-    autoBackupReminder: true, lastBackupAt: 0, lastBackupRecordCount: 0
+    showActivityCalendar: true,
+    autoBackupReminder: true, lastBackupAt: 0, lastBackupRecordCount: 0,
+    askReps: true,
+    accordions: {}
 }, DB.settings);
 if (!Array.isArray(DB.settings.hiddenBuiltins)) DB.settings.hiddenBuiltins = [];
 if (!['auto','light','dark'].includes(DB.settings.themeMode)) DB.settings.themeMode = 'auto';
@@ -711,13 +807,15 @@ if (DB.settings.soundMode !== 'voice' && DB.settings.soundMode !== 'beep') {
 if (typeof DB.settings.autoBackupReminder !== 'boolean') DB.settings.autoBackupReminder = true;
 if (typeof DB.settings.lastBackupAt !== 'number') DB.settings.lastBackupAt = 0;
 if (typeof DB.settings.lastBackupRecordCount !== 'number') DB.settings.lastBackupRecordCount = 0;
+if (typeof DB.settings.askReps !== 'boolean') DB.settings.askReps = true;
+if (typeof DB.settings.showActivityCalendar !== 'boolean') DB.settings.showActivityCalendar = true;
+if (!DB.settings.accordions || typeof DB.settings.accordions !== 'object') DB.settings.accordions = {};
 DB.settings.voice = (DB.settings.soundMode === 'voice');
 
 function isVoiceMode() { return DB.settings.soundMode === 'voice'; }
 function isBeepMode() { return DB.settings.soundMode !== 'voice'; }
 function getAutoAdvanceDelay() { return isVoiceMode() ? 1500 : 900; }
 
-/* ===== Настройки тренировки (приоритет над глобальными) ===== */
 function getEffectiveSetting(key) {
     if (runState && runState.workout && runState.workout.settings) {
         const v = runState.workout.settings[key];
@@ -726,7 +824,183 @@ function getEffectiveSetting(key) {
     return DB.settings[key];
 }
 
-/* ===================== ВАЛИДАЦИЯ И МИГРАЦИЯ ===================== */
+/* ===================== CUSTOM CONFIRM (queue) ===================== */
+const customConfirmQueue = [];
+let customConfirmBusy = false;
+
+function customConfirm(message, options = {}) {
+    return new Promise((resolve) => {
+        customConfirmQueue.push({ message, options, resolve });
+        if (!customConfirmBusy) processNextConfirm();
+    });
+}
+
+function processNextConfirm() {
+    if (customConfirmBusy || customConfirmQueue.length === 0) return;
+    const item = customConfirmQueue.shift();
+    customConfirmBusy = true;
+    const okText = item.options.okText || 'OK';
+    const cancelText = item.options.cancelText || 'Отмена';
+    const isDanger = item.options.danger !== false;
+    const title = item.options.title || 'Подтверждение';
+    const overlay = document.createElement('div');
+    overlay.className = 'bottom-sheet-overlay';
+    overlay.innerHTML = `<div class="bottom-sheet">
+        <div class="sheet-grip"></div>
+        <h2 class="sheet-title">${escapeHtml(title)}</h2>
+        <div class="sheet-info" style="white-space:pre-line;">${escapeHtml(item.message)}</div>
+        <button class="btn ${isDanger ? 'danger' : 'accent'}" id="cc-ok">${escapeHtml(okText)}</button>
+        <button class="btn ghost" id="cc-cancel">${escapeHtml(cancelText)}</button>
+    </div>`;
+    document.body.appendChild(overlay);
+    const finish = (r) => {
+        try { overlay.remove(); } catch(e) {}
+        customConfirmBusy = false;
+        item.resolve(r);
+        setTimeout(() => processNextConfirm(), 50);
+    };
+    overlay.querySelector('#cc-ok').onclick = () => finish(true);
+    overlay.querySelector('#cc-cancel').onclick = () => finish(false);
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) finish(false); });
+}
+
+/* ===================== ASK REPS (queue) ===================== */
+const askRepsQueue = [];
+let askRepsBusy = false;
+
+function askRepsCount(defaultValue) {
+    return new Promise((resolve) => {
+        askRepsQueue.push({ defaultValue, resolve });
+        if (!askRepsBusy) processNextAskReps();
+    });
+}
+
+function processNextAskReps() {
+    if (askRepsBusy || askRepsQueue.length === 0) return;
+    const item = askRepsQueue.shift();
+    askRepsBusy = true;
+    const def = Math.max(0, parseInt(item.defaultValue) || 0);
+    const overlay = document.createElement('div');
+    overlay.className = 'bottom-sheet-overlay';
+    overlay.innerHTML = `<div class="bottom-sheet">
+        <div class="sheet-grip"></div>
+        <h2 class="sheet-title">Сколько раз сделал?</h2>
+        <div class="sheet-info">
+            <div class="sheet-info-details">Цель: ${def} ${pluralReps(def)}</div>
+        </div>
+        <div class="reps-input-row">
+            <button class="btn small ghost" data-d="-3">-3</button>
+            <input type="number" id="ask-reps-input" class="input" min="0" max="999" step="1" value="${def}">
+            <button class="btn small ghost" data-d="+3">+3</button>
+        </div>
+        <div class="reps-stepper">
+            <button class="btn small ghost" data-d="-1">-1</button>
+            <button class="btn small ghost" data-d="+1">+1</button>
+        </div>
+        <button class="btn accent" id="ask-reps-save">✅ Сохранить</button>
+        <button class="btn ghost" id="ask-reps-cancel">Отмена</button>
+    </div>`;
+    document.body.appendChild(overlay);
+
+    const input = overlay.querySelector('#ask-reps-input');
+    setTimeout(() => { try { input.focus(); input.select(); } catch(e) {} }, 100);
+
+    overlay.querySelectorAll('[data-d]').forEach(btn => {
+        btn.onclick = () => {
+            const d = parseInt(btn.dataset.d);
+            input.value = Math.max(0, Math.min(999, (parseInt(input.value) || 0) + d));
+        };
+    });
+
+    const finish = (val) => {
+        try { overlay.remove(); } catch(e) {}
+        askRepsBusy = false;
+        item.resolve(val);
+        setTimeout(() => processNextAskReps(), 50);
+    };
+    overlay.querySelector('#ask-reps-save').onclick = () => {
+        const v = Math.max(0, Math.min(999, parseInt(input.value) || 0));
+        finish(v);
+    };
+    overlay.querySelector('#ask-reps-cancel').onclick = () => finish(null);
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) finish(null); });
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); overlay.querySelector('#ask-reps-save').click(); }
+        if (e.key === 'Escape') { e.preventDefault(); finish(null); }
+    });
+}
+
+/* ===================== SHARE FALLBACK ===================== */
+function showShareFallback(text) {
+    const ov = document.createElement('div');
+    ov.className = 'bottom-sheet-overlay';
+    ov.innerHTML = `<div class="bottom-sheet">
+        <div class="sheet-grip"></div>
+        <h2 class="sheet-title">Скопировать текст</h2>
+        <textarea class="input share-textarea" readonly>${escapeHtml(text)}</textarea>
+        <button class="btn accent" id="share-copy-btn">📋 Копировать</button>
+        <button class="btn ghost" id="share-close-btn">Закрыть</button>
+    </div>`;
+    document.body.appendChild(ov);
+    const ta = ov.querySelector('textarea');
+    ov.querySelector('#share-copy-btn').onclick = () => {
+        try {
+            ta.select();
+            document.execCommand('copy');
+            ov.querySelector('#share-copy-btn').textContent = '✅ Скопировано';
+        } catch(e) {
+            try { navigator.clipboard.writeText(text); ov.querySelector('#share-copy-btn').textContent = '✅ Скопировано'; } catch(err) {}
+        }
+    };
+    ov.querySelector('#share-close-btn').onclick = () => ov.remove();
+    ov.addEventListener('click', (e) => { if (e.target === ov) ov.remove(); });
+}
+
+/* ===================== PRUNE HISTORY / QUOTA ===================== */
+const HISTORY_PRUNE_LIMIT = 500;
+const HISTORY_HARD_LIMIT = 500;
+
+function pruneHistory(maxRecords = HISTORY_PRUNE_LIMIT) {
+    if (!Array.isArray(DB.history)) return 0;
+    if (DB.history.length <= maxRecords) return 0;
+    const sorted = [...DB.history].sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
+    const removed = DB.history.length - maxRecords;
+    DB.history = sorted.slice(0, maxRecords);
+    return removed;
+}
+
+function saveDBWithQuotaRecovery(key) {
+    const map = { workouts: 'ft_workouts', templates: 'ft_templates', programs: 'ft_programs', history: 'ft_history', settings: 'ft_settings' };
+    const storageKey = map[key];
+    if (!storageKey) return;
+    const ok = Storage.set(storageKey, DB[key]);
+    if (ok) return;
+    const removed = pruneHistory(200);
+    if (removed > 0) {
+        Storage.set('ft_history', DB.history);
+        const ok2 = Storage.set(storageKey, DB[key]);
+        if (ok2) {
+            showToast(`💾 Мало места. Удалено ${removed} старых записей.`, 4000);
+            return;
+        }
+    }
+    const removed2 = pruneHistory(50);
+    if (removed2 > 0) {
+        Storage.set('ft_history', DB.history);
+        const ok3 = Storage.set(storageKey, DB[key]);
+        if (ok3) {
+            showToast(`💾 Мало места. Удалено ${removed + removed2} старых записей.`, 4000);
+            return;
+        }
+    }
+    showToast('⚠️ Не удалось сохранить. Освободите место в браузере.', 5000);
+}
+
+function saveDB(key) {
+    saveDBWithQuotaRecovery(key);
+}
+
+/* ===================== ВАЛИДАЦИЯ ===================== */
 function validateAndMigrateDB() {
     if (!Array.isArray(DB.workouts)) DB.workouts = [];
     if (!Array.isArray(DB.templates)) DB.templates = [];
@@ -741,8 +1015,16 @@ function validateAndMigrateDB() {
 
     let migrated = false;
 
+    if (DB.history.length > HISTORY_HARD_LIMIT) {
+        const removed = pruneHistory(HISTORY_HARD_LIMIT);
+        if (removed > 0) {
+            saveDB('history');
+            setTimeout(() => showToast(`📜 История обрезана до ${HISTORY_HARD_LIMIT} записей`), 500);
+        }
+    }
+
     const migrateExercisesList = (list) => {
-        const hasKind = list.some(e => e && (e.kind === 'exercise' || e.kind === 'rest'));
+        const hasKind = list.some(e => e && (e.kind === 'exercise' || e.kind === 'rest' || e.kind === 'warmup'));
         if (hasKind) {
             return list.map(e => {
                 if (!e || typeof e !== 'object') return null;
@@ -753,6 +1035,11 @@ function validateAndMigrateDB() {
                         duration: (typeof e.duration === 'number') ? e.duration : (e.duration === null ? null : 60),
                         notes: e.notes || ''
                     };
+                }
+                if (e.kind === 'warmup') {
+                    let dur = (typeof e.duration === 'number') ? e.duration : 180;
+                    if (dur < 5) dur = 5;
+                    return { kind: 'warmup', name: 'Разминка', duration: dur };
                 }
                 const ex = {
                     kind: 'exercise',
@@ -780,12 +1067,7 @@ function validateAndMigrateDB() {
 
             if (ex.waterBreak) {
                 const dur = isLast ? null : (ex.restSeconds || 60);
-                result.push({
-                    kind: 'rest',
-                    restType: 'water',
-                    duration: dur,
-                    notes: ex.notes || ''
-                });
+                result.push({ kind: 'rest', restType: 'water', duration: dur, notes: ex.notes || '' });
                 return;
             }
 
@@ -807,12 +1089,7 @@ function validateAndMigrateDB() {
 
             const nextIsWater = next && next.waterBreak;
             if (!isLast && ex.restSeconds > 0 && !nextIsWater) {
-                result.push({
-                    kind: 'rest',
-                    restType: 'rest',
-                    duration: ex.restSeconds,
-                    notes: ''
-                });
+                result.push({ kind: 'rest', restType: 'rest', duration: ex.restSeconds, notes: '' });
             }
         });
         return result;
@@ -843,11 +1120,6 @@ function validateAndMigrateDB() {
         saveDB('templates');
         saveDB('programs');
     }
-}
-
-function saveDB(key) {
-    const map = { workouts: 'ft_workouts', templates: 'ft_templates', programs: 'ft_programs', history: 'ft_history', settings: 'ft_settings' };
-    Storage.set(map[key], DB[key]);
 }
 
 /* ===================== ХЕЛПЕРЫ ===================== */
@@ -899,6 +1171,7 @@ function pluralWeeks(n) { const m10 = n % 10, m100 = n % 100; if (m10 === 1 && m
 function pluralApproaches(n) { const m10 = n % 10, m100 = n % 100; if (m10 === 1 && m100 !== 11) return 'подход'; if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return 'подхода'; return 'подходов'; }
 function pluralReps(n) { const m10 = n % 10, m100 = n % 100; if (m10 === 1 && m100 !== 11) return 'повтор'; if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return 'повтора'; return 'повторов'; }
 function pluralMinutes(n) { const m10 = n % 10, m100 = n % 100; if (m10 === 1 && m100 !== 11) return 'минута'; if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return 'минуты'; return 'минут'; }
+function pluralWorkouts(n) { const m10 = n % 10, m100 = n % 100; if (m10 === 1 && m100 !== 11) return 'тренировка'; if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return 'тренировки'; return 'тренировок'; }
 
 function getExerciseNumber(exercises, i) { let n = 0; for (let j = 0; j <= i; j++) if (exercises[j] && exercises[j].kind === 'exercise') n++; return n; }
 function getTotalExerciseCount(exercises) { return exercises.filter(e => e && e.kind === 'exercise').length; }
@@ -921,6 +1194,7 @@ function estimateWorkoutDuration(w) {
     let total = 0;
     w.exercises.forEach(el => {
         if (!el) return;
+        if (el.kind === 'warmup') { total += (el.duration || 180); return; }
         if (el.kind === 'rest') {
             if (el.duration) total += el.duration;
         } else if (el.kind === 'exercise') {
@@ -936,7 +1210,6 @@ function estimateWorkoutDuration(w) {
     return total;
 }
 
-/* ===================== ВСТРОЕННЫЕ ШАБЛОНЫ ===================== */
 const BUILTIN_TEMPLATES = [
     { builtin: true, id: 'bt_1', name: 'Пресс 10 минут', autoStart: true, exercises: [
         { kind: 'exercise', name: 'Скручивания', type: 'sets', setsCount: 3, setMode: 'reps', targetReps: 15, restBetweenSets: 30, notes: '' },
@@ -957,6 +1230,7 @@ const BUILTIN_TEMPLATES = [
         { kind: 'exercise', name: 'Алмазные', type: 'reps', targetReps: 8, notes: '' }
     ]},
     { builtin: true, id: 'bt_3', name: 'Планка Challenge', autoStart: false, exercises: [
+        { kind: 'warmup', name: 'Разминка', duration: 180 },
         { kind: 'exercise', name: 'Планка на локтях', type: 'time', notes: 'Максимум' },
         { kind: 'rest', restType: 'rest', duration: 60, notes: '' },
         { kind: 'exercise', name: 'Планка на руках', type: 'time', notes: '' },
@@ -1061,7 +1335,7 @@ function renderVoiceRateOptions() {
 }
 function selectVoiceRate(v) { DB.settings.voiceRate = v; saveDB('settings'); renderVoiceRateOptions(); if (isVoiceMode()) speakCritical('скорость изменена'); }
 
-/* ===================== БЕЗОПАСНЫЙ РЕЖИМ ===================== */
+/* ===================== SAFE MODE ===================== */
 let safeModeActive = false;
 function showSafeMode(reason) {
     if (safeModeActive) return;
@@ -1069,32 +1343,19 @@ function showSafeMode(reason) {
     try {
         const div = document.createElement('div');
         div.style.cssText = 'position:fixed;inset:0;background:#0f0f12;color:#fff;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;gap:16px;';
-        div.innerHTML = `
-            <div style="font-size:2.5rem;">⚠️</div>
-            <div style="font-size:1.3rem;font-weight:700;">Что-то пошло не так</div>
-            <div style="color:#8a8a95;font-size:0.95rem;max-width:340px;">${reason || 'Ошибка загрузки'}</div>
-            <button id="safeReloadBtn" style="background:#bb86fc;color:#000;border:none;padding:14px 28px;border-radius:14px;font-size:1rem;font-weight:600;cursor:pointer;">🔄 Перезагрузить</button>
-            <button id="safeResetBtn" style="background:transparent;color:#ff5c6c;border:2px solid #ff5c6c;padding:14px 28px;border-radius:14px;font-size:1rem;font-weight:600;cursor:pointer;">🗑 Сбросить данные</button>
-        `;
+        div.innerHTML = `<div style="font-size:2.5rem;">⚠️</div><div style="font-size:1.3rem;font-weight:700;">Что-то пошло не так</div><div style="color:#8a8a95;font-size:0.95rem;max-width:340px;">${reason || 'Ошибка загрузки'}</div>`;
         document.body.appendChild(div);
-        document.getElementById('safeReloadBtn').onclick = () => location.reload();
-        document.getElementById('safeResetBtn').onclick = () => {
-            if (confirm('Удалить все данные?')) {
-                try { ['ft_workouts','ft_templates','ft_programs','ft_history','ft_settings','ft_run_state'].forEach(k => localStorage.removeItem(k)); } catch(e) {}
-                location.reload();
-            }
-        };
-    } catch(e) { alert('Критическая ошибка. Перезагрузите страницу.'); }
+    } catch(e) {}
 }
 
-/* ===================== ЗАЩИТА ВЫХОДА ===================== */
+/* ===================== EXIT PROTECTION ===================== */
 let exitProtectionActive = false;
 function enableExitProtection() { if (exitProtectionActive) return; exitProtectionActive = true; try { history.pushState({ ftProtected: true, ts: Date.now() }, '', location.href); } catch(e) {} }
 function disableExitProtection() { exitProtectionActive = false; }
-window.addEventListener('popstate', () => {
+window.addEventListener('popstate', async () => {
     if (!exitProtectionActive) return;
     if (!runState || runState.phase === 'finish') { disableExitProtection(); return; }
-    const exited = confirmExit();
+    const exited = await confirmExit();
     if (!exited) { try { history.pushState({ ftProtected: true, ts: Date.now() }, '', location.href); } catch(err) {} }
 });
 window.addEventListener('beforeunload', (e) => {
@@ -1104,7 +1365,7 @@ window.addEventListener('beforeunload', (e) => {
     return e.returnValue;
 });
 
-/* ===================== АУДИО ===================== */
+/* ===================== AUDIO ===================== */
 let audioCtx = null;
 async function getAudioCtx() {
     try {
@@ -1148,10 +1409,7 @@ function speakCritical(text) {
 }
 function cleanButtonText(text) {
     if (!text) return '';
-    return String(text)
-        .replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}\u{2300}-\u{23FF}\u{2190}-\u{21FF}\u{2900}-\u{297F}]/gu, '')
-        .replace(/[^\p{L}\p{N}\s.,!?+\-]/gu, '')
-        .replace(/\s+/g, ' ').trim();
+    return String(text).replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}\u{2300}-\u{23FF}\u{2190}-\u{21FF}\u{2900}-\u{297F}]/gu, '').replace(/[^\p{L}\p{N}\s.,!?+\-]/gu, '').replace(/\s+/g, ' ').trim();
 }
 function speakButton(text) {
     if (!DB.settings.announceButtons || !isVoiceMode() || !('speechSynthesis' in window)) return;
@@ -1165,37 +1423,17 @@ function speakButton(text) {
         speechSynthesis.speak(u);
     } catch(e) {}
 }
-function voiceConfirm(message) {
-    if (DB.settings.announceConfirm && isVoiceMode() && ('speechSynthesis' in window)) {
-        try {
-            const clean = cleanButtonText(message).substring(0, 140);
-            const u = new SpeechSynthesisUtterance(clean);
-            applyVoiceToUtterance(u);
-            u.rate = Math.min((DB.settings.voiceRate || 1) * 1.1, 1.6);
-            speechSynthesis.cancel(); speechSynthesis.speak(u);
-        } catch(e) {}
-    }
-    const result = confirm(message);
-    if (DB.settings.announceConfirm && isVoiceMode()) { try { speakCritical(result ? 'да' : 'нет'); } catch(e) {} }
-    return result;
-}
 document.addEventListener('click', (e) => {
     if (!DB.settings.announceButtons || !isVoiceMode()) return;
     if (!runState || runState.phase === 'finish') return;
     const runScreen = document.getElementById('screen-run');
     if (!runScreen || !runScreen.classList.contains('active')) return;
-
     try {
         const btn = e.target.closest('button, .menu-btn, .sound-option, .tab');
         if (!btn) return;
         if (!btn.closest('#screen-run')) return;
         if (btn.classList.contains('sheet-btn-cancel')) return;
-        
-        if (btn.classList.contains('icon-btn')) { 
-            const t = btn.getAttribute('title') || ''; 
-            if (t) speakButton(t); 
-            return; 
-        }
+        if (btn.classList.contains('icon-btn')) { const t = btn.getAttribute('title') || ''; if (t) speakButton(t); return; }
         let txt = (btn.innerText || btn.textContent || '').trim();
         if (!txt) { const t = btn.getAttribute('title') || ''; if (t) txt = t; }
         if (txt) speakButton(txt);
@@ -1314,7 +1552,7 @@ async function requestNotificationPermission() {
     try { return (await Notification.requestPermission()) === 'granted'; } catch(e) { return false; }
 }
 
-/* ===================== АВТОСОХРАНЕНИЕ ===================== */
+/* ===================== RUN STATE SAVE ===================== */
 const RUN_STATE_KEY = 'ft_run_state';
 let saveCounter = 0;
 
@@ -1330,6 +1568,11 @@ function saveRunState() {
         workoutNoteDraft: runState.workoutNoteDraft || '',
         currentExerciseWorkTime: runState.currentExerciseWorkTime || 0,
         lastSetElapsed: runState.lastSetElapsed || 0,
+        warmupFinished: !!runState.warmupFinished,
+        warmupBeepPlayed: !!runState.warmupBeepPlayed,
+        warmupSeconds: runState.warmupSeconds || 0,
+        warmupDuration: runState.warmupDuration || 0,
+        warmupElapsedBeforePause: getCurrentElapsed('warmup'),
         startTime: runState.startTime.getTime(),
         totalWorkTime: runState.totalWorkTime,
         exerciseTimes: [...runState.exerciseTimes],
@@ -1345,23 +1588,47 @@ function saveRunState() {
 function clearSavedRunState() { try { localStorage.removeItem(RUN_STATE_KEY); } catch(e) {} }
 function loadSavedRunState() { try { const r = localStorage.getItem(RUN_STATE_KEY); return r ? JSON.parse(r) : null; } catch(e) { return null; } }
 
-function offerResumeSavedSession() {
+async function offerResumeSavedSession() {
     const saved = loadSavedRunState();
     if (!saved || !saved.workoutId || saved.phase === 'finish') return;
     const workout = DB.workouts.find(w => w.id === saved.workoutId);
     if (!workout) { clearSavedRunState(); return; }
-    if (!['ready','work','rest','countdown'].includes(saved.phase)) { clearSavedRunState(); return; }
+    if (!['ready','work','rest','countdown','warmup'].includes(saved.phase)) { clearSavedRunState(); return; }
     const age = saved.savedAt ? ` (${formatTime(Math.floor((Date.now() - saved.savedAt)/1000))} назад)` : '';
-    if (voiceConfirm(`Найдена незавершённая тренировка «${saved.workoutName}»${age}.\nПродолжить?`)) restoreRunState(saved);
+    const ok = await customConfirm(`Найдена незавершённая тренировка:\n«${saved.workoutName}»${age}\n\nПродолжить?`, {
+        title: 'Продолжить тренировку?',
+        okText: '▶ Продолжить',
+        cancelText: 'Начать заново',
+        danger: false
+    });
+    if (ok) restoreRunState(saved);
     else clearSavedRunState();
 }
 
 function restoreRunState(saved) {
     const workout = DB.workouts.find(w => w.id === saved.workoutId);
     if (!workout) { clearSavedRunState(); return; }
+
+    let restoredPhase = saved.phase;
+    let restoredWarmupFinished = false;
+    let restoredWarmupPaused = false;
+
+    if (saved.phase === 'warmup') {
+        if (saved.warmupFinished) {
+            restoredPhase = 'warmup';
+            restoredWarmupFinished = true;
+        } else {
+            restoredPhase = 'warmup';
+            restoredWarmupFinished = false;
+            restoredWarmupPaused = true;
+        }
+    } else if (saved.phase === 'countdown') {
+        restoredPhase = 'ready';
+    }
+
     runState = {
         workout, index: saved.index || 0,
-        phase: (saved.phase === 'countdown') ? 'ready' : saved.phase,
+        phase: restoredPhase,
         currentSet: saved.currentSet || 1,
         restPhase: saved.restPhase || null,
         setResults: saved.setResults || {},
@@ -1369,6 +1636,13 @@ function restoreRunState(saved) {
         workoutNoteDraft: saved.workoutNoteDraft || '',
         currentExerciseWorkTime: saved.currentExerciseWorkTime || 0,
         lastSetElapsed: saved.lastSetElapsed || 0,
+        warmupFinished: restoredWarmupFinished,
+        warmupBeepPlayed: !!saved.warmupBeepPlayed,
+        warmupSeconds: saved.warmupSeconds || 0,
+        warmupDuration: saved.warmupDuration || 0,
+        warmupElapsedBeforePause: saved.warmupElapsedBeforePause || 0,
+        warmupPaused: restoredWarmupPaused,
+        warmupStartTime: null,
         countdownInterval: null, restOvertimeInterval: null, tickInterval: null,
         workStartTime: null, workElapsedBeforePause: saved.workElapsedBeforePause || 0, workPaused: true,
         restStartTime: null, restElapsedBeforePause: saved.restElapsedBeforePause || 0, restPaused: true,
@@ -1393,6 +1667,9 @@ function restoreRunState(saved) {
     } else if (runState.phase === 'work') {
         const timerEl = document.getElementById('work-timer');
         if (timerEl) timerEl.innerText = formatTime(getCurrentElapsed('work'));
+    } else if (runState.phase === 'warmup' && !restoredWarmupFinished) {
+        const timerEl = document.getElementById('warmup-timer');
+        if (timerEl) timerEl.innerText = formatTime(getRemainingTime('warmup'));
     }
     showScreen('screen-run');
     ensureTicker();
@@ -1508,7 +1785,7 @@ function previewAlarmSound(key) {
     } catch(e) {}
 }
 
-/* ===================== РЕНДЕР ЭКРАНОВ ===================== */
+/* ===================== SHOW SCREEN ===================== */
 function showScreen(id) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById(id).classList.add('active');
@@ -1517,6 +1794,8 @@ function showScreen(id) {
         try { previewCtx.close(); } catch(e) {}
         previewCtx = null;
     }
+    const fab = document.getElementById('fab-create-workout');
+    if (fab) fab.classList.toggle('visible', id === 'screen-workouts');
     if (id === 'screen-home') { renderHomeTodayBanner(); renderStreakBanner(); }
     if (id === 'screen-workouts') renderWorkoutsList();
     if (id === 'screen-history') renderHistory();
@@ -1524,6 +1803,70 @@ function showScreen(id) {
     if (id === 'screen-templates') renderTemplates();
     if (id === 'screen-programs') renderPrograms();
     if (id === 'screen-activity') renderActivity();
+}
+
+/* ===================== SWIPE DELETE ===================== */
+function initSwipeDelete(container, onDelete) {
+    const card = container.querySelector('.history-card');
+    if (!card) return;
+    const btn = container.querySelector('.swipe-delete-btn');
+    let startX = 0, startY = 0, swiping = false, currentOffset = 0;
+
+    const reset = () => {
+        card.style.transition = 'transform 0.2s';
+        card.style.transform = '';
+        currentOffset = 0;
+    };
+
+    card.addEventListener('touchstart', (e) => {
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+        swiping = false;
+        card.style.transition = 'none';
+    }, { passive: true });
+
+    card.addEventListener('touchmove', (e) => {
+        if (!startX) return;
+        const dx = e.touches[0].clientX - startX;
+        const dy = e.touches[0].clientY - startY;
+        if (!swiping && Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 10) {
+            startX = 0;
+            card.style.transition = 'transform 0.2s';
+            card.style.transform = '';
+            currentOffset = 0;
+            return;
+        }
+        if (Math.abs(dx) > 10) swiping = true;
+        if (swiping && dx < 0) {
+            try { e.preventDefault(); } catch(err) {}
+            const offset = Math.max(-100, dx);
+            card.style.transform = `translateX(${offset}px)`;
+            currentOffset = offset;
+        }
+    }, { passive: false });
+
+    card.addEventListener('touchend', () => {
+        card.style.transition = 'transform 0.2s';
+        if (currentOffset < -50) {
+            card.style.transform = 'translateX(-100px)';
+            currentOffset = -100;
+        } else {
+            card.style.transform = '';
+            currentOffset = 0;
+        }
+        startX = 0;
+        swiping = false;
+    }, { passive: true });
+
+    if (btn) {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            reset();
+            onDelete();
+        });
+    }
+
+    return reset;
 }
 
 /* ===================== DRAG ===================== */
@@ -1611,7 +1954,7 @@ function saveNewOrder() {
     saveDB('workouts');
 }
 
-/* ===================== ГЛАВНЫЙ ЭКРАН / СТРИК ===================== */
+/* ===================== HOME ===================== */
 function renderHomeTodayBanner() {
     const banner = document.getElementById('home-today-banner');
     if (!banner) return;
@@ -1631,19 +1974,12 @@ function renderHomeTodayBanner() {
         const pending = todays.filter(t => !completedIds.has(t.workout.id));
         if (pending.length === 0) {
             banner.style.display = 'block';
-            banner.innerHTML = `<div class="card" style="border:2px solid var(--accent);">
-                <div style="color:var(--accent); font-size:0.9rem; margin-bottom:6px;">🎉 Всё по плану!</div>
-                <div style="color:var(--muted); font-size:0.85rem;">${todays.length} тренировок выполнено</div>
-            </div>`;
+            banner.innerHTML = `<div class="card" style="border:2px solid var(--accent);"><div style="color:var(--accent); font-size:0.9rem; margin-bottom:6px;">🎉 Всё по плану!</div><div style="color:var(--muted); font-size:0.85rem;">${todays.length} тренировок выполнено</div></div>`;
             return;
         }
         const first = pending[0].workout;
         banner.style.display = 'block';
-        banner.innerHTML = `<div class="card" style="border:2px solid var(--accent);">
-            <div style="color:var(--accent); font-size:0.8rem; text-transform:uppercase; margin-bottom:6px;">📅 ${DAY_NAMES_FULL[todayKey]} · ${pending.length} из ${todays.length} осталось</div>
-            <div style="font-size:1.2rem; font-weight:600; margin-bottom:12px;">${escapeHtml(first.name)}</div>
-            <button class="btn accent" onclick="startWorkout(${first.id})" style="margin:0;">▶ Начать</button>
-        </div>`;
+        banner.innerHTML = `<div class="card" style="border:2px solid var(--accent);"><div style="color:var(--accent); font-size:0.8rem; text-transform:uppercase; margin-bottom:6px;">📅 ${DAY_NAMES_FULL[todayKey]} · ${pending.length} из ${todays.length} осталось</div><div style="font-size:1.2rem; font-weight:600; margin-bottom:12px;">${escapeHtml(first.name)}</div><button class="btn accent" onclick="startWorkout(${first.id})" style="margin:0;">▶ Начать</button></div>`;
     } catch(e) { banner.style.display = 'none'; }
 }
 
@@ -1689,6 +2025,7 @@ function buildLast30DaysGrid() {
 function renderStreakBanner() {
     const el = document.getElementById('streak-banner-home');
     if (!el) return;
+    if (!DB.settings.showActivityCalendar) { el.innerHTML = ''; return; }
     try {
         const dates = getTrainingDates();
         if (dates.size === 0) { el.innerHTML = ''; return; }
@@ -1716,6 +2053,33 @@ function buildHeatmap30() {
     }
     return html;
 }
+
+function buildWeekGraph() {
+    let html = '';
+    const today = new Date(); today.setHours(0,0,0,0);
+    const monday = startOfWeekMonday(today);
+    const todayKey = formatDateKey(today);
+    const days = [];
+    for (let i = 0; i < 7; i++) {
+        const d = addDays(monday, i);
+        const k = formatDateKey(d);
+        const m = getDayWorkMinutes(k);
+        days.push({ d, k, m });
+    }
+    const maxM = Math.max(1, ...days.map(x => x.m));
+    days.forEach(({ d, k, m }, i) => {
+        const pct = Math.min(100, Math.round((m / maxM) * 100));
+        const isToday = k === todayKey;
+        html += `<div class="week-graph-day ${isToday ? 'today' : ''}">
+            <div class="week-graph-bar">
+                <div class="week-graph-fill${m <= 0 ? ' empty' : ''}" style="height: ${m > 0 ? Math.max(10, pct) : 0}%;"></div>
+            </div>
+            <div class="week-graph-label">${DAY_NAMES_SHORT[['mon','tue','wed','thu','fri','sat','sun'][i]]}</div>
+        </div>`;
+    });
+    return html;
+}
+
 function renderActivity() {
     const c = document.getElementById('activity-content');
     if (!c) return;
@@ -1727,6 +2091,11 @@ function renderActivity() {
             <div style="font-size:3rem;">🔥</div>
             <div style="font-size:2rem; font-weight:800; margin:8px 0 4px; color:var(--fire);">${streak} ${pluralDays(streak)}</div>
             <div style="color:var(--muted); font-size:0.9rem;">подряд · рекорд ${record}</div>
+        </div>
+        <div class="card">
+            <div style="font-weight:700; margin-bottom:4px;">📊 Неделя</div>
+            <div class="week-graph">${buildWeekGraph()}</div>
+            <div style="color:var(--muted); font-size:0.75rem; text-align:center; margin-top:8px;">минут работы по дням</div>
         </div>
         <div class="card">
             <div style="font-weight:700; margin-bottom:4px;">📅 Активность 30 дней</div>
@@ -1745,6 +2114,7 @@ function renderActivity() {
             <div class="stat-row" style="margin-top:8px;"><div class="stat-label">⏱ Общее время</div><div class="stat-value">${formatTime(Math.floor(totalTime))}</div></div>
         </div>`;
 }
+
 function showDayActivityDetail(key) {
     const date = parseDateKey(key);
     const records = DB.history.filter(r => formatDateKey(new Date(r.startTime)) === key);
@@ -1767,6 +2137,7 @@ function showDayActivityDetail(key) {
         const wExists = r.workoutId && DB.workouts.find(w => w.id === r.workoutId);
         const startT = new Date(r.startTime);
         const endT = r.endTime ? new Date(r.endTime) : new Date(startT.getTime() + (r.totalDuration || 0) * 1000);
+        const hasWarmup = (r.warmupSeconds || 0) > 0;
 
         html += `<div class="history-card" style="margin:0;">
             <div class="history-top">
@@ -1780,18 +2151,21 @@ function showDayActivityDetail(key) {
                 </div>
             </div>
             ${r.workoutNote ? `<div style="background:var(--primary-soft); border-left:3px solid var(--primary); border-radius:10px; padding:10px 12px; font-size:0.85rem;">📝 ${escapeHtml(r.workoutNote)}</div>` : ''}
-            ${r.exerciseNames && r.exerciseNames.length > 0 ? `<details style="background:var(--card-2); border-radius:10px;">
+            ${((r.exerciseNames && r.exerciseNames.length > 0) || hasWarmup) ? `<details style="background:var(--card-2); border-radius:10px;">
                 <summary style="padding:10px 12px; font-size:0.85rem; color:var(--muted);">📊 Упражнения${hasNotes ? ' и заметки' : ''}</summary>
                 <div style="padding:0 12px 12px; display:flex; flex-direction:column; gap:6px;">
-                    ${r.exerciseNames.map((name, i) => {
+                    ${hasWarmup ? `<div style="padding:6px 0; border-bottom:1px solid var(--card-2);"><div style="display:flex; justify-content:space-between; font-size:0.85rem; gap:8px;"><span style="flex:1; min-width:0; color:var(--warn);">🔥 Разминка</span><span style="color:var(--warn); font-weight:600; flex-shrink:0;">${formatTime(r.warmupSeconds)}</span></div></div>` : ''}
+                    ${(r.exerciseNames || []).map((name, i) => {
                         const note = (r.exerciseNotes || {})[i];
                         const sets = (r.setResults || {})[i];
+                        const t = (r.exerciseTimes || [])[i];
+                        const isSkipped = t !== undefined && t !== null && t < 0;
                         return `<div style="padding:6px 0; border-bottom:1px solid var(--card-2);">
                             <div style="display:flex; justify-content:space-between; font-size:0.85rem; gap:8px;">
                                 <span style="flex:1; min-width:0; word-break:break-word;">${i+1}. ${escapeHtml(name || 'Упражнение')}</span>
-                                <span style="color:var(--accent); font-weight:600; flex-shrink:0;">${formatTime(r.exerciseTimes[i] || 0)}</span>
+                                <span style="color:${isSkipped ? 'var(--muted)' : 'var(--accent)'}; font-weight:600; flex-shrink:0;">${isSkipped ? '⏭ пропущено' : formatTime(t || 0)}</span>
                             </div>
-                            ${sets && Array.isArray(sets) && sets.length ? `<div style="color:var(--muted); font-size:0.8rem; margin-top:2px;">🔁 подходы: ${sets.join(' / ')}</div>` : ''}
+                            ${sets && Array.isArray(sets) && sets.length ? `<div style="color:var(--muted); font-size:0.8rem; margin-top:2px;">🔁 подходы: ${sets.join(' / ')}</div>` : (sets === 'skipped' ? `<div style="color:var(--muted); font-size:0.8rem; margin-top:2px;">⏭ пропущено</div>` : '')}
                             ${note ? `<div style="color:var(--accent); font-size:0.8rem; margin-top:4px; font-style:italic;">📝 ${escapeHtml(note)}</div>` : ''}
                         </div>`;
                     }).join('')}
@@ -1809,7 +2183,7 @@ function showDayActivityDetail(key) {
 }
 function closeTopSheet() { const o = document.querySelectorAll('.bottom-sheet-overlay'); if (o.length) o[o.length - 1].remove(); }
 
-/* ===================== ТРЕНИРОВКИ СПИСОК ===================== */
+/* ===================== WORKOUTS LIST ===================== */
 function renderWorkoutsList() {
     const c = document.getElementById('workouts-list');
     if (!c) return;
@@ -1842,17 +2216,19 @@ function renderWorkoutsList() {
 
     c.innerHTML = workouts.map(w => {
         const exCount = getTotalExerciseCount(w.exercises);
-        const restTime = getTotalRestTime(w.exercises);
+        const totalSec = estimateWorkoutDuration(w);
+        const totalMin = Math.round(totalSec / 60);
         return `<div class="workout-item" data-id="${w.id}">
             <div class="workout-header">
                 <div class="workout-info">
                     <div class="name">${escapeHtml(w.name || 'Без названия')}</div>
-                    <div class="meta">${exCount} упр. · ~${Math.round(restTime/60)} мин отдыха</div>
+                    <div class="meta">${exCount} упр. · ~${totalMin} мин всего</div>
                 </div>
                 <div class="workout-actions">
                     <button class="icon-btn" onclick="showPreview(${w.id})" title="Просмотр">👁</button>
                     <button class="icon-btn" onclick="duplicateWorkout(${w.id})" title="Копия">📋</button>
                     <button class="icon-btn" onclick="openEditor(${w.id}, false)" title="Редактировать">✏️</button>
+                    <button class="icon-btn delete" onclick="deleteWorkoutById(${w.id})" title="Удалить">🗑</button>
                 </div>
             </div>
             <button class="btn accent btn-start-workout" onclick="startWorkout(${w.id})">▶ Начать тренировку</button>
@@ -1874,7 +2250,23 @@ function duplicateWorkout(id) {
     DB.workouts.push(copy); saveDB('workouts'); renderWorkoutsList();
 }
 
-/* ===================== ПРОГРАММЫ ===================== */
+async function deleteWorkoutById(id) {
+    if (!await customConfirm('Удалить тренировку?', { danger: true, okText: '🗑 Удалить' })) return;
+    const idx = DB.workouts.findIndex(w => w.id === id);
+    if (idx < 0) return;
+    const removed = DB.workouts[idx];
+    DB.workouts.splice(idx, 1);
+    saveDB('workouts');
+    renderWorkoutsList();
+    showUndoToast('Тренировка удалена', () => {
+        DB.workouts.splice(idx, 0, removed);
+        saveDB('workouts');
+        renderWorkoutsList();
+        showToast('Восстановлено');
+    });
+}
+
+/* ===================== PROGRAMS ===================== */
 function getActiveWeek(program, date) {
     if (!program.weeks || program.weeks.length === 0) return null;
     for (const w of program.weeks) {
@@ -1980,9 +2372,9 @@ function addWeekToEditor() {
     editorProgram.weeks.push({ startDate: start, days: { mon:[], tue:[], wed:[], thu:[], fri:[], sat:[], sun:[] } });
     renderProgramWeeksList();
 }
-function deleteWeek(idx) {
+async function deleteWeek(idx) {
     if (editorProgram.weeks.length <= 1) { showToast('Должна остаться хотя бы одна неделя'); return; }
-    if (!voiceConfirm('Удалить неделю?')) return;
+    if (!await customConfirm('Удалить неделю?', { danger: true, okText: '🗑 Удалить' })) return;
     editorProgram.weeks.splice(idx, 1);
     collapsedWeeks = {};
     renderProgramWeeksList();
@@ -2049,15 +2441,15 @@ function closeDayEditor() {
 }
 function saveProgram() {
     const name = document.getElementById('program-name').value.trim();
-    if (!name) { alert('Введи название'); return; }
+    if (!name) { showToast('Введи название'); return; }
     editorProgram.weeks.sort((a, b) => a.startDate.localeCompare(b.startDate));
     if (editingProgramId === null) DB.programs.push({ id: Date.now(), name, weeks: editorProgram.weeks });
     else { const p = DB.programs.find(x => x.id === editingProgramId); if (p) Object.assign(p, { name, weeks: editorProgram.weeks }); }
     saveDB('programs');
     showScreen('screen-programs');
 }
-function deleteProgram() {
-    if (!voiceConfirm('Удалить программу?')) return;
+async function deleteProgram() {
+    if (!await customConfirm('Удалить программу?', { danger: true, okText: '🗑 Удалить' })) return;
     const idx = DB.programs.findIndex(x => x.id === editingProgramId);
     if (idx < 0) return;
     const removed = DB.programs[idx];
@@ -2071,8 +2463,8 @@ function deleteProgram() {
         showToast('Восстановлено');
     });
 }
-function deleteProgramById(id) {
-    if (!voiceConfirm('Удалить программу?')) return;
+async function deleteProgramById(id) {
+    if (!await customConfirm('Удалить программу?', { danger: true, okText: '🗑 Удалить' })) return;
     const idx = DB.programs.findIndex(x => x.id === id);
     if (idx < 0) return;
     const removed = DB.programs[idx];
@@ -2087,7 +2479,7 @@ function deleteProgramById(id) {
     });
 }
 
-/* ===================== ШАБЛОНЫ ===================== */
+/* ===================== TEMPLATES ===================== */
 function renderTemplates() {
     const c = document.getElementById('templates-list');
     let html = '';
@@ -2137,11 +2529,11 @@ function createFromTemplate(id, isBuiltin) {
     nw.id = Date.now();
     DB.workouts.push(nw);
     saveDB('workouts');
-    alert('Добавлено в тренировки!');
+    showToast('Добавлено в тренировки');
     showScreen('screen-workouts');
 }
-function deleteTemplate(id) {
-    if (!voiceConfirm('Удалить шаблон?')) return;
+async function deleteTemplate(id) {
+    if (!await customConfirm('Удалить шаблон?', { danger: true, okText: '🗑 Удалить' })) return;
     const idx = DB.templates.findIndex(t => t.id === id);
     if (idx < 0) return;
     const removed = DB.templates[idx];
@@ -2154,8 +2546,8 @@ function deleteTemplate(id) {
         showToast('Восстановлено');
     });
 }
-function hideBuiltinTemplate(id) {
-    if (!voiceConfirm('Скрыть шаблон?')) return;
+async function hideBuiltinTemplate(id) {
+    if (!await customConfirm('Скрыть шаблон?', { danger: true, okText: '👁‍🗨 Скрыть' })) return;
     if (!DB.settings.hiddenBuiltins.includes(id)) DB.settings.hiddenBuiltins.push(id);
     saveDB('settings'); renderTemplates();
     showUndoToast('Шаблон скрыт', () => {
@@ -2173,9 +2565,9 @@ function editBuiltinTemplate(id) {
     c.id = Date.now(); c.name = t.name + ' (моя версия)';
     DB.templates.push(c); saveDB('templates'); openEditor(c.id, true);
 }
-function restoreBuiltins() {
-    if (DB.settings.hiddenBuiltins.length === 0) { alert('Все шаблоны на месте!'); return; }
-    if (!voiceConfirm(`Восстановить ${DB.settings.hiddenBuiltins.length} шаблонов?`)) return;
+async function restoreBuiltins() {
+    if (DB.settings.hiddenBuiltins.length === 0) { showToast('Все шаблоны на месте'); return; }
+    if (!await customConfirm(`Восстановить ${DB.settings.hiddenBuiltins.length} шаблонов?`, { danger: false, okText: '🔄 Восстановить' })) return;
     const backup = [...DB.settings.hiddenBuiltins];
     DB.settings.hiddenBuiltins = []; saveDB('settings');
     renderSettings();
@@ -2203,18 +2595,15 @@ function showTemplatePreview(id, isBuiltin) {
 function renderPreviewElements(exercises) {
     return exercises.map((e, i) => {
         if (!e) return '';
+        if (e.kind === 'warmup') {
+            return `<div class="preview-exercise warmup"><div class="num">🔥</div><div class="info"><div class="name">Разминка</div><div class="rest-info">${formatTime(e.duration || 180)}</div></div></div>`;
+        }
         if (e.kind === 'rest') {
             const isWater = e.restType === 'water';
             const num = isWater ? '💧' : '🛌';
             const dur = e.duration === null ? 'без таймера' : formatTime(e.duration || 0);
             const name = isWater ? 'Необходимо попить воды' : 'Отдых';
-            return `<div class="preview-exercise ${isWater ? 'water' : 'rest'}">
-                <div class="num">${num}</div>
-                <div class="info">
-                    <div class="name">${escapeHtml(name)}</div>
-                    <div class="rest-info">${dur}</div>
-                </div>
-            </div>`;
+            return `<div class="preview-exercise ${isWater ? 'water' : 'rest'}"><div class="num">${num}</div><div class="info"><div class="name">${escapeHtml(name)}</div><div class="rest-info">${dur}</div></div></div>`;
         }
         const exNum = getExerciseNumber(exercises, i);
         let info = '';
@@ -2222,17 +2611,11 @@ function renderPreviewElements(exercises) {
         else if (e.type === 'reps') info = `${e.targetReps || 10} ${pluralReps(e.targetReps || 10)}`;
         else info = 'по времени';
         const icon = e.type === 'sets' ? ' 🔁' : e.type === 'reps' ? ' 🔢' : '';
-        return `<div class="preview-exercise">
-            <div class="num">${exNum}</div>
-            <div class="info">
-                <div class="name">${escapeHtml(e.name || 'Упражнение')}${icon}</div>
-                <div class="rest-info">${info}${e.notes ? ' · ' + escapeHtml(e.notes) : ''}</div>
-            </div>
-        </div>`;
+        return `<div class="preview-exercise"><div class="num">${exNum}</div><div class="info"><div class="name">${escapeHtml(e.name || 'Упражнение')}${icon}</div><div class="rest-info">${info}${e.notes ? ' · ' + escapeHtml(e.notes) : ''}</div></div></div>`;
     }).join('');
 }
 
-/* ===================== РЕДАКТОР ТРЕНИРОВКИ ===================== */
+/* ===================== EDITOR ===================== */
 function updateEditorSettingVisibility() {
     const cdEl = document.getElementById('workout-countdown');
     const cdRow = document.getElementById('workout-countdown-interval-row');
@@ -2250,6 +2633,8 @@ function initWorkoutSettingsFields(w) {
     const minuteBeepInt = ws.minuteBeepInterval !== undefined ? ws.minuteBeepInterval : DB.settings.minuteBeepInterval;
     const announceNumbers = ws.announceNumbers !== undefined ? ws.announceNumbers : DB.settings.announceNumbers;
     const continuousBeep = ws.continuousBeep !== undefined ? ws.continuousBeep : DB.settings.continuousBeep;
+    const askReps = ws.askReps !== undefined ? ws.askReps : DB.settings.askReps;
+    const skipWarmup = ws.skipWarmup !== undefined ? ws.skipWarmup : false;
 
     const cdEl = document.getElementById('workout-countdown');
     const cdDurEl = document.getElementById('workout-countdown-duration');
@@ -2257,17 +2642,21 @@ function initWorkoutSettingsFields(w) {
     const mbIntEl = document.getElementById('workout-minute-beep-interval');
     const anEl = document.getElementById('workout-announce-numbers');
     const cbEl = document.getElementById('workout-continuous-beep');
+    const arEl = document.getElementById('workout-ask-reps');
+    const swEl = document.getElementById('workout-skip-warmup');
     if (cdEl) cdEl.checked = !!countdown;
     if (cdDurEl) cdDurEl.value = String(countdownDur || 3);
     if (mbEl) mbEl.checked = !!minuteBeep;
     if (mbIntEl) mbIntEl.value = String(minuteBeepInt || 60);
     if (anEl) anEl.checked = !!announceNumbers;
     if (cbEl) cbEl.checked = !!continuousBeep;
+    if (arEl) arEl.checked = askReps !== false;
+    if (swEl) swEl.checked = !!skipWarmup;
     updateEditorSettingVisibility();
 }
 
-function resetWorkoutSettingsToGlobal() {
-    if (!voiceConfirm('Сбросить настройки тренировки к глобальным?')) return;
+async function resetWorkoutSettingsToGlobal() {
+    if (!await customConfirm('Сбросить настройки тренировки к глобальным?', { danger: false, okText: '↺ Сбросить' })) return;
     initWorkoutSettingsFields(null);
     showToast('↺ Сброшено к глобальным');
 }
@@ -2289,7 +2678,7 @@ function openEditor(id, isTemplate) {
         if (!w) return;
         editorExercises = JSON.parse(JSON.stringify(w.exercises));
         editorExercises.forEach(ex => {
-            if (ex.kind === 'rest') {
+            if (ex.kind === 'rest' || ex.kind === 'warmup') {
                 if (ex.duration !== null && ex.duration !== undefined && !REST_PRESETS.some(p => p.v === ex.duration)) {
                     ex.customDuration = true;
                 }
@@ -2307,18 +2696,16 @@ function openEditor(id, isTemplate) {
 }
 function cancelEditor() { showScreen(editingIsTemplate ? 'screen-templates' : 'screen-workouts'); }
 
-function renderDurationRow(i, el, presets, label) {
+function renderDurationRow(i, el, presets, label, allowNone = true) {
     const isPreset = !el.customDuration && presets.some(p => p.v === el.duration);
     let html = `<div class="rest-row"><label>${label}</label>
         <select class="select" onchange="handleDurationSelect(${i}, this.value)" style="flex:1; margin:0;">`;
     presets.forEach(p => { html += `<option value="${p.v}" ${isPreset && p.v === el.duration ? 'selected' : ''}>${p.t}</option>`; });
     html += `<option value="custom" ${(!isPreset && el.duration !== null) ? 'selected' : ''}>Другое...</option>`;
-    html += `<option value="none" ${el.duration === null ? 'selected' : ''}>Без таймера</option></select>`;
+    if (allowNone) html += `<option value="none" ${el.duration === null ? 'selected' : ''}>Без таймера</option>`;
+    html += `</select>`;
     if (!isPreset && el.duration !== null) {
-        html += `<input type="number" value="${el.duration}" min="0" step="5"
-            onchange="updateElement(${i}, 'duration', parseInt(this.value)||0); renderEditorExercises();"
-            style="width:70px; margin:0; padding:8px;">
-            <span style="color:var(--muted); font-size:0.85rem;">сек</span>`;
+        html += `<input type="number" value="${el.duration}" min="0" step="5" onchange="updateElement(${i}, 'duration', parseInt(this.value)||0); renderEditorExercises();" style="width:70px; margin:0; padding:8px;"><span style="color:var(--muted); font-size:0.85rem;">сек</span>`;
     }
     html += `</div>`;
     return html;
@@ -2343,76 +2730,50 @@ function renderEditorExercises() {
     const c = document.getElementById('exercises-list');
     if (editorExercises.length === 0) { c.innerHTML = '<div class="empty-state">Добавьте упражнения или отдых</div>'; return; }
     c.innerHTML = editorExercises.map((el, i) => {
-        const isRest = el.kind === 'rest';
-        if (isRest) {
-            const isWater = el.restType === 'water';
+        if (el.kind === 'warmup') {
             const header = `<div class="exercise-header">
-                <div class="exercise-number">${isWater ? '💧' : '🛌'}</div>
-                <input type="text" class="exercise-name-input" value="${escapeHtml(isWater ? 'Необходимо попить воды' : 'Отдых')}"
-                    onchange="updateElement(${i}, 'name', this.value)"
-                    placeholder="Название">
+                <div class="exercise-number">🔥</div>
+                <input type="text" class="exercise-name-input" value="Разминка" disabled>
                 <div class="exercise-controls">
                     <button class="icon-btn" onclick="moveElement(${i},-1)" ${i===0?'disabled':''} aria-label="Вверх"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg></button>
                     <button class="icon-btn" onclick="moveElement(${i},1)" ${i===editorExercises.length-1?'disabled':''} aria-label="Вниз"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
                     <button class="icon-btn delete-btn" onclick="removeElement(${i})" aria-label="Удалить"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
                 </div>
             </div>`;
-            const typeRow = `<div class="type-row">
-                <label>Тип:</label>
-                <select class="select" onchange="updateElement(${i}, 'restType', this.value); renderEditorExercises();">
-                    <option value="rest" ${!isWater ? 'selected' : ''}>🛌 Обычный отдых</option>
-                    <option value="water" ${isWater ? 'selected' : ''}>💧 Необходимо попить воды</option>
-                </select>
+            const durRow = renderDurationRow(i, el, REST_PRESETS, 'Длительность:', false);
+            return `<div class="exercise-block warmup-block">${header}${durRow}</div>`;
+        }
+        if (el.kind === 'rest') {
+            const isWater = el.restType === 'water';
+            const header = `<div class="exercise-header">
+                <div class="exercise-number">${isWater ? '💧' : '🛌'}</div>
+                <input type="text" class="exercise-name-input" value="${escapeHtml(isWater ? 'Необходимо попить воды' : 'Отдых')}" onchange="updateElement(${i}, 'name', this.value)" placeholder="Название">
+                <div class="exercise-controls">
+                    <button class="icon-btn" onclick="moveElement(${i},-1)" ${i===0?'disabled':''} aria-label="Вверх"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg></button>
+                    <button class="icon-btn" onclick="moveElement(${i},1)" ${i===editorExercises.length-1?'disabled':''} aria-label="Вниз"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+                    <button class="icon-btn delete-btn" onclick="removeElement(${i})" aria-label="Удалить"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+                </div>
             </div>`;
+            const typeRow = `<div class="type-row"><label>Тип:</label><select class="select" onchange="updateElement(${i}, 'restType', this.value); renderEditorExercises();"><option value="rest" ${!isWater ? 'selected' : ''}>🛌 Обычный отдых</option><option value="water" ${isWater ? 'selected' : ''}>💧 Необходимо попить воды</option></select></div>`;
             const durRow = renderDurationRow(i, el, REST_PRESETS, 'Длительность:');
-            return `<div class="exercise-block rest-block ${isWater ? 'water-type' : ''}">
-                ${header}${typeRow}${durRow}
-            </div>`;
+            return `<div class="exercise-block rest-block ${isWater ? 'water-type' : ''}">${header}${typeRow}${durRow}</div>`;
         }
         const num = getExerciseNumber(editorExercises, i);
         const exType = el.type || 'time';
-        let typeRow = `<div class="type-row">
-            <label>Тип:</label>
-            <select class="select" onchange="updateElement(${i}, 'type', this.value); renderEditorExercises();">
-                <option value="time" ${exType === 'time' ? 'selected' : ''}>⏱ Время</option>
-                <option value="reps" ${exType === 'reps' ? 'selected' : ''}>🔢 Повторы</option>
-                <option value="sets" ${exType === 'sets' ? 'selected' : ''}>🔁 Подходы</option>
-            </select>
-            ${exType === 'reps' ? `<input type="number" value="${el.targetReps || 10}" min="1" step="1"
-                onchange="updateElement(${i}, 'targetReps', parseInt(this.value)||10);">
-                <span style="color:var(--muted); font-size:0.85rem;">повт.</span>` : ''}
-            ${exType === 'sets' ? `
-                <label style="margin-left:6px;">Подходов:</label>
-                <input type="number" value="${el.setsCount || 3}" min="1" step="1"
-                    onchange="updateElement(${i}, 'setsCount', Math.max(1, parseInt(this.value)||3)); renderEditorExercises();">` : ''}
+        let typeRow = `<div class="type-row"><label>Тип:</label><select class="select" onchange="updateElement(${i}, 'type', this.value); renderEditorExercises();"><option value="time" ${exType === 'time' ? 'selected' : ''}>⏱ Время</option><option value="reps" ${exType === 'reps' ? 'selected' : ''}>🔢 Повторы</option><option value="sets" ${exType === 'sets' ? 'selected' : ''}>🔁 Подходы</option></select>
+            ${exType === 'reps' ? `<input type="number" value="${el.targetReps || 10}" min="1" step="1" onchange="updateElement(${i}, 'targetReps', parseInt(this.value)||10);"><span style="color:var(--muted); font-size:0.85rem;">повт.</span>` : ''}
+            ${exType === 'sets' ? `<label style="margin-left:6px;">Подходов:</label><input type="number" value="${el.setsCount || 3}" min="1" step="1" onchange="updateElement(${i}, 'setsCount', Math.max(1, parseInt(this.value)||3)); renderEditorExercises();">` : ''}
         </div>`;
         if (exType === 'sets') {
-            typeRow += `<div class="type-row">
-                <label>В подходе:</label>
-                <select class="select" onchange="updateElement(${i}, 'setMode', this.value); renderEditorExercises();" style="flex:1;">
-                    <option value="reps" ${(el.setMode||'reps') === 'reps' ? 'selected' : ''}>🔢 Повторы</option>
-                    <option value="time" ${el.setMode === 'time' ? 'selected' : ''}>⏱ Время</option>
-                </select>
-                ${(el.setMode||'reps') === 'reps' ? `<input type="number" value="${el.targetReps || 10}" min="1" step="1"
-                    onchange="updateElement(${i}, 'targetReps', parseInt(this.value)||10);">
-                    <span style="color:var(--muted); font-size:0.85rem;">повт.</span>` : `
-                    <input type="number" value="${el.setDuration || 45}" min="5" step="5"
-                        onchange="updateElement(${i}, 'setDuration', Math.max(5, parseInt(this.value)||45));">
-                    <span style="color:var(--muted); font-size:0.85rem;">сек</span>`}
+            typeRow += `<div class="type-row"><label>В подходе:</label><select class="select" onchange="updateElement(${i}, 'setMode', this.value); renderEditorExercises();" style="flex:1;"><option value="reps" ${(el.setMode||'reps') === 'reps' ? 'selected' : ''}>🔢 Повторы</option><option value="time" ${el.setMode === 'time' ? 'selected' : ''}>⏱ Время</option></select>
+                ${(el.setMode||'reps') === 'reps' ? `<input type="number" value="${el.targetReps || 10}" min="1" step="1" onchange="updateElement(${i}, 'targetReps', parseInt(this.value)||10);"><span style="color:var(--muted); font-size:0.85rem;">повт.</span>` : `<input type="number" value="${el.setDuration || 45}" min="5" step="5" onchange="updateElement(${i}, 'setDuration', Math.max(5, parseInt(this.value)||45));"><span style="color:var(--muted); font-size:0.85rem;">сек</span>`}
             </div>
-            <div class="rest-row"><label>Отдых между:</label>
-                <input type="number" value="${el.restBetweenSets || 60}" min="0" step="5"
-                    onchange="updateElement(${i}, 'restBetweenSets', parseInt(this.value)||0);"
-                    style="width:70px; margin:0; padding:8px;">
-                <span style="color:var(--muted); font-size:0.85rem;">сек</span>
-            </div>`;
+            <div class="rest-row"><label>Отдых между:</label><input type="number" value="${el.restBetweenSets || 60}" min="0" step="5" onchange="updateElement(${i}, 'restBetweenSets', parseInt(this.value)||0);" style="width:70px; margin:0; padding:8px;"><span style="color:var(--muted); font-size:0.85rem;">сек</span></div>`;
         }
         return `<div class="exercise-block">
             <div class="exercise-header">
                 <div class="exercise-number">${num}</div>
-                <input type="text" class="exercise-name-input" value="${escapeHtml(el.name)}"
-                    onchange="updateElement(${i}, 'name', this.value)"
-                    placeholder="Название">
+                <input type="text" class="exercise-name-input" value="${escapeHtml(el.name)}" onchange="updateElement(${i}, 'name', this.value)" placeholder="Название">
                 <div class="exercise-controls">
                     <button class="icon-btn" onclick="moveElement(${i},-1)" ${i===0?'disabled':''} aria-label="Вверх"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg></button>
                     <button class="icon-btn" onclick="moveElement(${i},1)" ${i===editorExercises.length-1?'disabled':''} aria-label="Вниз"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
@@ -2420,16 +2781,17 @@ function renderEditorExercises() {
                 </div>
             </div>
             ${typeRow}
-            <div class="notes-row">
-                <label>📝</label>
-                <textarea class="input" placeholder="Постоянная заметка" onchange="updateElement(${i}, 'notes', this.value)" style="margin:0;">${escapeHtml(el.notes || '')}</textarea>
-            </div>
+            <div class="notes-row"><label>📝</label><textarea class="input" placeholder="Постоянная заметка" onchange="updateElement(${i}, 'notes', this.value)" style="margin:0;">${escapeHtml(el.notes || '')}</textarea></div>
         </div>`;
     }).join('');
 }
 
 function addExercise() {
     editorExercises.push({ kind: 'exercise', name: '', type: 'time', notes: '', targetReps: 10, setsCount: 3, setMode: 'reps', setDuration: 45, restBetweenSets: 60 });
+    renderEditorExercises();
+}
+function addWarmup() {
+    editorExercises.push({ kind: 'warmup', name: 'Разминка', duration: 180 });
     renderEditorExercises();
 }
 function addRest() {
@@ -2460,49 +2822,65 @@ function moveElement(i, d) {
     renderEditorExercises();
 }
 
-function saveWorkout() {
-    const name = document.getElementById('workout-name').value.trim();
-    if (!name) { alert('Введи название'); return; }
-    if (editorExercises.length === 0) { alert('Добавь элементы'); return; }
-    const hasExercise = editorExercises.some(e => e.kind === 'exercise');
-    if (!hasExercise) { alert('Добавь хотя бы одно упражнение'); return; }
-    const emptyNames = editorExercises.filter(e => e.kind === 'exercise' && !e.name.trim());
-    if (emptyNames.length > 0) { if (!voiceConfirm(`У ${emptyNames.length} упражнений не указано название. Продолжить?`)) return; }
-    editorExercises.forEach(ex => {
-        if (ex.kind === 'exercise' && ex.type === 'sets') {
-            if (ex.setsCount === undefined || ex.setsCount === null) ex.setsCount = 3;
-            if (ex.setMode === undefined) ex.setMode = 'reps';
-            if (ex.setMode === 'reps' && (ex.targetReps === undefined || ex.targetReps === null)) ex.targetReps = 10;
-            if (ex.setMode === 'time' && (ex.setDuration === undefined || ex.setDuration === null)) ex.setDuration = 45;
-            if (ex.restBetweenSets === undefined || ex.restBetweenSets === null) ex.restBetweenSets = 60;
+let saveWorkoutInProgress = false;
+async function saveWorkout() {
+    if (saveWorkoutInProgress) return;
+    saveWorkoutInProgress = true;
+    try {
+        const name = document.getElementById('workout-name').value.trim();
+        if (!name) { showToast('Введи название'); return; }
+        if (editorExercises.length === 0) { showToast('Добавь элементы'); return; }
+        const hasExercise = editorExercises.some(e => e.kind === 'exercise');
+        if (!hasExercise) { showToast('Добавь хотя бы одно упражнение'); return; }
+        const emptyNames = editorExercises.filter(e => e.kind === 'exercise' && !e.name.trim());
+        if (emptyNames.length > 0) {
+            if (!await customConfirm(`У ${emptyNames.length} упражнений не указано название. Продолжить?`, { danger: false, okText: 'Продолжить' })) return;
         }
-        if (ex.kind === 'exercise' && ex.type === 'reps') {
-            if (ex.targetReps === undefined || ex.targetReps === null) ex.targetReps = 10;
+        editorExercises.forEach(ex => {
+            if (ex.kind === 'exercise' && ex.type === 'sets') {
+                if (ex.setsCount === undefined || ex.setsCount === null) ex.setsCount = 3;
+                if (ex.setMode === undefined) ex.setMode = 'reps';
+                if (ex.setMode === 'reps' && (ex.targetReps === undefined || ex.targetReps === null)) ex.targetReps = 10;
+                if (ex.setMode === 'time' && (ex.setDuration === undefined || ex.setDuration === null)) ex.setDuration = 45;
+                if (ex.restBetweenSets === undefined || ex.restBetweenSets === null) ex.restBetweenSets = 60;
+            }
+            if (ex.kind === 'exercise' && ex.type === 'reps') {
+                if (ex.targetReps === undefined || ex.targetReps === null) ex.targetReps = 10;
+            }
+            if (ex.kind === 'warmup') {
+                if (typeof ex.duration !== 'number' || ex.duration <= 0) ex.duration = 180;
+                if (ex.duration < 5) ex.duration = 5;
+                ex.name = 'Разминка';
+            }
+            if (ex.customDuration !== undefined) delete ex.customDuration;
+        });
+        const autoStart = document.getElementById('auto-start').checked;
+        const settings = {
+            countdown: document.getElementById('workout-countdown').checked,
+            countdownDuration: parseInt(document.getElementById('workout-countdown-duration').value) || 3,
+            minuteBeep: document.getElementById('workout-minute-beep').checked,
+            minuteBeepInterval: parseInt(document.getElementById('workout-minute-beep-interval').value) || 60,
+            announceNumbers: document.getElementById('workout-announce-numbers').checked,
+            continuousBeep: document.getElementById('workout-continuous-beep').checked,
+            askReps: document.getElementById('workout-ask-reps').checked,
+            skipWarmup: document.getElementById('workout-skip-warmup').checked
+        };
+        const data = { name, autoStart, exercises: editorExercises, settings };
+        if (editingIsTemplate) {
+            if (editingId === null) DB.templates.push({ id: Date.now(), ...data });
+            else Object.assign(DB.templates.find(x => x.id === editingId), data);
+            saveDB('templates'); showScreen('screen-templates');
+        } else {
+            if (editingId === null) DB.workouts.push({ id: Date.now(), ...data });
+            else Object.assign(DB.workouts.find(x => x.id === editingId), data);
+            saveDB('workouts'); showScreen('screen-workouts');
         }
-        if (ex.customDuration !== undefined) delete ex.customDuration;
-    });
-    const autoStart = document.getElementById('auto-start').checked;
-    const settings = {
-        countdown: document.getElementById('workout-countdown').checked,
-        countdownDuration: parseInt(document.getElementById('workout-countdown-duration').value) || 3,
-        minuteBeep: document.getElementById('workout-minute-beep').checked,
-        minuteBeepInterval: parseInt(document.getElementById('workout-minute-beep-interval').value) || 60,
-        announceNumbers: document.getElementById('workout-announce-numbers').checked,
-        continuousBeep: document.getElementById('workout-continuous-beep').checked
-    };
-    const data = { name, autoStart, exercises: editorExercises, settings };
-    if (editingIsTemplate) {
-        if (editingId === null) DB.templates.push({ id: Date.now(), ...data });
-        else Object.assign(DB.templates.find(x => x.id === editingId), data);
-        saveDB('templates'); showScreen('screen-templates');
-    } else {
-        if (editingId === null) DB.workouts.push({ id: Date.now(), ...data });
-        else Object.assign(DB.workouts.find(x => x.id === editingId), data);
-        saveDB('workouts'); showScreen('screen-workouts');
+    } finally {
+        saveWorkoutInProgress = false;
     }
 }
-function deleteWorkout() {
-    if (!voiceConfirm('Удалить?')) return;
+async function deleteWorkout() {
+    if (!await customConfirm('Удалить?', { danger: true, okText: '🗑 Удалить' })) return;
     if (editingIsTemplate) {
         const idx = DB.templates.findIndex(w => w.id === editingId);
         if (idx < 0) return;
@@ -2532,7 +2910,7 @@ function deleteWorkout() {
     }
 }
 function exportCurrentWorkout() {
-    if (editingId === null) { alert('Сначала сохрани'); return; }
+    if (editingId === null) { showToast('Сначала сохрани'); return; }
     const src = editingIsTemplate ? DB.templates : DB.workouts;
     const w = src.find(x => x.id === editingId);
     if (!w) return;
@@ -2552,14 +2930,14 @@ function importWorkout(event) {
     reader.onload = e => {
         try {
             const data = JSON.parse(e.target.result);
-            if (data.type !== 'fit-trainer-workout' || !data.workout) { alert('Не файл тренировки'); return; }
+            if (data.type !== 'fit-trainer-workout' || !data.workout) { showToast('Не файл тренировки'); return; }
             const w = data.workout;
-            if (!w.name || !w.exercises || !Array.isArray(w.exercises)) { alert('Неверный формат'); return; }
+            if (!w.name || !w.exercises || !Array.isArray(w.exercises)) { showToast('Неверный формат'); return; }
             const nw = { id: Date.now(), name: w.name + ' (импорт)', autoStart: w.autoStart || false, exercises: [], settings: w.settings || null };
             const tmp = { exercises: w.exercises };
             const migrated = (function() {
                 const list = tmp.exercises;
-                const hasKind = list.some(e => e && (e.kind === 'exercise' || e.kind === 'rest'));
+                const hasKind = list.some(e => e && (e.kind === 'exercise' || e.kind === 'rest' || e.kind === 'warmup'));
                 if (hasKind) return list;
                 const res = [];
                 list.forEach((ex, i) => {
@@ -2576,9 +2954,9 @@ function importWorkout(event) {
             })();
             nw.exercises = migrated;
             DB.workouts.push(nw); saveDB('workouts');
-            alert(`Импортировано: ${nw.name}`);
+            showToast(`Импортировано: ${nw.name}`);
             showScreen('screen-workouts');
-        } catch(err) { alert('Ошибка: ' + err.message); }
+        } catch(err) { showToast('Ошибка: ' + err.message); }
     };
     reader.readAsText(file);
     event.target.value = '';
@@ -2591,14 +2969,36 @@ function showPreview(id) {
     document.getElementById('preview-title').innerText = w.name;
     document.getElementById('preview-back-btn').onclick = () => showScreen('screen-workouts');
     document.getElementById('preview-content').innerHTML = `<div class="card"><div style="color:var(--muted); font-size:0.9rem;">
-        ${getTotalExerciseCount(w.exercises)} упражнений · ~${Math.round(getTotalRestTime(w.exercises)/60)} мин отдыха
+        ${getTotalExerciseCount(w.exercises)} упражнений · ~${Math.round(estimateWorkoutDuration(w)/60)} мин всего
     </div></div>${renderPreviewElements(w.exercises)}`;
-    document.getElementById('preview-actions').innerHTML = `<button class="btn accent" onclick="startFromPreview()">▶ Начать</button>`;
+    document.getElementById('preview-actions').innerHTML = `
+        <button class="btn accent" onclick="startFromPreview()">▶ Начать</button>
+        <button class="btn ghost" onclick="saveAsTemplate(${id})" style="margin-top:8px;">💾 Сохранить как шаблон</button>`;
     showScreen('screen-preview');
 }
 function startFromPreview() { if (previewWorkoutId) startWorkout(previewWorkoutId); }
+function saveAsTemplate(id) {
+    const w = DB.workouts.find(x => x.id === id);
+    if (!w) return;
+    const copy = JSON.parse(JSON.stringify(w));
+    copy.id = Date.now();
+    copy.name = w.name + ' (шаблон)';
+    DB.templates.push(copy);
+    saveDB('templates');
+    showToast('💾 Сохранено в шаблоны');
+}
+function saveCurrentRunAsTemplate() {
+    if (!runState || !runState.workout) return;
+    const w = runState.workout;
+    const copy = JSON.parse(JSON.stringify(w));
+    copy.id = Date.now();
+    copy.name = w.name + ' (шаблон)';
+    DB.templates.push(copy);
+    saveDB('templates');
+    showToast('💾 Сохранено в шаблоны');
+}
 
-/* ===================== ТРЕНИРОВКА (CORE) ===================== */
+/* ===================== RUN CORE ===================== */
 let runState = null;
 
 function ensureTicker() {
@@ -2624,12 +3024,10 @@ function pauseTimer(type) {
     runState[`${type}ElapsedBeforePause`] = e;
     runState[`${type}StartTime`] = null;
     runState[`${type}Paused`] = true;
-    if (typeof runState[`${type}OnPause`] === 'function') { try { runState[`${type}OnPause`](); } catch(err) {} }
 }
 function resumeTimer(type) {
     runState[`${type}StartTime`] = Date.now();
     runState[`${type}Paused`] = false;
-    if (typeof runState[`${type}OnResume`] === 'function') { try { runState[`${type}OnResume`](); } catch(err) {} }
 }
 function stopTimer(type) {
     runState[`${type}StartTime`] = null; runState[`${type}ElapsedBeforePause`] = 0;
@@ -2647,7 +3045,6 @@ function getCurrentElapsed(type) {
     return bp + Math.floor((Date.now() - st) / 1000);
 }
 function getRemainingTime(type) { return Math.max(0, (runState[`${type}Duration`] || 0) - getCurrentElapsed(type)); }
-function getOvertime(type) { return Math.max(0, getCurrentElapsed(type) - (runState[`${type}Duration`] || 0)); }
 
 async function startWorkout(id) {
     const w = DB.workouts.find(x => x.id === id);
@@ -2655,7 +3052,7 @@ async function startWorkout(id) {
     const saved = loadSavedRunState();
     if (saved && saved.workoutId && saved.phase && saved.phase !== 'finish') {
         const sw = DB.workouts.find(x => x.id === saved.workoutId);
-        if (['ready','work','rest','countdown'].includes(saved.phase)) {
+        if (['ready','work','rest','countdown','warmup'].includes(saved.phase)) {
             const choice = await showResumeDialog(saved, w);
             if (choice === 'cancel') return;
             if (choice === 'resume' && sw) { restoreRunState(saved); return; }
@@ -2668,6 +3065,9 @@ async function startWorkout(id) {
         currentSet: 1, restPhase: null,
         setResults: {}, exerciseNotes: {}, workoutNoteDraft: '',
         currentExerciseWorkTime: 0, lastSetElapsed: 0,
+        warmupFinished: false, warmupBeepPlayed: false,
+        warmupSeconds: 0, warmupDuration: 0, warmupElapsedBeforePause: 0,
+        warmupStartTime: null, warmupPaused: false,
         countdownInterval: null, restOvertimeInterval: null, tickInterval: null,
         workStartTime: null, workElapsedBeforePause: 0, workPaused: false,
         restStartTime: null, restElapsedBeforePause: 0, restPaused: false,
@@ -2688,12 +3088,98 @@ function beginCurrentElementFlow() {
     saveRunState();
     const el = runState.workout.exercises[runState.index];
     if (!el) { showFinishScreen(); return; }
-    if (el.kind === 'rest') {
+    if (el.kind === 'warmup') {
+        if (getEffectiveSetting('skipWarmup')) {
+            runState.index++;
+            runState.phase = 'ready';
+            if (runState.index >= runState.workout.exercises.length) { showFinishScreen(); return; }
+            renderRun();
+            if (runState.workout.autoStart) setTimeout(() => beginCurrentElementFlow(), 300);
+            return;
+        }
+        beginWarmupPhase(el);
+    } else if (el.kind === 'rest') {
         beginRestPhase(el);
     } else {
         if (getEffectiveSetting('countdown')) startCountdown();
         else startExerciseNow();
     }
+}
+
+function beginWarmupPhase(warmupEl) {
+    runState.phase = 'warmup';
+    runState.warmupFinished = false;
+    runState.warmupBeepPlayed = false;
+    const dur = (typeof warmupEl.duration === 'number' && warmupEl.duration > 0) ? warmupEl.duration : 180;
+    runState.warmupDuration = dur;
+    startTimer('warmup', dur);
+    speak('Разминка');
+    saveRunState();
+    renderRun();
+}
+
+function toggleWarmupPause() {
+    if (!runState || runState.phase !== 'warmup') return;
+    if (runState.warmupFinished) return;
+    if (runState.warmupPaused) { unlockAudio(); resumeTimer('warmup'); announceResume(); }
+    else { pauseTimer('warmup'); announcePause(); }
+    saveRunState(); renderRun();
+}
+
+function onWarmupFinished() {
+    if (!runState || runState.warmupFinished) return;
+    runState.warmupFinished = true;
+    const elapsed = getCurrentElapsed('warmup');
+    const dur = runState.warmupDuration || elapsed;
+    runState.warmupSeconds = (runState.warmupSeconds || 0) + Math.min(elapsed, dur);
+    if (isVoiceMode()) speakCritical('разминка завершена');
+    else playBeep(620, 0.2);
+    if (navigator.vibrate) navigator.vibrate([200]);
+    renderRun();
+    saveRunState();
+}
+
+function finishWarmupEarly() {
+    if (!runState || runState.phase !== 'warmup') return;
+    if (runState.warmupFinished) return;
+    const elapsed = getCurrentElapsed('warmup');
+    const dur = runState.warmupDuration || elapsed;
+    runState.warmupSeconds = (runState.warmupSeconds || 0) + Math.min(elapsed, dur);
+    stopTimer('warmup');
+    runState.warmupFinished = false;
+    runState.index++;
+    runState.phase = 'ready';
+    saveRunState();
+    if (runState.index >= runState.workout.exercises.length) { showFinishScreen(); return; }
+    renderRun();
+    if (runState.workout.autoStart) setTimeout(() => beginCurrentElementFlow(), getAutoAdvanceDelay());
+}
+
+async function skipWarmup() {
+    if (!runState || runState.phase !== 'warmup') return;
+    if (runState.warmupFinished) return;
+    const ok = await customConfirm('Пропустить разминку?', { title: 'Пропустить разминку', okText: '⏭ Пропустить', cancelText: 'Отмена', danger: true });
+    if (!ok) return;
+    stopTimer('warmup');
+    runState.warmupFinished = false;
+    runState.index++;
+    runState.phase = 'ready';
+    saveRunState();
+    if (runState.index >= runState.workout.exercises.length) { showFinishScreen(); return; }
+    renderRun();
+    if (runState.workout.autoStart) setTimeout(() => beginCurrentElementFlow(), getAutoAdvanceDelay());
+}
+
+function confirmWarmupFinished() {
+    if (!runState || runState.phase !== 'warmup') return;
+    stopTimer('warmup');
+    runState.warmupFinished = false;
+    runState.index++;
+    runState.phase = 'ready';
+    saveRunState();
+    if (runState.index >= runState.workout.exercises.length) { showFinishScreen(); return; }
+    renderRun();
+    if (runState.workout.autoStart) setTimeout(() => beginCurrentElementFlow(), getAutoAdvanceDelay());
 }
 
 function startCountdown() {
@@ -2745,7 +3231,6 @@ function beginRestPhase(restEl) {
         runState.restBannerMode = false;
         startTimer('rest', restEl.duration);
     }
-    
     const ta = document.getElementById('rest-note-textarea');
     const btn = document.getElementById('rest-note-toggle');
     if (ta) { ta.style.display = 'none'; ta.value = ''; }
@@ -2773,46 +3258,71 @@ function toggleWorkPause() {
     saveRunState(); renderRun();
 }
 
-function finishExercise() {
+let finishExerciseInProgress = false;
+async function finishExercise() {
+    if (finishExerciseInProgress) return;
     const el = runState.workout.exercises[runState.index];
     if (!el || el.kind !== 'exercise') return;
-    const elapsed = getCurrentElapsed('work');
-    stopTimer('work');
-    runState.workPaused = false;
-    runState.totalWorkTime += elapsed;
-    runState.currentExerciseWorkTime = (runState.currentExerciseWorkTime || 0) + elapsed;
-    runState.lastSetElapsed = elapsed;
-
-    if (el.type === 'sets') {
-        if (!runState.setResults[runState.index]) runState.setResults[runState.index] = [];
-        let val = el.setMode === 'time' ? Math.min(elapsed, el.setDuration || elapsed) : (el.targetReps || 0);
-        runState.setResults[runState.index].push(val);
-        const totalSets = el.setsCount || 3;
-        const isLastSet = runState.currentSet >= totalSets;
-        if (!isLastSet) {
-            runState.currentSet++;
-            runState.phase = 'rest';
-            runState.restPhase = 'between-sets';
-            runState.restFinished = false;
-            runState.restBeepPlayed = false;
-            runState.restBannerMode = false;
-            startTimer('rest', el.restBetweenSets || 60);
-            saveRunState(); renderRun();
-            if (getEffectiveSetting('announceNumbers')) speak(`Подход ${runState.currentSet - 1} готов. Отдых. Следующий ${runState.currentSet}`);
-            else speak(`Отдых. Следующий подход ${runState.currentSet}`);
-            return;
+    finishExerciseInProgress = true;
+    try {
+        const needAsk = ((el.type === 'sets' && el.setMode === 'reps') || el.type === 'reps') && getEffectiveSetting('askReps');
+        let askedCount = null;
+        if (needAsk) {
+            pauseTimer('work');
+            renderRun();
+            askedCount = await askRepsCount(el.targetReps || 0);
+            if (askedCount === null) {
+                if (!runState.workPaused) resumeTimer('work');
+                renderRun();
+                return;
+            }
         }
-        runState.exerciseTimes.push(runState.currentExerciseWorkTime);
-        runState.lastFinishedWorkElapsed = runState.currentExerciseWorkTime;
-        runState.currentExerciseWorkTime = 0;
-        runState.currentSet = 1;
-        runState.restPhase = null;
-        advanceAfterExercise();
-    } else {
-        runState.exerciseTimes.push(elapsed);
-        runState.lastFinishedWorkElapsed = elapsed;
-        runState.currentExerciseWorkTime = 0;
-        advanceAfterExercise();
+        const elapsed = getCurrentElapsed('work');
+        stopTimer('work');
+        runState.workPaused = false;
+        runState.totalWorkTime += elapsed;
+        runState.currentExerciseWorkTime = (runState.currentExerciseWorkTime || 0) + elapsed;
+        runState.lastSetElapsed = elapsed;
+        if (el.type === 'sets') {
+            if (!runState.setResults[runState.index]) runState.setResults[runState.index] = [];
+            let val = askedCount !== null ? askedCount : (el.setMode === 'time' ? Math.min(elapsed, el.setDuration || elapsed) : (el.targetReps || 0));
+            runState.setResults[runState.index].push(val);
+            const totalSets = el.setsCount || 3;
+            const isLastSet = runState.currentSet >= totalSets;
+            if (!isLastSet) {
+                runState.currentSet++;
+                runState.phase = 'rest';
+                runState.restPhase = 'between-sets';
+                runState.restFinished = false;
+                runState.restBeepPlayed = false;
+                runState.restBannerMode = false;
+                startTimer('rest', el.restBetweenSets || 60);
+                saveRunState(); renderRun();
+                if (getEffectiveSetting('announceNumbers')) speak(`Подход ${runState.currentSet - 1} готов. Отдых. Следующий ${runState.currentSet}`);
+                else speak(`Отдых. Следующий подход ${runState.currentSet}`);
+                return;
+            }
+            runState.exerciseTimes.push(runState.currentExerciseWorkTime);
+            runState.lastFinishedWorkElapsed = runState.currentExerciseWorkTime;
+            runState.currentExerciseWorkTime = 0;
+            runState.currentSet = 1;
+            runState.restPhase = null;
+            advanceAfterExercise();
+        } else if (el.type === 'reps') {
+            const val = askedCount !== null ? askedCount : (el.targetReps || 0);
+            runState.setResults[runState.index] = [val];
+            runState.exerciseTimes.push(elapsed);
+            runState.lastFinishedWorkElapsed = elapsed;
+            runState.currentExerciseWorkTime = 0;
+            advanceAfterExercise();
+        } else {
+            runState.exerciseTimes.push(elapsed);
+            runState.lastFinishedWorkElapsed = elapsed;
+            runState.currentExerciseWorkTime = 0;
+            advanceAfterExercise();
+        }
+    } finally {
+        finishExerciseInProgress = false;
     }
 }
 
@@ -2824,8 +3334,44 @@ function advanceAfterExercise() {
     saveRunState();
     if (runState.index >= runState.workout.exercises.length) { showFinishScreen(); return; }
     renderRun();
-    if (runState.workout.autoStart) {
-        setTimeout(() => beginCurrentElementFlow(), getAutoAdvanceDelay());
+    if (runState.workout.autoStart) setTimeout(() => beginCurrentElementFlow(), getAutoAdvanceDelay());
+}
+
+let skipExerciseInProgress = false;
+async function skipExercise() {
+    if (skipExerciseInProgress) return;
+    if (!runState) return;
+    const el = runState.workout.exercises[runState.index];
+    if (!el || el.kind !== 'exercise') return;
+    skipExerciseInProgress = true;
+    try {
+        const inWork = runState.phase === 'work' || runState.phase === 'countdown';
+        const isMid = el.type === 'sets' && runState.currentSet > 1;
+        if (inWork || isMid) {
+            const ok = await customConfirm('Пропустить упражнение?\nОно не будет засчитано в статистике.', { title: 'Пропустить упражнение', okText: '⏭ Пропустить', cancelText: 'Отмена', danger: true });
+            if (!ok) return;
+        }
+        stopTimer('work');
+        stopTimer('rest');
+        stopRestAlarm();
+        runState.workPaused = false;
+        runState.setResults[runState.index] = 'skipped';
+        runState.exerciseTimes.push(-1);
+        runState.currentSet = 1;
+        runState.restPhase = null;
+        runState.restFinished = false;
+        runState.restOvertime = 0;
+        runState.restBannerMode = false;
+        runState.currentExerciseWorkTime = 0;
+        runState.lastSetElapsed = 0;
+        runState.index++;
+        runState.phase = 'ready';
+        saveRunState();
+        if (runState.index >= runState.workout.exercises.length) { showFinishScreen(); return; }
+        renderRun();
+        if (runState.workout.autoStart) setTimeout(() => beginCurrentElementFlow(), getAutoAdvanceDelay());
+    } finally {
+        skipExerciseInProgress = false;
     }
 }
 
@@ -2838,7 +3384,6 @@ function toggleRestPause() {
 
 function adjustRest(d) {
     if (runState.restBannerMode) return;
-    
     if (runState.restFinished) {
         runState.restDuration = Math.max(0, runState.restDuration - d);
         const elapsed = getCurrentElapsed('rest');
@@ -2847,18 +3392,11 @@ function adjustRest(d) {
             runState.restOvertime = 0;
             runState.restBeepPlayed = false;
             stopRestAlarm();
-            if (runState.restOvertimeInterval) {
-                clearInterval(runState.restOvertimeInterval);
-                runState.restOvertimeInterval = null;
-            }
         }
     } else {
         runState.restDuration = Math.max(0, runState.restDuration + d);
-        if (runState.restDuration <= getCurrentElapsed('rest')) {
-            onRestFinished();
-        }
+        if (runState.restDuration <= getCurrentElapsed('rest')) onRestFinished();
     }
-    
     updateTimersUI();
     renderRun();
     saveRunState();
@@ -2914,9 +3452,7 @@ function confirmRestFinished() {
     if (runState.workout.autoStart) setTimeout(() => beginCurrentElementFlow(), getAutoAdvanceDelay());
 }
 
-function confirmBanner() {
-    confirmRestFinished();
-}
+function confirmBanner() { confirmRestFinished(); }
 
 function onRestFinished() {
     if (runState.restFinished) return;
@@ -2956,14 +3492,11 @@ function toggleRestNote() {
 
 function undoLastElement() {
     stopRestAlarm();
-
     if (runState.restPhase === 'between-sets') {
         stopTimer('rest');
         const el = runState.workout.exercises[runState.index];
         if (!el) return;
-        if (runState.setResults[runState.index] && runState.setResults[runState.index].length > 0) {
-            runState.setResults[runState.index].pop();
-        }
+        if (runState.setResults[runState.index] && runState.setResults[runState.index].length > 0) runState.setResults[runState.index].pop();
         runState.currentSet = Math.max(1, runState.currentSet - 1);
         runState.totalWorkTime = Math.max(0, runState.totalWorkTime - (runState.lastSetElapsed || 0));
         runState.currentExerciseWorkTime = Math.max(0, (runState.currentExerciseWorkTime || 0) - (runState.lastSetElapsed || 0));
@@ -2977,7 +3510,6 @@ function undoLastElement() {
         saveRunState(); renderRun();
         return;
     }
-
     const prev = findPrevExerciseIndex(runState.workout.exercises, runState.index);
     if (prev < 0) { showToast('Нечего отменять'); return; }
     stopTimer('rest');
@@ -3001,30 +3533,27 @@ function updateTimersUI() {
     if (!runState) return;
     const { phase } = runState;
 
-    if (getEffectiveSetting('minuteBeep') && (phase === 'work' || (phase === 'rest' && !runState.restBannerMode))) {
+    if (getEffectiveSetting('minuteBeep') && (phase === 'work' || (phase === 'rest' && !runState.restBannerMode) || phase === 'warmup')) {
         const paused = runState[`${phase}Paused`];
-        if (!paused) {
+        if (!paused && !(phase === 'warmup' && runState.warmupFinished)) {
             const interval = getEffectiveSetting('minuteBeepInterval') || 60;
-            const isRest = phase === 'rest';
-            const tt = isRest ? getRemainingTime('rest') : getCurrentElapsed('work');
+            const isCountdown = phase === 'rest' || phase === 'warmup';
+            const tt = (phase === 'rest') ? getRemainingTime('rest') : (phase === 'warmup' ? getRemainingTime('warmup') : getCurrentElapsed('work'));
             if (runState.lastBeepTargetTime === undefined) runState.lastBeepTargetTime = tt;
-
             let trigger = false;
-            if (isRest) {
+            if (isCountdown) {
                 const prevBucket = Math.ceil(runState.lastBeepTargetTime / interval);
                 const currBucket = Math.ceil(tt / interval);
-                if (currBucket < prevBucket && tt > 0) { trigger = true; }
+                if (currBucket < prevBucket && tt > 0) trigger = true;
             } else {
                 const prevBucket = Math.floor(runState.lastBeepTargetTime / interval);
                 const currBucket = Math.floor(tt / interval);
-                if (currBucket > prevBucket && tt > 0) { trigger = true; }
+                if (currBucket > prevBucket && tt > 0) trigger = true;
             }
             if (trigger) {
                 const m = Math.max(1, Math.round(tt / 60));
-                if (isVoiceMode()) {
-                    if (isRest) speakCritical(remainingMinutesText(m));
-                    else speakCritical(elapsedMinutesText(m));
-                } else playBeep(1000, 0.15);
+                if (isVoiceMode()) { if (isCountdown) speakCritical(remainingMinutesText(m)); else speakCritical(elapsedMinutesText(m)); }
+                else playBeep(1000, 0.15);
             }
             runState.lastBeepTargetTime = tt;
         }
@@ -3038,13 +3567,22 @@ function updateTimersUI() {
             const elapsed = getCurrentElapsed('work');
             const remaining = Math.max(0, (el.setDuration || 45) - elapsed);
             if (t) t.innerText = formatTime(remaining);
-            if (remaining <= 0 && !runState.setFinishing && !runState.workPaused) {
+            if (remaining <= 0 && !runState.setFinishing && !runState.workPaused && !finishExerciseInProgress) {
                 runState.setFinishing = true;
-                setTimeout(() => { runState.setFinishing = false; finishExercise(); }, 200);
+                Promise.resolve(finishExercise()).finally(() => { runState.setFinishing = false; });
             }
         } else {
             if (t) t.innerText = formatTime(getCurrentElapsed('work'));
         }
+    } else if (phase === 'warmup' && !runState.warmupFinished) {
+        const rem = getRemainingTime('warmup');
+        const el = document.getElementById('warmup-timer');
+        if (el) el.innerText = formatTime(rem);
+        if (rem > 0 && rem <= 3 && !runState.warmupBeepPlayed && !runState.warmupPaused) {
+            runState.warmupBeepPlayed = true;
+            announceFinalCount(rem);
+        }
+        if (rem === 0 && !runState.warmupFinished) onWarmupFinished();
     } else if (phase === 'rest' && !runState.restBannerMode) {
         const rem = getRemainingTime('rest');
         const el = document.getElementById('rest-timer');
@@ -3063,10 +3601,11 @@ function updateTimersUI() {
     if (saveCounter % 20 === 0) saveRunState();
 }
 
+function getOvertime(type) { return Math.max(0, getCurrentElapsed(type) - (runState[`${type}Duration`] || 0)); }
 function elapsedMinutesText(n) { if (n === 1) return 'минута'; return n + ' ' + pluralMinutes(n); }
 function remainingMinutesText(n) { if (n === 1) return 'одна минута'; return n + ' ' + pluralMinutes(n); }
 
-/* ===================== РЕНДЕР RUN ===================== */
+/* ===================== RENDER RUN ===================== */
 function renderRun() {
     const { workout, index, phase } = runState;
     const elements = workout.exercises;
@@ -3104,20 +3643,25 @@ function renderRun() {
     }
 
     if (phase === 'ready') {
-        if (el.kind === 'rest') {
+        if (el.kind === 'warmup') {
+            currentExEl.innerText = 'Разминка';
+            phaseLabel.innerText = 'РАЗМИНКА';
+            phaseLabel.className = 'phase-label';
+            const dur = (typeof el.duration === 'number' && el.duration > 0) ? el.duration : 180;
+            document.getElementById('phase-ready').innerHTML = `
+                <p style="text-align:center; color:var(--warn); font-size:1.2rem; font-weight:700; margin-bottom:10px;">⏱ ${formatTime(dur)}</p>
+                <p style="text-align:center; color:var(--muted);">Готов? Нажми чтобы начать.</p>
+                <button class="btn accent" onclick="beginCurrentElementFlow()">▶ Начать</button>`;
+            document.getElementById('phase-ready').style.display = 'block';
+        } else if (el.kind === 'rest') {
             const prevIdx = findPrevExerciseIndex(elements, index);
             const prevEx = prevIdx >= 0 ? elements[prevIdx] : null;
             currentExEl.innerText = prevEx ? (prevEx.name || 'Упражнение') : 'Отдых';
             const isWater = el.restType === 'water';
             phaseLabel.innerText = isWater ? 'НЕОБХОДИМО ПОПИТЬ ВОДЫ' : 'ОТДЫХ';
             phaseLabel.className = 'phase-label';
-            let info = el.duration === null || el.duration === 0
-                ? `<p style="text-align:center; color:var(--accent); font-size:1.2rem; font-weight:700; margin-bottom:10px;">Без таймера</p>`
-                : `<p style="text-align:center; color:var(--accent); font-size:1.2rem; font-weight:700; margin-bottom:10px;">${formatTime(el.duration)}</p>`;
-            document.getElementById('phase-ready').innerHTML = `
-                ${info}
-                <p style="text-align:center; color:var(--muted);">Готов? Нажми чтобы начать.</p>
-                <button class="btn accent" onclick="beginCurrentElementFlow()">▶ Начать</button>`;
+            let info = el.duration === null || el.duration === 0 ? `<p style="text-align:center; color:var(--accent); font-size:1.2rem; font-weight:700; margin-bottom:10px;">Без таймера</p>` : `<p style="text-align:center; color:var(--accent); font-size:1.2rem; font-weight:700; margin-bottom:10px;">${formatTime(el.duration)}</p>`;
+            document.getElementById('phase-ready').innerHTML = `${info}<p style="text-align:center; color:var(--muted);">Готов? Нажми чтобы начать.</p><button class="btn accent" onclick="beginCurrentElementFlow()">▶ Начать</button>`;
             document.getElementById('phase-ready').style.display = 'block';
         } else {
             currentExEl.innerText = el.name || 'Упражнение';
@@ -3127,11 +3671,7 @@ function renderRun() {
             let info = '';
             if (el.type === 'reps') info = `<p style="text-align:center; color:var(--accent); font-size:1.2rem; font-weight:700; margin-bottom:10px;">🔢 ${el.targetReps || 10} ${pluralReps(el.targetReps || 10)}</p>`;
             else if (el.type === 'sets') info = `<p style="text-align:center; color:var(--accent); font-size:1.2rem; font-weight:700; margin-bottom:10px;">🔁 ${el.setsCount || 3}× ${el.setMode === 'reps' ? (el.targetReps || 10) + ' повт.' : (el.setDuration || 45) + ' сек'}</p>`;
-            document.getElementById('phase-ready').innerHTML = `
-                ${el.notes ? `<p style="text-align:center; color:var(--muted); font-size:0.9rem; margin-bottom:10px;">📝 ${escapeHtml(el.notes)}</p>` : ''}
-                ${info}
-                <p style="text-align:center; color:var(--muted);">Готов? Нажми чтобы начать.</p>
-                <button class="btn accent" onclick="beginCurrentElementFlow()">▶ Начать</button>`;
+            document.getElementById('phase-ready').innerHTML = `${el.notes ? `<p style="text-align:center; color:var(--muted); font-size:0.9rem; margin-bottom:10px;">📝 ${escapeHtml(el.notes)}</p>` : ''}${info}<p style="text-align:center; color:var(--muted);">Готов? Нажми чтобы начать.</p><button class="btn accent" onclick="beginCurrentElementFlow()">▶ Начать</button><button class="btn ghost" onclick="skipExercise()" style="background:var(--card-2); color:var(--muted); margin-top:8px;">⏭ Пропустить</button>`;
             document.getElementById('phase-ready').style.display = 'block';
         }
     } else if (phase === 'countdown') {
@@ -3141,6 +3681,35 @@ function renderRun() {
         phaseLabel.className = 'phase-label';
         document.getElementById('countdown-timer').innerText = runState.countdownValue;
         document.getElementById('phase-countdown').style.display = 'block';
+    } else if (phase === 'warmup') {
+        currentExEl.innerText = 'Разминка';
+        const timer = document.getElementById('warmup-timer');
+        const pauseBtn = document.getElementById('warmup-pause-btn');
+        const finishEarlyBtn = document.getElementById('warmup-finish-early-btn');
+        const skipBtn = document.getElementById('warmup-skip-btn');
+        const confirmBtn = document.getElementById('warmup-confirm-btn');
+
+        if (runState.warmupFinished) {
+            phaseLabel.innerText = '✅ Разминка завершена';
+            phaseLabel.className = 'phase-label';
+            currentExEl.style.color = 'var(--accent)';
+            if (timer) { timer.classList.remove('overtime', 'paused'); timer.classList.add('done'); timer.innerText = formatTime(0); }
+            pauseBtn.style.display = 'none';
+            finishEarlyBtn.style.display = 'none';
+            skipBtn.style.display = 'none';
+            confirmBtn.style.display = 'block';
+        } else {
+            phaseLabel.innerText = runState.warmupPaused ? '⏸ ПАУЗА' : 'РАЗМИНКА';
+            phaseLabel.className = 'phase-label';
+            currentExEl.style.color = '';
+            if (timer) { timer.classList.remove('overtime', 'done'); timer.classList.toggle('paused', !!runState.warmupPaused); }
+            pauseBtn.style.display = 'block';
+            pauseBtn.innerText = runState.warmupPaused ? '▶ Продолжить' : '⏸ Пауза';
+            finishEarlyBtn.style.display = 'block';
+            skipBtn.style.display = 'block';
+            confirmBtn.style.display = 'none';
+        }
+        document.getElementById('phase-warmup').style.display = 'block';
     } else if (phase === 'work') {
         currentExEl.innerText = el.name || 'Упражнение';
         const exNum = getExerciseNumber(elements, index);
@@ -3149,6 +3718,7 @@ function renderRun() {
         const workTimer = document.getElementById('work-timer');
         const pauseBtn = document.getElementById('work-pause-btn');
         const finishBtn = document.getElementById('work-finish-btn');
+        const skipBtn = document.getElementById('work-skip-btn');
         const repsInfo = document.getElementById('work-reps-info');
         const repsTarget = document.getElementById('work-reps-target');
         let showReps = false, targetText = '', finishText = '✅ Завершить упражнение';
@@ -3160,17 +3730,12 @@ function renderRun() {
             if (runState.currentSet === (el.setsCount || 3) && el.setMode === 'reps') finishText = '✅ Последний подход';
         }
         pauseBtn.style.display = 'block';
+        if (skipBtn) skipBtn.style.display = 'block';
         repsInfo.style.display = showReps ? 'block' : 'none';
         if (showReps) repsTarget.innerText = targetText;
         finishBtn.innerText = finishText;
-        if (runState.workPaused) {
-            workTimer.classList.add('paused');
-            pauseBtn.innerText = '▶ Продолжить';
-            phaseLabel.innerText = '⏸ ПАУЗА';
-        } else {
-            workTimer.classList.remove('paused');
-            pauseBtn.innerText = '⏸ Пауза';
-        }
+        if (runState.workPaused) { workTimer.classList.add('paused'); pauseBtn.innerText = '▶ Продолжить'; phaseLabel.innerText = '⏸ ПАУЗА'; }
+        else { workTimer.classList.remove('paused'); pauseBtn.innerText = '⏸ Пауза'; }
         document.getElementById('phase-work').style.display = 'block';
     } else if (phase === 'rest') {
         renderRestElement(el);
@@ -3184,9 +3749,8 @@ function renderRestElement(el) {
     const isBanner = runState.restBannerMode;
 
     let displayTitle;
-    if (isBetween) {
-        displayTitle = el.name || 'Упражнение';
-    } else {
+    if (isBetween) displayTitle = el.name || 'Упражнение';
+    else {
         const prevIdx = findPrevExerciseIndex(runState.workout.exercises, runState.index);
         const prevEx = prevIdx >= 0 ? runState.workout.exercises[prevIdx] : null;
         displayTitle = prevEx ? (prevEx.name || 'Упражнение') : 'Отдых';
@@ -3195,66 +3759,44 @@ function renderRestElement(el) {
     currentExerciseEl.innerText = displayTitle;
     currentExerciseEl.style.color = runState.restFinished ? 'var(--danger)' : '';
 
-    if (runState.restFinished) {
-        phaseLabel.innerText = '⏰ ВРЕМЯ ВЫШЛО';
-        phaseLabel.className = 'phase-label finished';
-    } else if (isBetween) {
-        phaseLabel.innerText = 'ОТДЫХ МЕЖДУ ПОДХОДАМИ';
-        phaseLabel.className = 'phase-label';
-    } else if (isWater) {
-        phaseLabel.innerText = 'НЕОБХОДИМО ПОПИТЬ ВОДЫ';
-        phaseLabel.className = 'phase-label';
-    } else {
-        phaseLabel.innerText = 'ОТДЫХ';
-        phaseLabel.className = 'phase-label';
-    }
-    
+    if (runState.restFinished) { phaseLabel.innerText = '⏰ ВРЕМЯ ВЫШЛО'; phaseLabel.className = 'phase-label finished'; }
+    else if (isBetween) { phaseLabel.innerText = 'ОТДЫХ МЕЖДУ ПОДХОДАМИ'; phaseLabel.className = 'phase-label'; }
+    else if (isWater) { phaseLabel.innerText = 'НЕОБХОДИМО ПОПИТЬ ВОДЫ'; phaseLabel.className = 'phase-label'; }
+    else { phaseLabel.innerText = 'ОТДЫХ'; phaseLabel.className = 'phase-label'; }
+
     const middleIcon = document.getElementById('rest-middle-icon');
-    if (isWater && !runState.restFinished) {
-        middleIcon.style.display = 'flex';
-    } else {
-        middleIcon.style.display = 'none';
-    }
+    if (isWater && !runState.restFinished) middleIcon.style.display = 'flex';
+    else middleIcon.style.display = 'none';
 
     const timerEl = document.getElementById('rest-timer');
-    if (isBanner) {
-        timerEl.style.display = 'none';
-    } else {
+    if (isBanner) timerEl.style.display = 'none';
+    else {
         timerEl.style.display = 'flex';
-        if (runState.restFinished) {
-            timerEl.style.color = 'var(--danger)';
-            timerEl.className = 'big-timer overtime';
-        } else {
-            timerEl.style.color = '';
-            timerEl.className = 'big-timer' + (runState.restPaused ? ' paused' : '');
-        }
+        if (runState.restFinished) { timerEl.style.color = 'var(--danger)'; timerEl.className = 'big-timer overtime'; }
+        else { timerEl.style.color = ''; timerEl.className = 'big-timer' + (runState.restPaused ? ' paused' : ''); }
     }
-    
+
     const nextBlock = document.getElementById('next-exercise-block');
-    if (runState.restFinished) {
-        nextBlock.style.display = 'none';
-    } else {
+    if (runState.restFinished) nextBlock.style.display = 'none';
+    else {
         nextBlock.style.display = 'block';
         nextBlock.classList.remove('water');
         const nameEl = document.getElementById('next-exercise-name');
         const labelEl = document.getElementById('next-exercise-label');
         nameEl.classList.remove('water', 'finish');
-        
-        if (isBetween) {
-            labelEl.innerText = 'Следующий подход';
-            nameEl.innerText = `Подход ${runState.currentSet} из ${el.setsCount || 3}`;
-        } else {
+        if (isBetween) { labelEl.innerText = 'Следующий подход'; nameEl.innerText = `Подход ${runState.currentSet} из ${el.setsCount || 3}`; }
+        else {
             const next = findNextElement(runState.workout.exercises, runState.index);
-            if (!next) {
-                labelEl.innerText = 'Далее';
-                nameEl.innerText = 'Это последнее упражнение';
-            } else {
+            if (!next) { labelEl.innerText = 'Далее'; nameEl.innerText = 'Это последнее упражнение'; }
+            else {
                 const nx = next.el;
                 labelEl.innerText = 'Далее';
                 if (nx.kind === 'exercise') {
                     const num = getExerciseNumber(runState.workout.exercises, next.idx);
                     const info = nx.type === 'sets' ? ` (${nx.setsCount || 3}×)` : nx.type === 'reps' ? ` (${nx.targetReps||10})` : '';
                     nameEl.innerText = (getEffectiveSetting('announceNumbers') ? `${num}. ` : '') + (nx.name || 'Упражнение') + info;
+                } else if (nx.kind === 'warmup') {
+                    nameEl.innerText = '🔥 Разминка';
                 } else {
                     const isW = nx.restType === 'water';
                     nameEl.innerText = isW ? '💧 Необходимо попить воды' : '🛌 Отдых';
@@ -3265,16 +3807,13 @@ function renderRestElement(el) {
     }
 
     const noteBlock = document.getElementById('rest-note-block');
-    if (runState.restFinished || isBetween) {
-        noteBlock.style.display = 'none';
-    } else {
+    if (runState.restFinished || isBetween) noteBlock.style.display = 'none';
+    else {
         noteBlock.style.display = 'block';
         const toggle = document.getElementById('rest-note-toggle');
         const prevIdx = findPrevExerciseIndex(runState.workout.exercises, runState.index);
         const existing = prevIdx >= 0 ? runState.exerciseNotes[prevIdx] : '';
-        if (document.getElementById('rest-note-textarea').style.display === 'none') {
-            toggle.innerText = existing ? '📝 Редактировать заметку' : '📝 Добавить заметку';
-        }
+        if (document.getElementById('rest-note-textarea').style.display === 'none') toggle.innerText = existing ? '📝 Редактировать заметку' : '📝 Добавить заметку';
     }
 
     const pauseBtn = document.getElementById('rest-pause-btn');
@@ -3285,45 +3824,38 @@ function renderRestElement(el) {
     const bannerBtn = document.getElementById('rest-banner-btn');
 
     if (isBanner) {
-        pauseBtn.style.display = 'none';
-        skipBtn.style.display = 'none';
+        pauseBtn.style.display = 'none'; skipBtn.style.display = 'none';
         undoBtn.style.display = (isBetween || findPrevExerciseIndex(runState.workout.exercises, runState.index) >= 0) ? 'block' : 'none';
-        confirmBtn.style.display = 'none';
-        bannerBtn.style.display = 'block';
-        adjustDiv.style.display = 'none';
+        confirmBtn.style.display = 'none'; bannerBtn.style.display = 'block'; adjustDiv.style.display = 'none';
     } else if (runState.restFinished) {
-        pauseBtn.style.display = 'none';
-        skipBtn.style.display = 'none';
+        pauseBtn.style.display = 'none'; skipBtn.style.display = 'none';
         undoBtn.style.display = (isBetween || findPrevExerciseIndex(runState.workout.exercises, runState.index) >= 0) ? 'block' : 'none';
-        confirmBtn.style.display = 'block';
-        bannerBtn.style.display = 'none';
-        adjustDiv.style.display = 'none';
+        confirmBtn.style.display = 'block'; bannerBtn.style.display = 'none'; adjustDiv.style.display = 'none';
     } else {
         pauseBtn.style.display = 'block';
         pauseBtn.innerText = runState.restPaused ? '▶ Продолжить' : '⏸ Пауза';
         undoBtn.style.display = (isBetween || findPrevExerciseIndex(runState.workout.exercises, runState.index) >= 0) ? 'block' : 'none';
-        skipBtn.style.display = 'block';
-        confirmBtn.style.display = 'none';
-        bannerBtn.style.display = 'none';
-        adjustDiv.style.display = 'flex';
+        skipBtn.style.display = 'block'; confirmBtn.style.display = 'none'; bannerBtn.style.display = 'none'; adjustDiv.style.display = 'flex';
     }
-    
+
     document.getElementById('phase-rest').style.display = 'block';
 }
 
 function hideAllPhases() {
-    ['phase-ready','phase-countdown','phase-work','phase-rest','phase-finish'].forEach(id => {
+    ['phase-ready','phase-countdown','phase-work','phase-rest','phase-warmup','phase-finish'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.style.display = 'none';
     });
 }
 
-function confirmExit() {
+async function confirmExit() {
     if (!runState || runState.phase === 'finish') { showScreen('screen-workouts'); return true; }
-    if (!voiceConfirm('Выйти из тренировки?\n\nПрогресс сохранится.')) return false;
+    const ok = await customConfirm('Выйти из тренировки?\n\nПрогресс сохранится.', { title: 'Выйти из тренировки?', okText: '← Выйти', cancelText: 'Остаться', danger: true });
+    if (!ok) return false;
     stopTickInterval();
     if (runState.countdownInterval) clearInterval(runState.countdownInterval);
     stopRestAlarm();
+    if (runState.phase === 'warmup') stopTimer('warmup');
     releaseWakeLock();
     saveRunState();
     disableExitProtection();
@@ -3337,7 +3869,7 @@ function showFinishScreen() {
     stopTickInterval();
     if (runState && runState.countdownInterval) clearInterval(runState.countdownInterval);
     stopRestAlarm();
-    if (runState && runState.restOvertimeInterval) { clearInterval(runState.restOvertimeInterval); runState.restOvertimeInterval = null; }
+    if (runState) stopTimer('warmup');
     clearSavedRunState(); disableExitProtection();
     const endTime = new Date();
     const totalDuration = Math.floor((endTime - runState.startTime) / 1000);
@@ -3363,6 +3895,7 @@ function showFinishScreen() {
         endTime: endTime.toISOString(),
         totalDuration,
         workTime: runState.totalWorkTime,
+        warmupSeconds: runState.warmupSeconds || 0,
         exercisesCount: getTotalExerciseCount(runState.workout.exercises),
         exerciseTimes: [...runState.exerciseTimes],
         exerciseNames: runState.workout.exercises.filter(e => e.kind === 'exercise').map(e => e.name || ''),
@@ -3371,30 +3904,32 @@ function showFinishScreen() {
         setResults: JSON.parse(JSON.stringify(runState.setResults || {}))
     };
     DB.history.push(record);
+    const removed = pruneHistory(HISTORY_PRUNE_LIMIT);
+    if (removed > 0) setTimeout(() => showToast(`📜 История обрезана до ${HISTORY_PRUNE_LIMIT} записей`), 800);
     saveDB('history');
 
     const noteItems = [];
     runState.workout.exercises.forEach((el, i) => {
         if (el.kind === 'exercise' && runState.exerciseNotes[i]) {
-            noteItems.push(`<div style="padding:8px 0; border-bottom:1px solid var(--card-2);">
-                <div style="font-size:0.9rem; color:var(--muted);">${escapeHtml(el.name)}</div>
-                <div style="color:var(--text); font-size:0.9rem; margin-top:2px;">${escapeHtml(runState.exerciseNotes[i])}</div>
-            </div>`);
+            noteItems.push(`<div style="padding:8px 0; border-bottom:1px solid var(--card-2);"><div style="font-size:0.9rem; color:var(--muted);">${escapeHtml(el.name)}</div><div style="color:var(--text); font-size:0.9rem; margin-top:2px;">${escapeHtml(runState.exerciseNotes[i])}</div></div>`);
         }
     });
 
     let exListHtml = '';
+    if ((runState.warmupSeconds || 0) > 0) {
+        exListHtml += `<div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--card-2);"><span style="color:var(--warn); font-size:0.9rem;">🔥 Разминка</span><span style="color:var(--warn); font-weight:700;">${formatTime(runState.warmupSeconds)}</span></div>`;
+    }
     let exCounter = 0;
     runState.workout.exercises.forEach((el, i) => {
         if (el.kind !== 'exercise') return;
         exCounter++;
-        const t = runState.exerciseTimes[exCounter - 1] || 0;
+        const t = runState.exerciseTimes[exCounter - 1];
         const sets = runState.setResults[i];
-        const setsInfo = sets && sets.length ? ` · подходы: ${sets.join('/')}` : '';
-        exListHtml += `<div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--card-2);">
-            <span style="color:var(--muted); font-size:0.9rem;">${exCounter}. ${escapeHtml(el.name || 'Упражнение')}${setsInfo}</span>
-            <span style="color:var(--accent); font-weight:700;">${formatTime(t)}</span>
-        </div>`;
+        const isSkipped = t !== undefined && t !== null && t < 0;
+        let setsInfo = '';
+        if (Array.isArray(sets) && sets.length) setsInfo = ` · подходы: ${sets.join('/')}`;
+        else if (sets === 'skipped') setsInfo = '';
+        exListHtml += `<div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--card-2);"><span style="color:var(--muted); font-size:0.9rem;">${exCounter}. ${escapeHtml(el.name || 'Упражнение')}${setsInfo}</span><span style="color:${isSkipped ? 'var(--muted)' : 'var(--accent)'}; font-weight:700;">${isSkipped ? '⏭ пропущено' : formatTime(t || 0)}</span></div>`;
     });
 
     document.getElementById('phase-finish').innerHTML = `
@@ -3405,12 +3940,10 @@ function showFinishScreen() {
                 <div class="stat-row"><div class="stat-label">🏁 Конец</div><div class="stat-value">${formatClock(endTime)}</div></div>
                 <div class="stat-row"><div class="stat-label">⏱ Длительность</div><div class="stat-value">${formatTime(totalDuration)}</div></div>
                 <div class="stat-row"><div class="stat-label">💪 Работа</div><div class="stat-value highlight">${formatTime(runState.totalWorkTime)}</div></div>
+                ${(runState.warmupSeconds || 0) > 0 ? `<div class="stat-row"><div class="stat-label">🔥 Разминка</div><div class="stat-value">${formatTime(runState.warmupSeconds)}</div></div>` : ''}
             </div>
         </div>
-        ${noteItems.length ? `<details open style="margin-top:12px; background:var(--card); border-radius:14px; border:1px solid var(--border);">
-            <summary style="padding:14px 16px; font-weight:600;">📝 Заметки по упражнениям</summary>
-            <div style="padding:0 16px 16px;">${noteItems.join('')}</div>
-        </details>` : ''}
+        ${noteItems.length ? `<details open style="margin-top:12px; background:var(--card); border-radius:14px; border:1px solid var(--border);"><summary style="padding:14px 16px; font-weight:600;">📝 Заметки по упражнениям</summary><div style="padding:0 16px 16px;">${noteItems.join('')}</div></details>` : ''}
         <div class="card" style="margin-top:12px;" id="finish-note-card">
             <button id="finish-note-toggle" class="btn ghost small" style="width:100%; padding:10px; font-size:0.85rem;" onclick="toggleFinishNote()">📝 Добавить заметку к тренировке</button>
             <div id="finish-note-block" style="display:none; margin-top:8px;">
@@ -3418,11 +3951,9 @@ function showFinishScreen() {
                 <button class="btn small accent" onclick="saveWorkoutNote(${record.id})">💾 Сохранить</button>
             </div>
         </div>
-        <details style="margin-top:12px; background:var(--card); border-radius:14px; border:1px solid var(--border);">
-            <summary style="padding:14px 16px; font-weight:600;">📊 Время по упражнениям</summary>
-            <div style="padding:0 16px 16px;">${exListHtml}</div>
-        </details>
+        <details style="margin-top:12px; background:var(--card); border-radius:14px; border:1px solid var(--border);"><summary style="padding:14px 16px; font-weight:600;">📊 Время по упражнениям</summary><div style="padding:0 16px 16px;">${exListHtml}</div></details>
         <button class="btn accent" onclick="shareResult(${record.id})" style="margin-top:16px;">📤 Поделиться</button>
+        <button class="btn ghost" onclick="saveCurrentRunAsTemplate()" style="margin-top:8px;">💾 Сохранить как шаблон</button>
         <button class="btn" onclick="repeatLastWorkout(${runState.workout.id})" style="margin-top:8px;">🔁 Повторить</button>
         <button class="btn ghost" onclick="showScreen('screen-workouts')">← К тренировкам</button>
     `;
@@ -3434,13 +3965,8 @@ function toggleFinishNote() {
     const block = document.getElementById('finish-note-block');
     const toggle = document.getElementById('finish-note-toggle');
     if (!block || !toggle) return;
-    if (block.style.display === 'none') {
-        block.style.display = 'block';
-        toggle.style.display = 'none';
-    } else {
-        block.style.display = 'none';
-        toggle.style.display = 'block';
-    }
+    if (block.style.display === 'none') { block.style.display = 'block'; toggle.style.display = 'none'; }
+    else { block.style.display = 'none'; toggle.style.display = 'block'; }
 }
 
 function saveWorkoutNote(recordId) {
@@ -3454,64 +3980,126 @@ function saveWorkoutNote(recordId) {
         const block = document.getElementById('finish-note-block');
         const toggle = document.getElementById('finish-note-toggle');
         if (block) block.style.display = 'none';
-        if (toggle) {
-            toggle.style.display = 'block';
-            toggle.innerText = '📝 Редактировать заметку к тренировке';
-        }
+        if (toggle) { toggle.style.display = 'block'; toggle.innerText = '📝 Редактировать заметку к тренировке'; }
     }
 }
 function repeatLastWorkout(workoutId) { runState = null; startWorkout(workoutId); }
 
-/* ===================== ИСТОРИЯ ===================== */
+/* ===================== HISTORY ===================== */
 function renderHistory() { renderHistoryList(); renderHistoryStats(); renderHistoryRecords(); }
 function switchHistoryTab(tab, el) {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     el.classList.add('active');
     ['list','stats','records'].forEach(t => { document.getElementById('history-tab-' + t).style.display = (t === tab) ? 'block' : 'none'; });
 }
+
+function getFilteredHistory() {
+    const searchEl = document.getElementById('history-search');
+    const periodEl = document.getElementById('history-period');
+    const q = searchEl ? searchEl.value.toLowerCase().trim() : '';
+    const period = periodEl ? periodEl.value : 'all';
+    let items = [...DB.history];
+    if (period !== 'all') {
+        const days = parseInt(period) || 0;
+        if (days > 0) {
+            const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+            items = items.filter(r => { try { return new Date(r.startTime).getTime() >= cutoff; } catch(e) { return false; } });
+        }
+    }
+    if (q) {
+        items = items.filter(r => {
+            const nameMatch = (r.workoutName || '').toLowerCase().includes(q);
+            const noteMatch = (r.workoutNote || '').toLowerCase().includes(q);
+            const exMatch = Array.isArray(r.exerciseNames) && r.exerciseNames.some(n => (n || '').toLowerCase().includes(q));
+            return nameMatch || noteMatch || exMatch;
+        });
+    }
+    return items;
+}
+
 function renderHistoryList() {
     const c = document.getElementById('history-tab-list');
+    if (!c) return;
+    const items = getFilteredHistory();
     if (DB.history.length === 0) { c.innerHTML = '<div class="empty-state">История пуста</div>'; return; }
-    const sorted = [...DB.history].sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
-    c.innerHTML = sorted.map(r => {
+
+    const totalWork = items.reduce((s, r) => s + (r.workTime || 0), 0);
+    const totalDuration = items.reduce((s, r) => s + (r.totalDuration || 0), 0);
+    const totalWarmup = items.reduce((s, r) => s + (r.warmupSeconds || 0), 0);
+
+    const summaryHtml = `<div class="history-summary-card">
+        <div class="history-summary-title">Найдено</div>
+        <div class="history-summary-big">${items.length}</div>
+        <div class="history-summary-big-sub">${pluralWorkouts(items.length)}</div>
+        <div class="history-summary-row">
+            <div class="history-summary-item"><div class="val">${formatTime(Math.floor(totalDuration))}</div><div class="lbl">⏱ общее</div></div>
+            <div class="history-summary-item"><div class="val">${formatTime(Math.floor(totalWork))}</div><div class="lbl">💪 работа</div></div>
+            ${totalWarmup > 0 ? `<div class="history-summary-item"><div class="val">${formatTime(Math.floor(totalWarmup))}</div><div class="lbl">🔥 разминка</div></div>` : ''}
+        </div>
+    </div>`;
+
+    if (items.length === 0) { c.innerHTML = summaryHtml + '<div class="empty-state">Ничего не найдено</div>'; return; }
+    const sorted = [...items].sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
+
+    const swipeResets = [];
+
+    c.innerHTML = summaryHtml + sorted.map(r => {
         const wExists = r.workoutId && DB.workouts.find(w => w.id === r.workoutId);
         const notes = r.exerciseNotes || {};
         const hasNotes = Object.values(notes).some(n => n) || r.workoutNote;
-        return `<div class="history-card">
-            <div class="history-top">
-                <div class="history-info">
-                    <div class="name">${escapeHtml(r.workoutName)}</div>
-                    <div class="stats">${formatDate(new Date(r.startTime))} · ${formatTime(r.totalDuration)} · 💪 ${formatTime(r.workTime)}</div>
+        const hasWarmup = (r.warmupSeconds || 0) > 0;
+        return `<div class="swipe-container" data-history-id="${r.id}">
+            <button class="swipe-delete-btn" data-delete-id="${r.id}">🗑 Удалить</button>
+            <div class="history-card">
+                <div class="history-top">
+                    <div class="history-info">
+                        <div class="name">${escapeHtml(r.workoutName)}</div>
+                        <div class="stats">${formatDate(new Date(r.startTime))} · ${formatTime(r.totalDuration)} · 💪 ${formatTime(r.workTime)}${hasWarmup ? ' · 🔥 ' + formatTime(r.warmupSeconds) : ''}</div>
+                    </div>
+                    <div class="history-actions">
+                        ${wExists ? `<button class="icon-btn" onclick="repeatLastWorkout(${r.workoutId})" title="Повторить">▶</button>` : ''}
+                        <button class="icon-btn" onclick="shareResult(${r.id})" title="Поделиться">📤</button>
+                        <button class="icon-btn delete" onclick="deleteHistoryRecord(${r.id})" title="Удалить">🗑</button>
+                    </div>
                 </div>
-                <div class="history-actions">
-                    ${wExists ? `<button class="icon-btn" onclick="repeatLastWorkout(${r.workoutId})" title="Повторить">▶</button>` : ''}
-                    <button class="icon-btn" onclick="shareResult(${r.id})" title="Поделиться">📤</button>
-                    <button class="icon-btn delete" onclick="deleteHistoryRecord(${r.id})" title="Удалить">🗑</button>
-                </div>
+                ${r.workoutNote ? `<div style="background:var(--primary-soft); border-left:3px solid var(--primary); border-radius:10px; padding:10px 12px; font-size:0.85rem;">📝 ${escapeHtml(r.workoutNote)}</div>` : ''}
+                ${((r.exerciseNames && r.exerciseNames.length > 0) || hasWarmup) ? `<details style="background:var(--card-2); border-radius:10px;">
+                    <summary style="padding:10px 12px; font-size:0.85rem; color:var(--muted);">📊 Упражнения${hasNotes ? ' и заметки' : ''}</summary>
+                    <div style="padding:0 12px 12px; display:flex; flex-direction:column; gap:6px;">
+                        ${hasWarmup ? `<div style="padding:6px 0; border-bottom:1px solid var(--card-2);"><div style="display:flex; justify-content:space-between; font-size:0.85rem; gap:8px;"><span style="flex:1; min-width:0; color:var(--warn);">🔥 Разминка</span><span style="color:var(--warn); font-weight:600; flex-shrink:0;">${formatTime(r.warmupSeconds)}</span></div></div>` : ''}
+                        ${(r.exerciseNames || []).map((name, i) => {
+                            const note = (r.exerciseNotes || {})[i];
+                            const sets = (r.setResults || {})[i];
+                            const t = (r.exerciseTimes || [])[i];
+                            const isSkipped = t !== undefined && t !== null && t < 0;
+                            return `<div style="padding:6px 0; border-bottom:1px solid var(--card-2);">
+                                <div style="display:flex; justify-content:space-between; font-size:0.85rem; gap:8px;">
+                                    <span style="flex:1; min-width:0; word-break:break-word;">${i+1}. ${escapeHtml(name || 'Упражнение')}</span>
+                                    <span style="color:${isSkipped ? 'var(--muted)' : 'var(--accent)'}; font-weight:600; flex-shrink:0;">${isSkipped ? '⏭ пропущено' : formatTime(t || 0)}</span>
+                                </div>
+                                ${sets && Array.isArray(sets) && sets.length ? `<div style="color:var(--muted); font-size:0.8rem; margin-top:2px;">🔁 подходы: ${sets.join(' / ')}</div>` : (sets === 'skipped' ? `<div style="color:var(--muted); font-size:0.8rem; margin-top:2px;">⏭ пропущено</div>` : '')}
+                                ${note ? `<div style="color:var(--accent); font-size:0.8rem; margin-top:4px; font-style:italic;">📝 ${escapeHtml(note)}</div>` : ''}
+                            </div>`;
+                        }).join('')}
+                    </div>
+                </details>` : ''}
             </div>
-            ${r.workoutNote ? `<div style="background:var(--primary-soft); border-left:3px solid var(--primary); border-radius:10px; padding:10px 12px; font-size:0.85rem;">📝 ${escapeHtml(r.workoutNote)}</div>` : ''}
-            ${r.exerciseNames && r.exerciseNames.length > 0 ? `<details style="background:var(--card-2); border-radius:10px;">
-                <summary style="padding:10px 12px; font-size:0.85rem; color:var(--muted);">📊 Упражнения${hasNotes ? ' и заметки' : ''}</summary>
-                <div style="padding:0 12px 12px; display:flex; flex-direction:column; gap:6px;">
-                    ${r.exerciseNames.map((name, i) => {
-                        const note = (r.exerciseNotes || {})[i];
-                        const sets = (r.setResults || {})[i];
-                        return `<div style="padding:6px 0; border-bottom:1px solid var(--card-2);">
-                            <div style="display:flex; justify-content:space-between; font-size:0.85rem; gap:8px;">
-                                <span style="flex:1; min-width:0; word-break:break-word;">${i+1}. ${escapeHtml(name || 'Упражнение')}</span>
-                                <span style="color:var(--accent); font-weight:600; flex-shrink:0;">${formatTime(r.exerciseTimes[i] || 0)}</span>
-                            </div>
-                            ${sets && Array.isArray(sets) && sets.length ? `<div style="color:var(--muted); font-size:0.8rem; margin-top:2px;">🔁 подходы: ${sets.join(' / ')}</div>` : ''}
-                            ${note ? `<div style="color:var(--accent); font-size:0.8rem; margin-top:4px; font-style:italic;">📝 ${escapeHtml(note)}</div>` : ''}
-                        </div>`;
-                    }).join('')}
-                </div>
-            </details>` : ''}
         </div>`;
     }).join('');
+
+    c.querySelectorAll('.swipe-container').forEach(container => {
+        const id = parseInt(container.dataset.historyId);
+        const btn = container.querySelector('.swipe-delete-btn');
+        const reset = initSwipeDelete(container, () => {
+            const card = container.querySelector('.history-card');
+            if (card) card.style.transform = '';
+            deleteHistoryRecord(id);
+        });
+        swipeResets.push(reset);
+    });
 }
-function deleteHistoryRecord(id) {
-    if (!voiceConfirm('Удалить запись?')) return;
+async function deleteHistoryRecord(id) {
+    if (!await customConfirm('Удалить запись?', { danger: true, okText: '🗑 Удалить' })) return;
     const idx = DB.history.findIndex(r => r.id === id);
     if (idx < 0) return;
     const removed = DB.history[idx];
@@ -3527,25 +4115,64 @@ function deleteHistoryRecord(id) {
 }
 function renderHistoryStats() {
     const c = document.getElementById('history-tab-stats');
+    if (!c) return;
+    const items = getFilteredHistory();
     if (DB.history.length === 0) { c.innerHTML = '<div class="empty-state">Нет данных</div>'; return; }
+    if (items.length === 0) { c.innerHTML = '<div class="empty-state">Ничего не найдено</div>'; return; }
     const now = new Date();
-    const week = DB.history.filter(r => new Date(r.startTime) >= new Date(now.getTime() - 7*24*60*60*1000));
-    const month = DB.history.filter(r => new Date(r.startTime) >= new Date(now.getTime() - 30*24*60*60*1000));
-    const totalTime = DB.history.reduce((s, r) => s + r.totalDuration, 0);
-    const totalWork = DB.history.reduce((s, r) => s + r.workTime, 0);
+    const week = items.filter(r => new Date(r.startTime) >= new Date(now.getTime() - 7*24*60*60*1000));
+    const month = items.filter(r => new Date(r.startTime) >= new Date(now.getTime() - 30*24*60*60*1000));
+    const totalTime = items.reduce((s, r) => s + r.totalDuration, 0);
+    const totalWork = items.reduce((s, r) => s + r.workTime, 0);
+    const totalWarmup = items.reduce((s, r) => s + (r.warmupSeconds || 0), 0);
+    const avgDuration = items.length > 0 ? Math.floor(totalTime / items.length) : 0;
+    const avgWork = items.length > 0 ? Math.floor(totalWork / items.length) : 0;
+
+    const exMap = {};
+    items.forEach(r => {
+        (r.exerciseNames || []).forEach((name, i) => {
+            const t = (r.exerciseTimes || [])[i] || 0;
+            if (t > 0) {
+                const key = name || 'Упражнение';
+                exMap[key] = (exMap[key] || 0) + t;
+            }
+        });
+    });
+    const top3 = Object.entries(exMap).sort((a, b) => b[1] - a[1]).slice(0, 3);
+
+    let top3Html = '';
+    if (top3.length > 0) {
+        top3Html = `<div class="card" style="margin-top:12px;"><div style="font-weight:700; margin-bottom:8px;">🏆 Топ-3 упражнения по времени</div>`;
+        top3.forEach(([name, t], i) => {
+            const medal = ['🥇', '🥈', '🥉'][i] || '•';
+            top3Html += `<div class="stat-row" style="margin-top:6px;"><div class="stat-label">${medal} ${escapeHtml(name)}</div><div class="stat-value">${formatTime(Math.floor(t))}</div></div>`;
+        });
+        top3Html += `</div>`;
+    }
+
     c.innerHTML = `<div class="card">
         <div class="stat-row"><div class="stat-label">📅 Эта неделя</div><div class="stat-value">${week.length} трен.</div></div>
         <div class="stat-row" style="margin-top:8px;"><div class="stat-label">📅 Этот месяц</div><div class="stat-value">${month.length} трен.</div></div>
-        <div class="stat-row" style="margin-top:8px;"><div class="stat-label">🏆 Всего</div><div class="stat-value highlight">${DB.history.length}</div></div>
+        <div class="stat-row" style="margin-top:8px;"><div class="stat-label">🏆 Найдено</div><div class="stat-value highlight">${items.length}</div></div>
         <div class="stat-row" style="margin-top:8px;"><div class="stat-label">⏱ Общее время</div><div class="stat-value">${formatTime(Math.floor(totalTime))}</div></div>
         <div class="stat-row" style="margin-top:8px;"><div class="stat-label">💪 Чистое время</div><div class="stat-value">${formatTime(Math.floor(totalWork))}</div></div>
-    </div>`;
+        ${totalWarmup > 0 ? `<div class="stat-row" style="margin-top:8px;"><div class="stat-label">🔥 Разминка</div><div class="stat-value">${formatTime(Math.floor(totalWarmup))}</div></div>` : ''}
+    </div>
+    <div class="card" style="margin-top:12px;">
+        <div style="font-weight:700; margin-bottom:8px;">📊 В среднем</div>
+        <div class="stat-row"><div class="stat-label">⏱ Длительность</div><div class="stat-value">${formatTime(avgDuration)}</div></div>
+        <div class="stat-row" style="margin-top:8px;"><div class="stat-label">💪 Работа</div><div class="stat-value">${formatTime(avgWork)}</div></div>
+    </div>
+    ${top3Html}`;
 }
 function renderHistoryRecords() {
     const c = document.getElementById('history-tab-records');
+    if (!c) return;
+    const items = getFilteredHistory();
     if (DB.history.length === 0) { c.innerHTML = '<div class="empty-state">Нет данных</div>'; return; }
-    const longest = DB.history.reduce((a, b) => a.totalDuration > b.totalDuration ? a : b);
-    const mostWork = DB.history.reduce((a, b) => a.workTime > b.workTime ? a : b);
+    if (items.length === 0) { c.innerHTML = '<div class="empty-state">Ничего не найдено</div>'; return; }
+    const longest = items.reduce((a, b) => a.totalDuration > b.totalDuration ? a : b);
+    const mostWork = items.reduce((a, b) => a.workTime > b.workTime ? a : b);
     c.innerHTML = `<div class="record-item"><div class="label">🏅 Самая длинная</div><div class="value">${formatTime(longest.totalDuration)}</div></div>
     <div style="color:var(--muted); font-size:0.8rem; margin:-4px 0 12px 4px;">${escapeHtml(longest.workoutName)}</div>
     <div class="record-item"><div class="label">💪 Больше работы</div><div class="value">${formatTime(mostWork.workTime)}</div></div>
@@ -3554,12 +4181,19 @@ function renderHistoryRecords() {
 function shareResult(id) {
     const r = DB.history.find(x => x.id === id);
     if (!r) return;
-    const text = `💪 Тренировка: ${r.workoutName}\n📅 ${formatDate(new Date(r.startTime))}\n⏱ ${formatTime(r.totalDuration)}\n💪 ${formatTime(r.workTime)}\n\n#FitTrainer`;
-    if (navigator.share) navigator.share({ title: 'Тренировка', text }).catch(() => {});
-    else { try { navigator.clipboard.writeText(text).then(() => alert('Скопировано!')); } catch(e) { prompt('Текст:', text); } }
+    let text = `💪 Тренировка: ${r.workoutName}\n📅 ${formatDate(new Date(r.startTime))}\n⏱ ${formatTime(r.totalDuration)}\n💪 ${formatTime(r.workTime)}`;
+    if ((r.warmupSeconds || 0) > 0) text += `\n🔥 Разминка: ${formatTime(r.warmupSeconds)}`;
+    text += `\n\n#FitTrainer`;
+    if (navigator.share) {
+        navigator.share({ title: 'Тренировка', text }).catch(() => showShareFallback(text));
+    } else if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => showToast('📋 Скопировано')).catch(() => showShareFallback(text));
+    } else {
+        showShareFallback(text);
+    }
 }
-function clearHistory() {
-    if (!voiceConfirm('Удалить всю историю?')) return;
+async function clearHistory() {
+    if (!await customConfirm('Удалить всю историю?', { danger: true, okText: '🗑 Удалить всё' })) return;
     const backup = [...DB.history];
     DB.history = [];
     saveDB('history');
@@ -3572,7 +4206,46 @@ function clearHistory() {
     });
 }
 
-/* ===================== НАСТРОЙКИ ===================== */
+/* ===================== CSV EXPORT ===================== */
+function csvEscape(v) {
+    const s = String(v === undefined || v === null ? '' : v);
+    if (s.indexOf(',') >= 0 || s.indexOf('"') >= 0 || s.indexOf('\n') >= 0) {
+        return '"' + s.replace(/"/g, '""') + '"';
+    }
+    return s;
+}
+function exportCSV() {
+    if (!DB.history.length) { showToast('История пуста'); return; }
+    const headers = ['Дата', 'Начало', 'Конец', 'Тренировка', 'Длительность', 'Длительность_сек', 'Работа', 'Работа_сек', 'Разминка_сек', 'Упражнений', 'Заметка'];
+    const rows = DB.history.map(r => {
+        const start = new Date(r.startTime);
+        const end = r.endTime ? new Date(r.endTime) : new Date(start.getTime() + (r.totalDuration || 0) * 1000);
+        return [
+            formatDateKey(start),
+            formatClock(start),
+            formatClock(end),
+            r.workoutName || '',
+            formatTime(r.totalDuration || 0),
+            r.totalDuration || 0,
+            formatTime(r.workTime || 0),
+            r.workTime || 0,
+            r.warmupSeconds || 0,
+            r.exercisesCount || (r.exerciseNames || []).length,
+            r.workoutNote || ''
+        ];
+    });
+    const csv = [headers, ...rows].map(row => row.map(csvEscape).join(',')).join('\n');
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `fit-trainer-history-${new Date().toISOString().slice(0,10)}.csv`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('📥 CSV экспортирован');
+}
+
+/* ===================== SETTINGS ===================== */
 function renderSettings() {
     document.getElementById('set-wakelock').checked = DB.settings.wakeLock;
     document.getElementById('set-countdown').checked = DB.settings.countdown;
@@ -3585,6 +4258,10 @@ function renderSettings() {
     document.getElementById('set-announce-confirm').checked = DB.settings.announceConfirm;
     document.getElementById('set-notify-scheduled').checked = DB.settings.notifyScheduledWorkouts;
     document.getElementById('set-notify-show-completed').checked = DB.settings.notifyShowCompleted;
+    const showActivityEl = document.getElementById('set-show-activity');
+    if (showActivityEl) showActivityEl.checked = DB.settings.showActivityCalendar !== false;
+    const askRepsEl = document.getElementById('set-ask-reps');
+    if (askRepsEl) askRepsEl.checked = DB.settings.askReps;
     const backupChk = document.getElementById('set-auto-backup');
     if (backupChk) backupChk.checked = DB.settings.autoBackupReminder;
     const vib = document.getElementById('vibration-warning');
@@ -3600,13 +4277,26 @@ function renderSettings() {
     updateAnnounceVisibility();
     updateBackupInfo();
 
+    document.querySelectorAll('.settings-group').forEach(group => {
+        const key = group.dataset.group;
+        if (key && DB.settings.accordions && DB.settings.accordions[key] !== undefined) {
+            group.open = DB.settings.accordions[key];
+        }
+        group.addEventListener('toggle', () => {
+            DB.settings.accordions = DB.settings.accordions || {};
+            DB.settings.accordions[key] = group.open;
+            Storage.set('ft_settings', DB.settings);
+        }, { once: true });
+    });
+
     const map = {
         'set-wakelock': 'wakeLock', 'set-countdown': 'countdown', 'set-default-auto': 'defaultAutoStart',
         'set-continuous-beep': 'continuousBeep', 'set-minute-beep': 'minuteBeep',
         'set-announce-numbers': 'announceNumbers', 'set-show-start-time': 'showStartTime',
         'set-announce-buttons': 'announceButtons', 'set-announce-confirm': 'announceConfirm',
         'set-notify-scheduled': 'notifyScheduledWorkouts', 'set-notify-show-completed': 'notifyShowCompleted',
-        'set-auto-backup': 'autoBackupReminder'
+        'set-show-activity': 'showActivityCalendar',
+        'set-auto-backup': 'autoBackupReminder', 'set-ask-reps': 'askReps'
     };
     Object.keys(map).forEach(id => {
         const el = document.getElementById(id);
@@ -3617,6 +4307,7 @@ function renderSettings() {
             if (id === 'set-continuous-beep') renderSoundOptions();
             if (id === 'set-minute-beep') renderMinuteBeepOptions();
             if (id === 'set-countdown') renderCountdownIntervals();
+            if (id === 'set-show-activity') renderStreakBanner();
         };
     });
 }
@@ -3643,9 +4334,7 @@ function renderSoundModeOptions() {
     const modes = [{ v: 'voice', name: '🗣 Озвучивать', desc: 'Голосом' }, { v: 'beep', name: '🔔 Пикать', desc: 'Короткие сигналы' }];
     c.innerHTML = modes.map(m => {
         const sel = DB.settings.soundMode === m.v;
-        return `<div class="sound-option ${sel ? 'selected' : ''}" onclick="selectSoundMode('${m.v}')">
-            <div class="radio"></div><div class="sound-info"><div class="sound-name">${m.name}</div><div class="sound-desc">${m.desc}</div></div>
-        </div>`;
+        return `<div class="sound-option ${sel ? 'selected' : ''}" onclick="selectSoundMode('${m.v}')"><div class="radio"></div><div class="sound-info"><div class="sound-name">${m.name}</div><div class="sound-desc">${m.desc}</div></div></div>`;
     }).join('');
     updateAnnounceVisibility();
 }
@@ -3659,10 +4348,7 @@ function renderSoundOptions() {
     c.innerHTML = Object.keys(ALARM_SOUNDS).map(k => {
         const s = ALARM_SOUNDS[k];
         const sel = DB.settings.alarmSound === k;
-        return `<div class="sound-option ${sel ? 'selected' : ''}" onclick="selectAlarmSound('${k}')">
-            <div class="radio"></div><div class="sound-info"><div class="sound-name">${s.name}</div><div class="sound-desc">${s.desc}</div></div>
-            <button class="preview-btn" onclick="event.stopPropagation(); previewAlarmSound('${k}')">▶</button>
-        </div>`;
+        return `<div class="sound-option ${sel ? 'selected' : ''}" onclick="selectAlarmSound('${k}')"><div class="radio"></div><div class="sound-info"><div class="sound-name">${s.name}</div><div class="sound-desc">${s.desc}</div></div><button class="preview-btn" onclick="event.stopPropagation(); previewAlarmSound('${k}')">▶</button></div>`;
     }).join('');
 }
 function selectAlarmSound(k) { DB.settings.alarmSound = k; saveDB('settings'); renderSoundOptions(); }
@@ -3671,9 +4357,7 @@ function renderMinuteBeepOptions() {
     c.style.display = DB.settings.minuteBeep ? 'block' : 'none';
     document.getElementById('minute-beep-interval-options').innerHTML = MINUTE_BEEP_INTERVALS.map(o => {
         const sel = DB.settings.minuteBeepInterval === o.v;
-        return `<div class="sound-option ${sel ? 'selected' : ''}" onclick="selectMinuteBeepInterval(${o.v})">
-            <div class="radio"></div><div class="sound-info"><div class="sound-name">${o.t}</div></div>
-        </div>`;
+        return `<div class="sound-option ${sel ? 'selected' : ''}" onclick="selectMinuteBeepInterval(${o.v})"><div class="radio"></div><div class="sound-info"><div class="sound-name">${o.t}</div></div></div>`;
     }).join('');
 }
 function selectMinuteBeepInterval(v) { DB.settings.minuteBeepInterval = v; saveDB('settings'); renderMinuteBeepOptions(); }
@@ -3682,9 +4366,7 @@ function renderCountdownIntervals() {
     c.style.display = DB.settings.countdown ? 'block' : 'none';
     document.getElementById('countdown-interval-list').innerHTML = COUNTDOWN_INTERVALS.map(o => {
         const sel = DB.settings.countdownDuration === o.v;
-        return `<div class="sound-option ${sel ? 'selected' : ''}" onclick="selectCountdownInterval(${o.v})">
-            <div class="radio"></div><div class="sound-info"><div class="sound-name">${o.t}</div></div>
-        </div>`;
+        return `<div class="sound-option ${sel ? 'selected' : ''}" onclick="selectCountdownInterval(${o.v})"><div class="radio"></div><div class="sound-info"><div class="sound-name">${o.t}</div></div></div>`;
     }).join('');
 }
 function selectCountdownInterval(v) { DB.settings.countdownDuration = v; saveDB('settings'); renderCountdownIntervals(); }
@@ -3708,10 +4390,11 @@ function importData(event) {
     const file = event.target.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = e => {
+    reader.onload = async e => {
         try {
             const data = JSON.parse(e.target.result);
-            if (!voiceConfirm(`Импортировать данные?\nТренировок: ${data.workouts?.length || 0}\nШаблонов: ${data.templates?.length || 0}\nПрограмм: ${data.programs?.length || 0}\nЗаписей: ${data.history?.length || 0}\n\nТекущие данные будут ЗАМЕНЕНЫ.`)) return;
+            const ok = await customConfirm(`Импортировать данные?\nТренировок: ${data.workouts?.length || 0}\nШаблонов: ${data.templates?.length || 0}\nПрограмм: ${data.programs?.length || 0}\nЗаписей: ${data.history?.length || 0}\n\nТекущие данные будут ЗАМЕНЕНЫ.`, { title: 'Импорт данных', okText: '📥 Импортировать', danger: true });
+            if (!ok) return;
             if (data.workouts) DB.workouts = data.workouts;
             if (data.templates) DB.templates = data.templates;
             if (data.programs) DB.programs = data.programs;
@@ -3724,19 +4407,22 @@ function importData(event) {
             if (typeof DB.settings.autoBackupReminder !== 'boolean') DB.settings.autoBackupReminder = true;
             if (typeof DB.settings.lastBackupAt !== 'number') DB.settings.lastBackupAt = 0;
             if (typeof DB.settings.lastBackupRecordCount !== 'number') DB.settings.lastBackupRecordCount = 0;
+            if (typeof DB.settings.askReps !== 'boolean') DB.settings.askReps = true;
+            if (typeof DB.settings.showActivityCalendar !== 'boolean') DB.settings.showActivityCalendar = true;
+            if (!DB.settings.accordions || typeof DB.settings.accordions !== 'object') DB.settings.accordions = {};
             DB.settings.voice = (DB.settings.soundMode === 'voice');
             saveDB('workouts'); saveDB('templates'); saveDB('programs'); saveDB('history'); saveDB('settings');
             validateAndMigrateDB();
             applyTheme();
-            alert('Импорт успешен!');
+            showToast('Импорт успешен');
             showScreen('screen-home');
-        } catch(err) { alert('Ошибка: ' + err.message); }
+        } catch(err) { showToast('Ошибка: ' + err.message); }
     };
     reader.readAsText(file);
     event.target.value = '';
 }
 
-/* ===================== АВТОБЭКАП ===================== */
+/* ===================== AUTO BACKUP ===================== */
 function checkAutoBackupReminder() {
     if (!DB.settings.autoBackupReminder) return;
     if (!DB.history.length) return;
@@ -3768,10 +4454,7 @@ function showBackupReminder(reason) {
         <div class="sheet-grip"></div>
         <div class="sheet-icon">💾</div>
         <h2 class="sheet-title">Пора сделать бэкап</h2>
-        <div class="sheet-info">
-            <div class="sheet-info-name">Прошло: ${escapeHtml(reason)}</div>
-            <div class="sheet-info-details">Сохраните данные, чтобы не потерять прогресс.</div>
-        </div>
+        <div class="sheet-info"><div class="sheet-info-name">Прошло: ${escapeHtml(reason)}</div><div class="sheet-info-details">Сохраните данные, чтобы не потерять прогресс.</div></div>
         <button class="btn accent" onclick="doBackupAndClose(this)">💾 Сделать бэкап</button>
         <button class="btn ghost" onclick="snoozeBackup(this)">Позже</button>
         <button class="btn notif-dismiss" style="background:transparent;color:var(--muted);font-size:0.85rem;" onclick="disableBackupReminder(this)">Отключить напоминания</button>
@@ -3802,7 +4485,7 @@ function disableBackupReminder(btn) {
     showToast('Напоминания отключены');
 }
 
-/* ===================== УВЕДОМЛЕНИЯ О ТРЕНИРОВКАХ ===================== */
+/* ===================== NOTIFICATIONS ===================== */
 const NOTIF_DISMISSED_KEY = 'ft_notif_dismissed';
 
 function checkScheduledNotifications() {
@@ -3838,13 +4521,7 @@ function checkScheduledNotifications() {
 function showAllDoneNotification(items, todayKey) {
     const ov = document.createElement('div');
     ov.className = 'bottom-sheet-overlay';
-    ov.innerHTML = `<div class="bottom-sheet">
-        <div class="sheet-grip"></div>
-        <div class="sheet-icon">🎉</div>
-        <h2 class="sheet-title">Всё по плану!</h2>
-        <div class="sheet-info"><div class="sheet-info-details">${items.length} тренировок выполнено</div></div>
-        <button class="btn accent" onclick="markAllDoneAndClose(this, 'ft_notif_alldone_${todayKey}')">Отлично</button>
-    </div>`;
+    ov.innerHTML = `<div class="bottom-sheet"><div class="sheet-grip"></div><div class="sheet-icon">🎉</div><h2 class="sheet-title">Всё по плану!</h2><div class="sheet-info"><div class="sheet-info-details">${items.length} тренировок выполнено</div></div><button class="btn accent" onclick="markAllDoneAndClose(this, 'ft_notif_alldone_${todayKey}')">Отлично</button></div>`;
     document.body.appendChild(ov);
 }
 function markAllDoneAndClose(btn, key) {
@@ -3863,11 +4540,7 @@ function showScheduledNotificationModal(items, completedIds, pending, todayKey) 
         if (done && !showCompleted) return;
         const histRec = done ? DB.history.find(r => r.workoutId === t.workout.id && formatDateKey(new Date(r.startTime)) === todayKey) : null;
         const sub = done ? `✅ Выполнено ${histRec ? formatClock(new Date(histRec.startTime)) : ''}` : `📅 ${escapeHtml(t.program.name)}`;
-        itemsHtml += `<div class="notif-item ${done ? 'done' : ''}">
-            <div class="notif-status">${done ? '✅' : '⏳'}</div>
-            <div class="notif-body"><div class="notif-name">${escapeHtml(t.workout.name)}</div><div class="notif-sub">${sub}</div></div>
-            ${!done ? `<button class="icon-btn" onclick="notifStart(${t.workout.id}, this)" style="background:var(--accent); color:#000; width:38px; height:38px; border-radius:10px; font-weight:700;">▶</button>` : ''}
-        </div>`;
+        itemsHtml += `<div class="notif-item ${done ? 'done' : ''}"><div class="notif-status">${done ? '✅' : '⏳'}</div><div class="notif-body"><div class="notif-name">${escapeHtml(t.workout.name)}</div><div class="notif-sub">${sub}</div></div>${!done ? `<button class="icon-btn" onclick="notifStart(${t.workout.id}, this)" style="background:var(--accent); color:#000; width:38px; height:38px; border-radius:10px; font-weight:700;">▶</button>` : ''}</div>`;
     });
     if (!itemsHtml) { ov.remove(); return; }
     ov.innerHTML = `<div class="bottom-sheet">
@@ -3894,7 +4567,7 @@ function notifStart(id, btn) {
     startWorkout(id);
 }
 
-/* ===================== СТАРТ ===================== */
+/* ===================== START ===================== */
 document.addEventListener('click', unlockAudio, { capture: true });
 document.addEventListener('touchstart', unlockAudio, { capture: true, passive: true });
 document.addEventListener('visibilitychange', () => {
