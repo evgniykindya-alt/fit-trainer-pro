@@ -1,5 +1,5 @@
 // sw.js — Service Worker с кэшированием (офлайн-режим) + уведомления
-const CACHE_VERSION = 'ft-v1.5.4';
+const CACHE_VERSION = 'ft-v1.5.5';
 const CACHE_NAME = 'fit-trainer-' + CACHE_VERSION;
 const PRECACHE_URLS = ['./', './index.html'];
 
