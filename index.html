@@ -1174,25 +1174,47 @@ function getEffectiveSetting(key) {
 function hasOpenOverlay() { return !!document.querySelector('.bottom-sheet-overlay'); }
 
 /* ===================== HOME / NAV VISIBILITY ===================== */
+/*
+ * Логика компоновки главного меню:
+ *  - "Мои тренировки" — всегда во всю ширину (первая строка).
+ *  - Узкие кнопки (templates/programs/activity/history) — всегда узкие.
+ *  - "Настройки" — единственная гибкая кнопка:
+ *      • если видимых узких НЕЧЁТНОЕ число → "Настройки" становится УЗКОЙ
+ *        (встаёт в освободившееся место от скрытой кнопки, ряд выравнивается);
+ *      • если ЧЁТНОЕ → "Настройки" остаётся ВО ВСЮ ШИРИНУ.
+ *  Так при скрытии любых узких кнопок не остаётся «дырок», а сетка всегда
+ *  выровнена по 2 колонки.
+ */
 function applyHomeMenuVisibility() {
-    const map = { templates: 'menu-btn-templates', programs: 'menu-btn-programs', activity: 'menu-btn-activity', history: 'menu-btn-history' };
-    Object.keys(map).forEach(k => {
-        const el = document.getElementById(map[k]);
+    const narrowIdToKey = {
+        'menu-btn-templates': 'templates',
+        'menu-btn-programs': 'programs',
+        'menu-btn-activity': 'activity',
+        'menu-btn-history': 'history'
+    };
+
+    // 1. Скрыть/показать узкие кнопки
+    Object.keys(narrowIdToKey).forEach(id => {
+        const el = document.getElementById(id);
         if (!el) return;
-        el.style.display = DB.settings.hiddenMenuItems.includes(k) ? 'none' : '';
+        el.style.display = DB.settings.hiddenMenuItems.includes(narrowIdToKey[id]) ? 'none' : '';
+        el.classList.remove('menu-wide'); // узкие всегда узкие
     });
 
-    // Перекомпоновка: если количество видимых узких кнопок нечётное —
-    // последняя растягивается на всю ширину (две колонки), чтобы не было "дырки".
-    const narrowIds = ['menu-btn-templates', 'menu-btn-programs', 'menu-btn-activity', 'menu-btn-history'];
-    const visibleNarrow = narrowIds
-        .map(id => document.getElementById(id))
-        .filter(el => el && el.style.display !== 'none');
-    visibleNarrow.forEach((el, i) => {
-        const shouldBeWide = (i === visibleNarrow.length - 1) && (visibleNarrow.length % 2 === 1);
-        el.classList.toggle('menu-wide', shouldBeWide);
-    });
+    // 2. Посчитать видимые узкие
+    const visibleNarrowCount = Object.keys(narrowIdToKey).filter(id => {
+        const el = document.getElementById(id);
+        return el && el.style.display !== 'none';
+    }).length;
 
+    // 3. "Настройки": широкая при чётном количестве узких, узкая — при нечётном
+    const settingsBtn = document.getElementById('menu-btn-settings');
+    if (settingsBtn) {
+        const settingsWide = (visibleNarrowCount % 2 === 0);
+        settingsBtn.classList.toggle('menu-wide', settingsWide);
+    }
+
+    // 4. Нижнее меню (скрытие вкладок)
     document.querySelectorAll('.nav-btn[data-hideable]').forEach(btn => {
         const key = btn.dataset.hideable;
         btn.style.display = DB.settings.hiddenMenuItems.includes(key) ? 'none' : '';
@@ -3487,13 +3509,17 @@ function ensureTicker() {
 }
 function stopTickInterval() { if (runState && runState.tickInterval) { clearInterval(runState.tickInterval); runState.tickInterval = null; } }
 
+/* FIX: setAttribute для SVG (гарантированная установка класса, включая danger) */
 function setRingProgress(ringId, pct, cls) {
     const ring = document.getElementById(ringId);
     if (!ring) return;
     pct = Math.max(0, Math.min(1, pct));
     ring.style.strokeDasharray = RING_CIRCUMFERENCE;
     ring.style.strokeDashoffset = RING_CIRCUMFERENCE * (1 - pct);
-    if (cls !== undefined) ring.className = 'timer-ring-fg ' + cls;
+    if (cls !== undefined) {
+        // setAttribute('class') работает для SVG надёжнее, чем element.className = ...
+        try { ring.setAttribute('class', 'timer-ring-fg ' + cls); } catch(e) {}
+    }
 }
 
 function startTimer(type, duration) {
@@ -3625,7 +3651,6 @@ function beginCurrentElementFlow(fromAuto = false) {
         const wName = String(runState.workout.name || '').trim();
         if (announceName && wName && isVoiceMode() && ('speechSynthesis' in window)) {
             runState._flowStarting = true;
-            // FIX: визуальная индикация на время озвучки
             const readyEl = document.getElementById('phase-ready');
             if (readyEl) {
                 const btn = readyEl.querySelector('button.btn.accent');
@@ -4084,6 +4109,8 @@ function onRestFinished() {
         runState.restOvertime = 0;
         startRestAlarm();
         updateTimersUI();
+        // FIX: явно ставим красный цвет, чтобы кольцо точно стало danger
+        setRingProgress('ring-rest', 1, 'danger');
         renderRun();
     } else {
         playEndBeep();
@@ -4116,6 +4143,7 @@ function toggleRestNote() {
     }
 }
 
+/* FIX: undoLastElement — как при старте упражнения (озвучка + отсчёт + цель) */
 function undoLastElement() {
     stopRestAlarm();
     if (runState.restPhase === 'between-sets') {
@@ -4133,6 +4161,7 @@ function undoLastElement() {
         runState.restFinished = false;
         runState.restOvertime = 0;
         startTimer('work', 0);
+        if (isVoiceMode()) speak(`Подход ${runState.currentSet}`);
         saveRunState(); renderRun();
         return;
     }
@@ -4146,13 +4175,21 @@ function undoLastElement() {
     runState.currentExerciseWorkTime = 0;
     runState.lastSetElapsed = 0;
     runState.index = prev;
-    runState.phase = 'work';
-    runState.workPaused = false;
     runState.currentSet = 1;
     runState.restFinished = false;
     runState.restOvertime = 0;
-    startTimer('work', 0);
-    saveRunState(); renderRun();
+    runState.restPhase = null;
+    runState.phase = 'ready';
+    saveRunState();
+    renderRun();
+    // Запускаем обычный флоу: озвучка упражнения + цели, обратный отсчёт, старт
+    const targetIndex = prev;
+    setTimeout(() => {
+        if (runState && runState.phase === 'ready' && runState.index === targetIndex) {
+            unlockAudio();
+            proceedWithElement(false);
+        }
+    }, 100);
 }
 
 function updateTimersUI() {
@@ -4387,7 +4424,6 @@ function renderRun() {
             repsTarget.innerText = targetText + ' ' + pluralReps(nReps);
         }
         finishBtn.innerText = finishText;
-        // timeline подходов
         if (timelineEl) {
             if (el.type === 'sets' && (el.setsCount || 1) > 1) {
                 const total = el.setsCount || 3;
@@ -4416,27 +4452,32 @@ function renderRestElement(el) {
     const isWater = el.restType === 'water';
     const isBanner = runState.restBannerMode;
 
-    let displayTitle;
-    if (isBetween) displayTitle = el.name || 'Упражнение';
-    else {
-        const prevIdx = findPrevExerciseIndex(runState.workout.exercises, runState.index);
-        const prevEx = prevIdx >= 0 ? runState.workout.exercises[prevIdx] : null;
-        displayTitle = prevEx ? (prevEx.name || 'Упражнение') : 'Отдых';
-    }
+    // FIX: для воды скрываем название упражнения сверху (дублирует "необходимо попить воды")
     const currentExerciseEl = document.getElementById('current-exercise');
-    currentExerciseEl.innerText = displayTitle;
-    currentExerciseEl.style.color = runState.restFinished ? 'var(--danger)' : '';
+    if (isWater) {
+        currentExerciseEl.style.display = 'none';
+        currentExerciseEl.innerText = '';
+    } else {
+        let displayTitle;
+        if (isBetween) displayTitle = el.name || 'Упражнение';
+        else {
+            const prevIdx = findPrevExerciseIndex(runState.workout.exercises, runState.index);
+            const prevEx = prevIdx >= 0 ? runState.workout.exercises[prevIdx] : null;
+            displayTitle = prevEx ? (prevEx.name || 'Упражнение') : 'Отдых';
+        }
+        currentExerciseEl.style.display = 'flex';
+        currentExerciseEl.innerText = displayTitle;
+        currentExerciseEl.style.color = runState.restFinished ? 'var(--danger)' : '';
+    }
 
     if (runState.restFinished) { phaseLabel.innerText = '⏰ ВРЕМЯ ВЫШЛО'; phaseLabel.className = 'phase-label finished'; }
     else if (isBetween) { phaseLabel.innerText = 'ОТДЫХ МЕЖДУ ПОДХОДАМИ'; phaseLabel.className = 'phase-label'; }
     else if (isWater) { phaseLabel.innerText = 'НЕОБХОДИМО ПОПИТЬ ВОДЫ'; phaseLabel.className = 'phase-label'; }
     else { phaseLabel.innerText = 'ОТДЫХ'; phaseLabel.className = 'phase-label'; }
 
-    // Капля и кольцо таймера
     const middleIcon = document.getElementById('rest-middle-icon');
     const ringWrap = document.getElementById('rest-ring-wrap');
     if (isBanner && isWater) {
-        // Вода без таймера: убираем кольцо, показываем большую каплю по центру
         if (ringWrap) ringWrap.style.display = 'none';
         middleIcon.style.display = 'flex';
         middleIcon.style.fontSize = '5rem';
@@ -4447,6 +4488,18 @@ function renderRestElement(el) {
         middleIcon.style.minHeight = '';
         if (isWater && !runState.restFinished) middleIcon.style.display = 'flex';
         else middleIcon.style.display = 'none';
+    }
+
+    // FIX: явно управляем цветом кольца из renderRestElement,
+    // чтобы при "время вышло" гарантированно был красный (danger).
+    if (!isBanner) {
+        if (runState.restFinished) {
+            setRingProgress('ring-rest', 1, 'danger');
+        } else {
+            const rem = getRemainingTime('rest');
+            const dur = runState.restDuration || 1;
+            setRingProgress('ring-rest', rem / dur, 'rest');
+        }
     }
 
     const timerEl = document.getElementById('rest-timer');
@@ -4468,7 +4521,11 @@ function renderRestElement(el) {
         if (isBetween) { labelEl.innerText = 'Следующий подход'; nameEl.innerText = `Подход ${runState.currentSet} из ${el.setsCount || 3}`; }
         else {
             const next = findNextElement(runState.workout.exercises, runState.index);
-            if (!next) { labelEl.innerText = 'Далее'; nameEl.innerText = 'Это последнее упражнение'; }
+            if (!next) {
+                labelEl.innerText = 'Далее';
+                // FIX: для воды — "последнее действие", для остального — "последнее упражнение"
+                nameEl.innerText = isWater ? 'Это последнее действие' : 'Это последнее упражнение';
+            }
             else {
                 const nx = next.el;
                 labelEl.innerText = 'Далее';
@@ -5294,7 +5351,6 @@ function showScheduledNotificationModal(items, completedCounts, pending, todayKe
 function notifStart(id, btn) {
     const ov = btn.closest('.bottom-sheet-overlay');
     if (ov) ov.remove();
-    // FIX: проверка на удалённую тренировку
     const w = DB.workouts.find(x => x.id === id);
     if (!w) { showToast('⚠️ Тренировка удалена'); return; }
     startWorkout(id);
