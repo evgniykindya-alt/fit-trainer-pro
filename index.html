@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Fit Trainer Pro v.1.5.2">
+<meta name="apple-mobile-web-app-title" content="Fit Trainer Pro v1.5.2">
 <meta name="theme-color" content="#0a0a10">
-<title>Fit Trainer Pro v.1.5.2</title>
-<link rel="manifest" href='data:application/manifest+json,{"name":"Fit Trainer Pro v.1.5.2","short_name":"FitTrainer","start_url":".","display":"standalone","background_color":"%230a0a10","theme_color":"%230a0a10","icons":[{"src":"data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%230a0a10%22/%3E%3Ctext x=%2250%22 y=%2268%22 font-size=%2260%22 text-anchor=%22middle%22%3E💪%3C/text%3E%3C/svg%3E","sizes":"192x192","type":"image/svg+xml"}]}'>
+<title>Fit Trainer Pro v1.5.2</title>
+<link rel="manifest" href='data:application/manifest+json,{"name":"Fit Trainer Pro v1.5.2","short_name":"FitTrainer","start_url":".","display":"standalone","background_color":"%230a0a10","theme_color":"%230a0a10","icons":[{"src":"data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%230a0a10%22/%3E%3Ctext x=%2250%22 y=%2268%22 font-size=%2260%22 text-anchor=%22middle%22%3E💪%3C/text%3E%3C/svg%3E","sizes":"192x192","type":"image/svg+xml"}]}'>
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%230a0a10'/%3E%3Ctext x='50' y='68' font-size='60' text-anchor='middle'%3E💪%3C/text%3E%3C/svg%3E">
 <style>
 :root {
@@ -91,7 +91,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
     border-radius: 8px;
 }
 .app-container { width: 100%; height: 100vh; height: 100dvh; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: var(--sat) 0 var(--sab) 0; }
-body.nav-visible .app-container { padding-bottom: calc(var(--nav-h) + var(--sab) + 8px); }
+body.nav-visible .app-container { padding-bottom: calc(var(--nav-h) + 8px); }
 .screen { display: none; padding: 16px 16px 24px; min-height: 100%; }
 .screen.active { display: block; animation: screenIn 0.22s cubic-bezier(0.2, 0.9, 0.3, 1); }
 @keyframes screenIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
@@ -199,9 +199,8 @@ h2 { color: var(--primary); margin: 22px 0 12px; font-size: 1.05rem; font-weight
     -webkit-backdrop-filter: blur(24px) saturate(180%);
     backdrop-filter: blur(24px) saturate(180%);
     border-top: 1px solid var(--border-soft);
-    padding-bottom: var(--sab);
     z-index: 100;
-    height: calc(var(--nav-h) + var(--sab));
+    height: var(--nav-h);
 }
 body.light .bottom-nav { background: rgba(255,255,255,0.85); }
 body.nav-visible .bottom-nav { display: flex; }
@@ -468,7 +467,7 @@ details[open] summary::after { transform: rotate(180deg); }
 @keyframes toastIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 
 #toast-container { position: fixed; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); display: flex; flex-direction: column-reverse; gap: 8px; z-index: 10001; max-width: 90%; width: auto; pointer-events: none; }
-body.nav-visible #toast-container { bottom: calc(var(--nav-h) + var(--sab) + 16px); }
+body.nav-visible #toast-container { bottom: calc(var(--nav-h) + 16px); }
 .ft-toast { background: rgba(28,28,38,0.95); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); color: var(--text); padding: 12px 20px; border-radius: var(--r-sm); font-size: 0.9rem; box-shadow: var(--shadow-lg); animation: toastIn 0.2s ease; max-width: 320px; text-align: center; border: 1px solid var(--border); pointer-events: auto; }
 body.light .ft-toast { background: rgba(255,255,255,0.95); }
 
@@ -802,7 +801,7 @@ body.light .ft-toast { background: rgba(255,255,255,0.95); }
     </div>
     <div id="phase-rest" style="display:none;">
         <div id="rest-middle-icon" class="rest-icon-display" style="display:none;">💧</div>
-        <div class="timer-ring-wrap">
+        <div class="timer-ring-wrap" id="rest-ring-wrap">
             <svg class="timer-ring" viewBox="0 0 120 120">
                 <circle class="timer-ring-bg" cx="60" cy="60" r="54"></circle>
                 <circle class="timer-ring-fg rest" id="ring-rest" cx="60" cy="60" r="54"></circle>
@@ -826,7 +825,7 @@ body.light .ft-toast { background: rgba(255,255,255,0.95); }
         <div class="rest-buttons">
             <button class="btn accent" id="rest-skip-btn" onclick="skipRest()">⏭ Пропустить</button>
             <button class="btn warn" id="rest-pause-btn" onclick="toggleRestPause()">⏸ Пауза</button>
-            <button class="btn" style="background:var(--blue); color:#0a0a10;" id="rest-undo-btn" onclick="undoLastElement()">↩ Предыдущее</button>
+            <button class="btn" style="background:var(--blue); color:#0a0a10;" id="rest-undo-btn" onclick="undoLastElement()">↩ Предыдущее упражнение</button>
             <button class="btn accent" id="rest-confirm-btn" onclick="confirmRestFinished()" style="display:none;">✅ Завершить отдых</button>
             <button class="btn accent" id="rest-banner-btn" onclick="confirmBanner()" style="display:none;">✅ Продолжить</button>
         </div>
@@ -922,6 +921,7 @@ body.light .ft-toast { background: rgba(255,255,255,0.95); }
         <summary>📱 Поведение</summary>
         <div class="group-body">
             <div class="checkbox-row"><input type="checkbox" id="set-wakelock"><label for="set-wakelock">🔒 Не гасить экран</label></div>
+            <div class="checkbox-row"><input type="checkbox" id="set-show-bottom-nav"><label for="set-show-bottom-nav">📱 Показывать нижнее меню</label></div>
             <div id="vibration-warning" class="checkbox-row disabled" style="display:none;"><label>📳 Вибро не поддерживается</label></div>
         </div>
     </details>
@@ -954,7 +954,7 @@ body.light .ft-toast { background: rgba(255,255,255,0.95); }
         <summary>ℹ️ О приложении</summary>
         <div class="group-body">
             <div class="card" style="color:var(--muted); font-size:0.85rem; line-height:1.6;">
-                <strong style="color:var(--text);">Fit Trainer Pro v.1.5.2</strong><br>
+                <strong style="color:var(--text);">Fit Trainer Pro v1.5.2</strong><br>
                 Данные хранятся локально.
             </div>
         </div>
@@ -1134,6 +1134,7 @@ DB.settings = Object.assign({
     autoBackupReminder: true, lastBackupAt: 0, lastBackupRecordCount: 0,
     askReps: true,
     hiddenMenuItems: [],
+    showBottomNav: true,
     accordions: {}
 }, DB.settings);
 if ('announceConfirm' in DB.settings) delete DB.settings.announceConfirm;
@@ -1152,6 +1153,7 @@ if (typeof DB.settings.announceWorkoutName !== 'boolean') DB.settings.announceWo
 if (typeof DB.settings.showActivityCalendar !== 'boolean') DB.settings.showActivityCalendar = true;
 if (typeof DB.settings.notifyScheduledWorkouts !== 'boolean') DB.settings.notifyScheduledWorkouts = true;
 if (typeof DB.settings.notifyShowCompleted !== 'boolean') DB.settings.notifyShowCompleted = true;
+if (typeof DB.settings.showBottomNav !== 'boolean') DB.settings.showBottomNav = true;
 if (!DB.settings.accordions || typeof DB.settings.accordions !== 'object') DB.settings.accordions = {};
 const HIDEABLE_MENU_KEYS = ['templates','programs','activity','history'];
 if (!Array.isArray(DB.settings.hiddenMenuItems)) DB.settings.hiddenMenuItems = [];
@@ -1179,9 +1181,32 @@ function applyHomeMenuVisibility() {
         if (!el) return;
         el.style.display = DB.settings.hiddenMenuItems.includes(k) ? 'none' : '';
     });
+
+    // Перекомпоновка: если количество видимых узких кнопок нечётное —
+    // последняя растягивается на всю ширину (две колонки), чтобы не было "дырки".
+    const narrowIds = ['menu-btn-templates', 'menu-btn-programs', 'menu-btn-activity', 'menu-btn-history'];
+    const visibleNarrow = narrowIds
+        .map(id => document.getElementById(id))
+        .filter(el => el && el.style.display !== 'none');
+    visibleNarrow.forEach((el, i) => {
+        const shouldBeWide = (i === visibleNarrow.length - 1) && (visibleNarrow.length % 2 === 1);
+        el.classList.toggle('menu-wide', shouldBeWide);
+    });
+
     document.querySelectorAll('.nav-btn[data-hideable]').forEach(btn => {
         const key = btn.dataset.hideable;
         btn.style.display = DB.settings.hiddenMenuItems.includes(key) ? 'none' : '';
+    });
+}
+
+function applyNavVisibility() {
+    const active = document.querySelector('.screen.active');
+    if (!active) return;
+    const id = active.id;
+    const showNav = !NO_NAV_SCREENS.includes(id) && DB.settings.showBottomNav !== false;
+    document.body.classList.toggle('nav-visible', showNav);
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.screen === id);
     });
 }
 
@@ -2115,11 +2140,7 @@ function showScreen(id) {
     document.getElementById(id).classList.add('active');
     document.querySelector('.app-container').scrollTop = 0;
 
-    const showNav = !NO_NAV_SCREENS.includes(id);
-    document.body.classList.toggle('nav-visible', showNav);
-    document.querySelectorAll('.nav-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.screen === id);
-    });
+    applyNavVisibility();
 
     if (id !== 'screen-settings' && previewCtx) {
         try { previewCtx.close(); } catch(e) {}
@@ -4411,9 +4432,22 @@ function renderRestElement(el) {
     else if (isWater) { phaseLabel.innerText = 'НЕОБХОДИМО ПОПИТЬ ВОДЫ'; phaseLabel.className = 'phase-label'; }
     else { phaseLabel.innerText = 'ОТДЫХ'; phaseLabel.className = 'phase-label'; }
 
+    // Капля и кольцо таймера
     const middleIcon = document.getElementById('rest-middle-icon');
-    if (isWater && !runState.restFinished) middleIcon.style.display = 'flex';
-    else middleIcon.style.display = 'none';
+    const ringWrap = document.getElementById('rest-ring-wrap');
+    if (isBanner && isWater) {
+        // Вода без таймера: убираем кольцо, показываем большую каплю по центру
+        if (ringWrap) ringWrap.style.display = 'none';
+        middleIcon.style.display = 'flex';
+        middleIcon.style.fontSize = '5rem';
+        middleIcon.style.minHeight = '220px';
+    } else {
+        if (ringWrap) ringWrap.style.display = '';
+        middleIcon.style.fontSize = '';
+        middleIcon.style.minHeight = '';
+        if (isWater && !runState.restFinished) middleIcon.style.display = 'flex';
+        else middleIcon.style.display = 'none';
+    }
 
     const timerEl = document.getElementById('rest-timer');
     if (isBanner) timerEl.style.display = 'none';
@@ -4470,8 +4504,7 @@ function renderRestElement(el) {
     const adjustDiv = document.getElementById('rest-adjust');
     const bannerBtn = document.getElementById('rest-banner-btn');
 
-    // FIX: правильный label для между-подходов
-    if (undoBtn) undoBtn.innerText = isBetween ? '↩ Предыдущий подход' : '↩ Предыдущее';
+    if (undoBtn) undoBtn.innerText = isBetween ? '↩ Предыдущий подход' : '↩ Предыдущее упражнение';
 
     if (isBanner) {
         pauseBtn.style.display = 'none'; skipBtn.style.display = 'none';
@@ -4867,7 +4900,6 @@ async function clearHistory() {
     saveDB('history');
     renderHistory();
     showUndoToast('История очищена', () => {
-        // FIX: не теряем записи, добавленные между удалением и Undo
         const current = Array.isArray(DB.history) ? DB.history : [];
         const backupIds = new Set(backup.map(r => r.id));
         const newOnes = current.filter(r => !backupIds.has(r.id));
@@ -4923,6 +4955,8 @@ function renderSettings() {
     if (askRepsEl) askRepsEl.checked = DB.settings.askReps;
     const backupChk = document.getElementById('set-auto-backup');
     if (backupChk) backupChk.checked = DB.settings.autoBackupReminder;
+    const showNavChk = document.getElementById('set-show-bottom-nav');
+    if (showNavChk) showNavChk.checked = DB.settings.showBottomNav !== false;
     const vib = document.getElementById('vibration-warning');
     if (vib) vib.style.display = (typeof navigator.vibrate === 'function') ? 'none' : 'flex';
 
@@ -4974,7 +5008,8 @@ function renderSettings() {
         'set-announce-buttons': 'announceButtons',
         'set-notify-scheduled': 'notifyScheduledWorkouts', 'set-notify-show-completed': 'notifyShowCompleted',
         'set-show-activity': 'showActivityCalendar',
-        'set-auto-backup': 'autoBackupReminder', 'set-ask-reps': 'askReps'
+        'set-auto-backup': 'autoBackupReminder', 'set-ask-reps': 'askReps',
+        'set-show-bottom-nav': 'showBottomNav'
     };
     Object.keys(map).forEach(id => {
         const el = document.getElementById(id);
@@ -4989,6 +5024,7 @@ function renderSettings() {
             if (id === 'set-minute-beep') renderMinuteBeepOptions();
             if (id === 'set-countdown') renderCountdownIntervals();
             if (id === 'set-show-activity') renderStreakBanner();
+            if (id === 'set-show-bottom-nav') applyNavVisibility();
             if (id === 'set-wakelock') {
                 if (DB.settings.wakeLock) { if (runState && runState.phase !== 'finish') acquireWakeLock(); }
                 else releaseWakeLock();
@@ -5095,6 +5131,7 @@ function importData(event) {
             if (typeof DB.settings.showActivityCalendar !== 'boolean') DB.settings.showActivityCalendar = true;
             if (typeof DB.settings.notifyScheduledWorkouts !== 'boolean') DB.settings.notifyScheduledWorkouts = true;
             if (typeof DB.settings.notifyShowCompleted !== 'boolean') DB.settings.notifyShowCompleted = true;
+            if (typeof DB.settings.showBottomNav !== 'boolean') DB.settings.showBottomNav = true;
             if (!DB.settings.accordions || typeof DB.settings.accordions !== 'object') DB.settings.accordions = {};
             if (!Array.isArray(DB.settings.hiddenMenuItems)) DB.settings.hiddenMenuItems = [];
             DB.settings.hiddenMenuItems = DB.settings.hiddenMenuItems.filter(k => HIDEABLE_MENU_KEYS.includes(k));
